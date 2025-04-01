@@ -1,0 +1,45 @@
+Green使用说明文档
+应用概述
+Green是一款基于WebRTC技术的实时视频传输应用，专为Electron客户端与TouchDesigner之间的视频流通信设计。本应用提供低延迟、高质量的跨平台视频传输解决方案。
+主要功能
+跨平台视频传输：实现Electron与TouchDesigner之间的实时视频连接
+自动发现连接：自动检测并连接可用的TouchDesigner客户端
+双向信令兼容：支持标准WebRTC和TouchDesigner专用信令格式
+弹性连接管理：具备自动重连、状态监测和错误恢复机制
+用户友好界面：提供连接状态显示、客户端选择和手动连接控制
+系统要求
+Node.js (v14+)
+npm包管理器
+支持WebRTC的现代浏览器（浏览器访问时）
+安装步骤
+下载项目文件
+安装依赖：npm install
+运行方式
+完整应用：npm run dev（同时启动信令服务器和Electron客户端）
+仅信令服务器：npm run signaling
+仅Electron客户端：npm run start
+使用指南
+启动应用后，Electron客户端自动连接到信令服务器（端口3000）
+TouchDesigner客户端连接时，系统自动识别并尝试建立连接
+界面右上角显示连接状态（绿色=已连接，红色=未连接）
+底部控制面板功能：
+输入/选择TouchDesigner客户端ID
+"连接到TD"按钮手动发起连接
+"刷新列表"更新可用客户端
+"重置连接"重新初始化连接
+故障排除
+无法连接信令服务器
+确认服务器已启动（端口3000）
+检查网络和防火墙设置
+未检测到TouchDesigner客户端
+检查TouchDesigner WebRTC配置
+使用"刷新列表"按钮
+视频连接失败
+点击"重置连接"重新初始化
+检查TouchDesigner WebRTC节点设置
+技术架构
+Electron应用：提供桌面界面和WebRTC连接管理
+信令服务器：处理客户端发现和WebRTC信令交换
+WebRTC通信：实现低延迟、高质量的P2P视频传输
+更多信息
+本应用为TouchDesigner创作者提供了将实时视频内容集成到Electron应用的便捷方式，为跨平台视频通信提供强大解决方案。
