@@ -158,14 +158,15 @@ wss.on('connection', (ws) => {
                 
                 // 处理TouchDesigner格式的信令消息
                 if (data.signalingType === 'Offer' || data.signalingType === 'Answer' || data.signalingType === 'Ice') {
-                    const targetId = data.targetId;
+                    // 优先使用targetId，如果不存在则使用target
+                    const targetId = data.targetId || data.target;
                     
                     if (targetId && clients.has(targetId)) {
                         // 直接转发，不进行格式转换
                         console.log(`转发TouchDesigner ${data.signalingType}消息到目标 ${targetId}`);
                         clients.get(targetId).ws.send(message.toString());
                     } else {
-                        console.log(`目标客户端 ${targetId} 不存在或未连接`);
+                        console.log(`目标客户端 ${targetId} 不存在或未连接，检查是否正确设置targetId或target字段`);
                     }
                 }
                 
@@ -214,11 +215,12 @@ wss.on('connection', (ws) => {
                     break;
                 case 'offer':
                     // 记录offer信息
-                    console.log(`客户端 ${data.sender} 向 ${data.target} 发送offer`);
+                    console.log(`客户端 ${data.sender} 向 ${data.target || data.targetId} 发送offer`);
                     
-                    // 转发给目标客户端
-                    if (data.target && clients.has(data.target)) {
-                        const targetInfo = clients.get(data.target);
+                    // 转发给目标客户端，优先使用target，如果不存在则使用targetId
+                    const offerTargetId = data.target || data.targetId;
+                    if (offerTargetId && clients.has(offerTargetId)) {
+                        const targetInfo = clients.get(offerTargetId);
                         
                         // 检查目标是否为TouchDesigner客户端
                         if (targetInfo.type === 'touchdesigner') {
@@ -227,7 +229,7 @@ wss.on('connection', (ws) => {
                             
                             targetInfo.ws.send(JSON.stringify({
                                 signalingType: 'Offer',
-                                targetId: data.target,
+                                targetId: offerTargetId,
                                 senderId: data.sender,
                                 content: {
                                     sdp: data.sdp
@@ -237,15 +239,17 @@ wss.on('connection', (ws) => {
                             targetInfo.ws.send(message.toString());
                         }
                     } else {
-                        console.log(`目标客户端 ${data.target} 不存在或未连接`);
+                        console.log(`目标客户端 ${offerTargetId} 不存在或未连接，检查是否正确设置target或targetId字段`);
                     }
                     break;
                 case 'answer':
-                    console.log(`客户端 ${data.sender} 向 ${data.target} 发送answer`);
+                    // 优先使用target，如果不存在则使用targetId
+                    const answerTargetId = data.target || data.targetId;
+                    console.log(`客户端 ${data.sender} 向 ${answerTargetId} 发送answer`);
                     
                     // 转发给目标客户端
-                    if (data.target && clients.has(data.target)) {
-                        const targetInfo = clients.get(data.target);
+                    if (answerTargetId && clients.has(answerTargetId)) {
+                        const targetInfo = clients.get(answerTargetId);
                         
                         // 检查目标是否为TouchDesigner客户端
                         if (targetInfo.type === 'touchdesigner') {
@@ -254,7 +258,7 @@ wss.on('connection', (ws) => {
                             
                             targetInfo.ws.send(JSON.stringify({
                                 signalingType: 'Answer',
-                                targetId: data.target,
+                                targetId: answerTargetId,
                                 senderId: data.sender,
                                 content: {
                                     sdp: data.sdp
@@ -264,15 +268,17 @@ wss.on('connection', (ws) => {
                             targetInfo.ws.send(message.toString());
                         }
                     } else {
-                        console.log(`目标客户端 ${data.target} 不存在或未连接`);
+                        console.log(`目标客户端 ${answerTargetId} 不存在或未连接，检查是否正确设置target或targetId字段`);
                     }
                     break;
                 case 'ice-candidate':
-                    console.log(`客户端 ${data.sender} 向 ${data.target} 发送ICE候选`);
+                    // 优先使用target，如果不存在则使用targetId
+                    const iceTargetId = data.target || data.targetId;
+                    console.log(`客户端 ${data.sender} 向 ${iceTargetId} 发送ICE候选`);
                     
                     // 转发给目标客户端
-                    if (data.target && clients.has(data.target)) {
-                        const targetInfo = clients.get(data.target);
+                    if (iceTargetId && clients.has(iceTargetId)) {
+                        const targetInfo = clients.get(iceTargetId);
                         
                         // 检查目标是否为TouchDesigner客户端
                         if (targetInfo.type === 'touchdesigner') {
@@ -281,7 +287,7 @@ wss.on('connection', (ws) => {
                             
                             targetInfo.ws.send(JSON.stringify({
                                 signalingType: 'Ice',
-                                targetId: data.target,
+                                targetId: iceTargetId,
                                 senderId: data.sender,
                                 content: {
                                     sdpCandidate: data.candidate.candidate,
@@ -293,7 +299,7 @@ wss.on('connection', (ws) => {
                             targetInfo.ws.send(message.toString());
                         }
                     } else {
-                        console.log(`目标客户端 ${data.target} 不存在或未连接`);
+                        console.log(`目标客户端 ${iceTargetId} 不存在或未连接，检查是否正确设置target或targetId字段`);
                     }
                     break;
             }
@@ -332,7 +338,13 @@ function broadcastToTouchDesignerClients(electronClientId) {
     
     clients.forEach((info, id) => {
         if (info.type === 'touchdesigner' || info.type === 'unknown') {
-            // 对于TD客户端，我们发送一个简化的客户端列表，只包含这个Electron客户端
+            // 对于TD客户端，使用TouchDesigner格式发送客户端列表
+            info.ws.send(JSON.stringify({
+                messageType: 'ClientsList',
+                clients: [electronClientId]
+            }));
+            
+            // 同时发送标准格式，以确保兼容性
             info.ws.send(JSON.stringify({
                 type: 'clients-list',
                 clients: [{ id: electronClientId, type: 'electron' }]
@@ -359,14 +371,25 @@ function getClientsList(currentClientId) {
 function broadcastClientsList() {
     clients.forEach((clientInfo, id) => {
         const clientsList = getClientsList(id);
-        clientInfo.ws.send(JSON.stringify({
-            type: 'clients-list',
-            clients: clientsList
-        }));
+        
+        // 根据客户端类型发送不同格式的消息
+        if (clientInfo.type === 'touchdesigner') {
+            // TouchDesigner格式 - 只发送ID数组
+            clientInfo.ws.send(JSON.stringify({
+                messageType: 'ClientsList',
+                clients: clientsList.map(client => client.id)
+            }));
+        } else {
+            // 标准格式 - 发送完整客户端信息
+            clientInfo.ws.send(JSON.stringify({
+                type: 'clients-list',
+                clients: clientsList
+            }));
+        }
     });
 }
 
 // 启动服务器
 server.listen(port, () => {
     console.log(`信令服务器运行在 http://localhost:${port}`);
-}); 
+});

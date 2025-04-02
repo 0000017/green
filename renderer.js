@@ -1,9 +1,9 @@
 //处理WebRTC连接
-const configuration = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' }
-    ]
-};
+// 导入WebRTC配置
+const webRTCConfig = require('./webrtc_config/webRTCConfig.js');
+
+// 使用导入的配置
+const configuration = webRTCConfig.peerConnectionConfig;
 
 let peerConnection;
 let videoElement;
@@ -15,8 +15,8 @@ let isConnected = false;
 
 // 连接到信令服务器
 function connectToSignalingServer() {
-    // 根据实际部署修改服务器地址
-    const signalingServerUrl = 'ws://localhost:3000';
+    // 使用webRTCConfig中的信令服务器配置
+    const signalingServerUrl = webRTCConfig.signalingServerConfig.url;
     
     signalingSocket = new WebSocket(signalingServerUrl);
     
@@ -157,12 +157,12 @@ function connectToSignalingServer() {
         console.log('与信令服务器的连接已关闭');
         updateConnectionStatus(false, "与信令服务器断开连接");
         
-        // 尝试重新连接
+        // 尝试重新连接，使用webRTCConfig中的重连间隔
         if (!reconnectInterval) {
             reconnectInterval = setInterval(() => {
                 console.log('尝试重新连接到信令服务器...');
                 connectToSignalingServer();
-            }, 5000);
+            }, webRTCConfig.signalingServerConfig.reconnectInterval);
         }
     };
     
@@ -373,13 +373,17 @@ async function createPeerConnection() {
     console.log('创建新的PeerConnection...');
     peerConnection = new RTCPeerConnection(configuration);
     
+    // 使用webRTCConfig中的perfectNegotiationConfig进行完美协商配置
+    const perfectNegotiation = webRTCConfig.perfectNegotiationConfig;
+    
     // 添加本地视频流
     try {
         console.log('尝试获取本地视频流...');
-        // 创建一个Canvas元素作为视频源
+        // 创建一个Canvas元素作为视频源，使用webRTCConfig中的mediaConstraints配置
         const canvas = document.createElement('canvas');
-        canvas.width = 640;
-        canvas.height = 480;
+        // 使用配置中的理想宽度和高度
+        canvas.width = webRTCConfig.mediaConstraints.video.width.ideal || 640;
+        canvas.height = webRTCConfig.mediaConstraints.video.height.ideal || 480;
         document.body.appendChild(canvas);
         canvas.style.position = 'absolute';
         canvas.style.top = '0';
@@ -417,8 +421,9 @@ async function createPeerConnection() {
         // 保存interval引用以便可以在连接重置时清除
         window.animationInterval = animationInterval;
         
-        // 从Canvas获取视频流
-        const stream = canvas.captureStream(30); // 30fps
+        // 从Canvas获取视频流，使用配置中的帧率
+        const frameRate = webRTCConfig.mediaConstraints.video.frameRate?.ideal || 30;
+        const stream = canvas.captureStream(frameRate); // 使用配置的帧率
         
         // 保存流引用以便可以在连接重置时停止轨道
         window.localStream = stream;
@@ -436,9 +441,10 @@ async function createPeerConnection() {
                     params.encodings = [{}];
                 }
                 
-                // 设置较低的比特率和分辨率，提高兼容性
-                params.encodings[0].maxBitrate = 1000000; // 1Mbps
-                params.encodings[0].maxFramerate = 30;
+                // 使用webRTCConfig中的配置设置编码参数
+                const videoConstraints = webRTCConfig.mediaConstraints.video;
+                params.encodings[0].maxBitrate = 1000000; // 1Mbps，可以根据需要从配置中获取
+                params.encodings[0].maxFramerate = videoConstraints.frameRate?.ideal || 30;
                 
                 sender.setParameters(params).catch(e => {
                     console.warn('设置视频参数失败:', e);
@@ -484,22 +490,26 @@ async function createPeerConnection() {
         if (event.candidate && signalingSocket && signalingSocket.readyState === WebSocket.OPEN) {
             console.log('发送ICE候选...');
             
-            // 始终使用TouchDesigner格式发送ICE候选
+            // 使用webRTCConfig中的signalingMessageTemplate作为模板发送ICE候选
             console.log('使用TouchDesigner格式发送ICE候选');
-            signalingSocket.send(JSON.stringify({
-                signalingType: 'Ice',
-                targetId: remoteClientId,
-                senderId: localClientId,
-                content: {
-                    sdpCandidate: event.candidate.candidate,
-                    sdpMLineIndex: event.candidate.sdpMLineIndex,
-                    sdpMid: event.candidate.sdpMid
-                }
-            }));
+            const iceMessage = JSON.parse(JSON.stringify(webRTCConfig.signalingMessageTemplate));
+            iceMessage.signalingType = 'Ice';
+            iceMessage.target = remoteClientId;
+            iceMessage.targetId = remoteClientId; // 添加targetId字段，TouchDesigner需要这个
+            iceMessage.sender = localClientId;
+            iceMessage.senderId = localClientId; // 添加senderId字段，确保兼容性
+            iceMessage.content = {
+                sdpCandidate: event.candidate.candidate,
+                sdpMLineIndex: event.candidate.sdpMLineIndex,
+                sdpMid: event.candidate.sdpMid
+            };
+            console.log(`发送ICE候选到目标: ${remoteClientId}`);
+            signalingSocket.send(JSON.stringify(iceMessage));
+
         }
     };
     
-    // 连接状态变化
+    // 连接状态变化 - 使用webRTCConfig中的connectionMonitorConfig
     peerConnection.onconnectionstatechange = () => {
         console.log('连接状态:', peerConnection.connectionState);
         
@@ -512,9 +522,10 @@ async function createPeerConnection() {
             updateConnectionStatus(false, `连接${peerConnection.connectionState}`);
             if (peerConnection.connectionState === 'failed') {
                 console.log('连接失败，尝试重新连接');
+                // 使用配置中的连接超时设置
                 setTimeout(() => {
                     resetConnection();
-                }, 2000);
+                }, webRTCConfig.connectionMonitorConfig.connectionTimeout / 5); // 使用配置的超时时间的1/5作为重连延迟
             }
         }
     };
@@ -591,6 +602,11 @@ async function initiateConnection() {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
     
+    // 设置完美协商的polite参数
+    // 在实际应用中，这应该基于连接时间来确定
+    // 默认Electron客户端为非polite端（主动发起连接）
+    webRTCConfig.perfectNegotiationConfig.polite = false;
+    
     await createPeerConnection();
     
     try {
@@ -627,16 +643,19 @@ async function initiateConnection() {
         console.log('offer创建成功，设置本地描述...');
         console.log('SDP格式化后前50个字符:', modifiedSdp.substring(0, 50), '...');
         
-        // 始终使用TouchDesigner格式发送offer
+        // 使用webRTCConfig中的signalingMessageTemplate作为模板发送offer
         console.log('使用TouchDesigner格式发送offer');
-        signalingSocket.send(JSON.stringify({
-            signalingType: 'Offer',
-            targetId: remoteClientId,
-            senderId: localClientId,
-            content: {
-                sdp: peerConnection.localDescription
-            }
-        }));
+        const offerMessage = JSON.parse(JSON.stringify(webRTCConfig.signalingMessageTemplate));
+        offerMessage.signalingType = 'Offer';
+        offerMessage.target = remoteClientId;
+        offerMessage.targetId = remoteClientId; // 添加targetId字段，TouchDesigner需要这个
+        offerMessage.sender = localClientId;
+        offerMessage.senderId = localClientId; // 添加senderId字段，确保兼容性
+        offerMessage.content = {
+            sdp: peerConnection.localDescription.sdp
+        };
+        console.log(`发送offer到目标: ${remoteClientId}`);
+        signalingSocket.send(JSON.stringify(offerMessage));
         
         // 定期请求客户端列表，但避免太频繁
         if (!window.listClientInterval) {
@@ -682,16 +701,19 @@ async function handleOffer(sdp) {
         await peerConnection.setLocalDescription(answer);
         console.log('本地描述设置成功，发送answer...');
         
-        // 始终使用TouchDesigner格式发送answer
+        // 使用webRTCConfig中的signalingMessageTemplate作为模板发送answer
         console.log('使用TouchDesigner格式发送answer');
-        signalingSocket.send(JSON.stringify({
-            signalingType: 'Answer',
-            targetId: remoteClientId,
-            senderId: localClientId,
-            content: {
-                sdp: peerConnection.localDescription
-            }
-        }));
+        const answerMessage = JSON.parse(JSON.stringify(webRTCConfig.signalingMessageTemplate));
+        answerMessage.signalingType = 'Answer';
+        answerMessage.target = remoteClientId;
+        answerMessage.targetId = remoteClientId; // 添加targetId字段，TouchDesigner需要这个
+        answerMessage.sender = localClientId;
+        answerMessage.senderId = localClientId; // 添加senderId字段，确保兼容性
+        answerMessage.content = {
+            sdp: peerConnection.localDescription.sdp
+        };
+        console.log(`发送answer到目标: ${remoteClientId}`);
+        signalingSocket.send(JSON.stringify(answerMessage));
         
         console.log('answer已发送');
     } catch (error) {
@@ -782,4 +804,4 @@ function setupWebRTCListeners() {
 }
 
 // 页面加载时初始化
-window.onload = initWebRTC; 
+window.onload = initWebRTC;
