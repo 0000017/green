@@ -65,10 +65,19 @@ class SignalingClient {
                         updateUI('本地ID', localClientId);
                     }
                     
-                    // 处理客户端列表
-                    if (messageObj.signalingType === 'ClientsList') {
+                    // 处理ClientEntered消息 - 保存自己的属性
+                    if (messageObj.signalingType === 'ClientEntered') {
+                        if (messageObj.content && messageObj.content.self) {
+                            this.properties = messageObj.content.self.properties || { timeJoined: Date.now() };
+                            console.log('[WEBSOCKET] 收到ClientEntered消息，保存属性:', this.properties);
+                        }
+                    }
+                    
+                    // 处理客户端列表 - 注意使用'Clients'而不是'ClientsList'
+                    if (messageObj.signalingType === 'Clients') {
                         this.clients = messageObj.content.clients || [];
                         clientsList = this.clients;
+                        console.log('[WEBSOCKET] 收到客户端列表:', this.clients);
                         updateClientsList(this.clients);
                     }
                     
@@ -697,14 +706,21 @@ function updateUI(section, message) {
 function updateClientsList(clients) {
     console.log('更新客户端列表:', clients);
     
+    // 过滤掉自己的ID，只显示其他客户端
+    const filteredClients = clients.filter(client => {
+        const clientId = typeof client === 'string' ? client : client.id || client.address;
+        return clientId !== localClientId;
+    });
+    console.log('过滤后的客户端列表:', filteredClients);
+    
     // 更新客户端列表显示
     let clientsListElement = document.getElementById('clients-list-display');
     if (clientsListElement) {
-        if (!clients || clients.length === 0) {
+        if (!filteredClients || filteredClients.length === 0) {
             clientsListElement.innerHTML = '没有可用的客户端';
         } else {
             clientsListElement.innerHTML = '可用的客户端:<br>' + 
-                clients.map(client => {
+                filteredClients.map(client => {
                     // TD服务器返回的客户端格式可能是完整对象，而不仅仅是ID
                     const clientId = typeof client === 'string' ? client : client.id || client.address;
                     const isSelected = webRTCConnection && webRTCConnection.target === clientId;

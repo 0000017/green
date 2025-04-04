@@ -3,18 +3,8 @@ const WebSocket = require('ws');
 // 信令服务器配置
 const PORT = process.env.PORT || 9000;
 
-// 客户端连接存储
+// 客户端连接存储 - 这里使用Map便于通过ID查找
 const clients = new Map();
-
-// 信令消息模板 - 严格匹配TouchDesigner期望的格式
-const tdMessageTemplate = {
-    metadata: {
-        apiVersion: '1.0.1',
-        compVersion: '1.0.1',
-        compOrigin: 'WebRTC',
-        projectName: 'TDWebRTCWebDemo'
-    }
-};
 
 // 创建WebSocket服务器
 const server = new WebSocket.Server({ port: PORT });
@@ -24,106 +14,133 @@ console.log(`信令服务器启动在端口 ${PORT}`);
 // 客户端ID计数器
 let clientCounter = 0;
 
+// TD消息标准格式
+const tdMessageFormat = {
+    metadata: {
+        apiVersion: '1.0.1',
+        compVersion: '1.0.1',
+        compOrigin: 'WebRTC',
+        projectName: 'TDWebRTCWebDemo'
+    }
+};
+
 // 当客户端连接时的处理
-server.on('connection', function(ws) {
-    // 为客户端生成唯一ID，使用简单的计数器
+server.on('connection', function(ws, req) {
+    // 为客户端生成唯一ID
     const clientId = 'client_' + (++clientCounter);
     
-    // 存储客户端连接
+    // 创建客户端属性，包含timeJoined
+    const clientProperties = {
+        timeJoined: Date.now()
+    };
+    
+    // 存储客户端连接信息
     clients.set(clientId, {
         id: clientId,
+        address: clientId, // 添加address字段，与id相同
         connection: ws,
-        properties: {
-            timeJoined: Date.now(),
-            clientType: 'unknown' // 默认客户端类型
-        }
+        properties: clientProperties
     });
     
-    console.log(`客户端 ${clientId} 已连接`);
+    console.log(`新客户端 ${clientId} 已连接`);
     
-    // 发送连接确认和分配的ID - 使用TouchDesigner期望的格式
-    ws.send(JSON.stringify({
-        metadata: tdMessageTemplate.metadata,
-        signalingType: 'Connected',
-        sender: 'server',
-        target: clientId,
-        connectionId: clientId,
+    // 发送连接确认和ID分配 - 注意这里的格式必须与TD期望的完全匹配
+    const connectionMessage = {
+        connectionId: clientId,  // 这是关键字段，客户端用它来识别自己
+        metadata: tdMessageFormat.metadata
+    };
+    
+    ws.send(JSON.stringify(connectionMessage));
+    console.log(`已向客户端 ${clientId} 发送连接确认:`, connectionMessage);
+    
+    // 发送ClientEntered消息 - TouchDesigner期望的格式
+    const clientEnteredMessage = {
+        metadata: tdMessageFormat.metadata,
+        signalingType: 'ClientEntered',
+        sender: null,
+        target: '',
         content: {
-            clientId: clientId,
-            properties: {
-                timeJoined: Date.now()
+            self: {
+                id: clientId,
+                address: clientId, // 添加address字段，与id相同
+                properties: clientProperties
             }
         }
-    }));
+    };
     
-    // 广播客户端列表更新
-    broadcastClientList();
+    ws.send(JSON.stringify(clientEnteredMessage));
+    console.log(`已向客户端 ${clientId} 发送ClientEntered消息`);
+    
+    // 广播更新的客户端列表
+    broadcastClientsList();
     
     // 处理客户端消息
     ws.on('message', function(message) {
         try {
+            // 解析接收到的消息
             const messageObj = JSON.parse(message);
-            console.log(`收到来自客户端 ${clientId} 的消息类型:`, messageObj.signalingType || 'unknown');
+            console.log(`收到来自 ${clientId} 的消息类型: ${messageObj.signalingType || messageObj.type || 'unknown'}`);
             
-            // 获取客户端实例，确保它存在
+            // 详细日志
+            if (process.env.DEBUG) {
+                console.log(`完整消息内容: ${message}`);
+            }
+            
+            // 获取客户端数据，确保它存在
             const clientData = clients.get(clientId);
             if (!clientData) {
-                console.error(`错误: 找不到客户端 ${clientId} 的数据`);
+                console.error(`无法找到客户端 ${clientId} 的数据`);
                 return;
             }
             
-            // 处理客户端信息更新 - 使用新格式
-            if (messageObj.signalingType === 'ClientInfo' && messageObj.content && messageObj.content.properties) {
-                // 更新客户端属性
-                clientData.properties = {
-                    ...clientData.properties,
-                    ...messageObj.content.properties
-                };
-                console.log(`更新客户端 ${clientId} 属性:`, clientData.properties);
+            // 处理ListClients请求
+            if (messageObj.signalingType === 'ListClients') {
+                sendClientsList(ws);
+                return;
             }
             
-            // 处理不同类型的消息 - 只支持signalingType格式
-            if (messageObj.signalingType === 'ListClients') {
-                // 向请求的客户端发送客户端列表
-                sendClientList(ws);
-            } 
-            // 处理WebRTC信令消息 (Offer/Answer/Ice/CallStart/CallEnd等)
-            else if (messageObj.signalingType) {
-                // 添加发送者ID和确保content和properties存在
+            // 为所有信令消息添加发送者信息和元数据
+            if (messageObj.signalingType) {
+                // 确保消息有发送者字段
                 messageObj.sender = clientId;
                 
+                // 确保消息有元数据
+                if (!messageObj.metadata) {
+                    messageObj.metadata = tdMessageFormat.metadata;
+                }
+                
+                // 确保content字段存在
                 if (!messageObj.content) {
                     messageObj.content = {};
                 }
                 
-                if (!messageObj.content.properties && (messageObj.signalingType === 'Offer' || messageObj.signalingType === 'Answer' || messageObj.signalingType === 'CallStart')) {
-                    messageObj.content.properties = clientData.properties;
+                // 处理特定类型的消息
+                if (messageObj.signalingType === 'Ice') {
+                    // 确保Ice消息格式正确，TD期望sdpCandidate字段
+                    if (messageObj.content.candidate && !messageObj.content.sdpCandidate) {
+                        messageObj.content.sdpCandidate = messageObj.content.candidate;
+                        delete messageObj.content.candidate;
+                    }
                 }
                 
-                // 如果有指定目标，则转发给目标客户端
+                // 根据target字段决定转发方式
                 if (messageObj.target && clients.has(messageObj.target)) {
-                    const targetClientData = clients.get(messageObj.target);
-                    if (targetClientData && targetClientData.connection.readyState === WebSocket.OPEN) {
-                        // 安全处理: 确保目标客户端可用
-                        try {
-                            targetClientData.connection.send(JSON.stringify(messageObj));
-                            console.log(`将 ${messageObj.signalingType} 消息从 ${clientId} 转发到 ${messageObj.target}`);
-                        } catch (e) {
-                            console.error(`向客户端 ${messageObj.target} 发送消息失败:`, e);
-                        }
+                    // 发送给特定目标
+                    const targetClient = clients.get(messageObj.target);
+                    if (targetClient && targetClient.connection.readyState === WebSocket.OPEN) {
+                        targetClient.connection.send(JSON.stringify(messageObj));
+                        console.log(`已转发 ${messageObj.signalingType} 消息从 ${clientId} 到 ${messageObj.target}`);
                     } else {
-                        console.log(`目标客户端 ${messageObj.target} 不可用或连接未打开`);
+                        console.log(`目标客户端 ${messageObj.target} 不可用`);
                     }
-                } 
-                // 如果没有指定目标，则广播给所有其他客户端
-                else if (!messageObj.target) {
+                } else if (!messageObj.target || messageObj.target === '') {
+                    // 广播给其他所有客户端
                     broadcastToOthers(clientId, messageObj);
-                    console.log(`广播 ${messageObj.signalingType} 消息从 ${clientId} 到所有其他客户端`);
                 }
             }
-            
         } catch (error) {
-            console.error(`处理来自客户端 ${clientId} 的消息时出错:`, error);
+            console.error(`处理消息时出错: ${error.message}`);
+            console.error(`原始消息: ${message}`);
         }
     });
     
@@ -131,11 +148,12 @@ server.on('connection', function(ws) {
     ws.on('close', function() {
         console.log(`客户端 ${clientId} 已断开连接`);
         
-        // 向所有其他客户端广播断开通知
+        // 向其他客户端广播断开通知
         const disconnectMessage = {
-            metadata: tdMessageTemplate.metadata,
-            signalingType: "ClientDisconnected",
+            metadata: tdMessageFormat.metadata,
+            signalingType: 'ClientDisconnected',
             sender: clientId,
+            target: '',
             content: {}
         };
         
@@ -145,42 +163,44 @@ server.on('connection', function(ws) {
         clients.delete(clientId);
         
         // 广播更新的客户端列表
-        broadcastClientList();
+        broadcastClientsList();
     });
     
     // 处理错误
     ws.on('error', function(error) {
         console.error(`客户端 ${clientId} 连接错误:`, error);
         clients.delete(clientId);
-        broadcastClientList();
+        broadcastClientsList();
     });
 });
 
 // 向所有客户端广播客户端列表
-function broadcastClientList() {
+function broadcastClientsList() {
     try {
-        const clientIds = Array.from(clients.keys());
+        // 创建客户端列表 - 包含完整客户端信息
+        const clientsArray = Array.from(clients.values()).map(client => ({
+            id: client.id,
+            address: client.address, // 添加address字段
+            properties: client.properties
+        }));
         
-        // 为所有客户端创建客户端列表消息
-        // 使用TouchDesigner兼容的格式
-        const clientListMessage = {
-            metadata: tdMessageTemplate.metadata,
-            signalingType: 'ClientsList',
-            sender: 'server',
-            target: '',
+        // TD格式的客户端列表消息 - 使用'Clients'而不是'ClientsList'
+        const clientsListMessage = {
+            metadata: tdMessageFormat.metadata,
+            signalingType: 'Clients',
             content: {
-                clients: clientIds
+                clients: clientsArray
             }
         };
         
         // 广播给所有连接的客户端
-        clients.forEach(client => {
-            try {
-                if (client && client.connection && client.connection.readyState === WebSocket.OPEN) {
-                    client.connection.send(JSON.stringify(clientListMessage));
+        clients.forEach((client) => {
+            if (client && client.connection && client.connection.readyState === WebSocket.OPEN) {
+                try {
+                    client.connection.send(JSON.stringify(clientsListMessage));
+                } catch (error) {
+                    console.error(`向客户端 ${client.id} 发送客户端列表失败:`, error);
                 }
-            } catch (e) {
-                console.error(`向客户端 ${client.id} 发送客户端列表失败:`, e);
             }
         });
     } catch (error) {
@@ -189,27 +209,31 @@ function broadcastClientList() {
 }
 
 // 向特定客户端发送客户端列表
-function sendClientList(ws) {
+function sendClientsList(ws) {
     try {
         if (!ws || ws.readyState !== WebSocket.OPEN) {
             console.error('无法发送客户端列表: WebSocket未打开');
             return;
         }
         
-        const clientIds = Array.from(clients.keys());
+        // 创建客户端列表 - 包含完整客户端信息
+        const clientsArray = Array.from(clients.values()).map(client => ({
+            id: client.id,
+            address: client.address, // 添加address字段
+            properties: client.properties
+        }));
         
-        // 使用TouchDesigner期望的格式
-        const clientListMessage = {
-            metadata: tdMessageTemplate.metadata,
-            signalingType: 'ClientsList',
-            sender: 'server',
-            target: '',
+        // TD格式的客户端列表消息 - 使用'Clients'而不是'ClientsList'
+        const clientsListMessage = {
+            metadata: tdMessageFormat.metadata,
+            signalingType: 'Clients',
             content: {
-                clients: clientIds
+                clients: clientsArray
             }
         };
         
-        ws.send(JSON.stringify(clientListMessage));
+        ws.send(JSON.stringify(clientsListMessage));
+        console.log('已发送客户端列表');
     } catch (error) {
         console.error('发送客户端列表时出错:', error);
     }
@@ -218,12 +242,22 @@ function sendClientList(ws) {
 // 广播消息给除了指定客户端之外的所有客户端
 function broadcastToOthers(senderId, message) {
     try {
+        // 确保消息格式完整
+        if (!message.metadata) {
+            message.metadata = tdMessageFormat.metadata;
+        }
+        
+        if (!message.sender) {
+            message.sender = senderId;
+        }
+        
+        // 向除发送者外的所有客户端发送消息
         clients.forEach((client, id) => {
             if (id !== senderId && client && client.connection && client.connection.readyState === WebSocket.OPEN) {
                 try {
                     client.connection.send(JSON.stringify(message));
-                } catch (e) {
-                    console.error(`向客户端 ${id} 广播消息失败:`, e);
+                } catch (error) {
+                    console.error(`向客户端 ${id} 广播消息失败:`, error);
                 }
             }
         });
