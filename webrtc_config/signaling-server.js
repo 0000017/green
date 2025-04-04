@@ -177,29 +177,31 @@ server.on('connection', function(ws, req) {
 // 向所有客户端广播客户端列表
 function broadcastClientsList() {
     try {
-        // 创建客户端列表 - 包含完整客户端信息
-        const clientsArray = Array.from(clients.values()).map(client => ({
-            id: client.id,
-            address: client.address, // 添加address字段
-            properties: client.properties
-        }));
-        
-        // TD格式的客户端列表消息 - 使用'Clients'而不是'ClientsList'
-        const clientsListMessage = {
-            metadata: tdMessageFormat.metadata,
-            signalingType: 'Clients',
-            content: {
-                clients: clientsArray
-            }
-        };
-        
-        // 广播给所有连接的客户端
-        clients.forEach((client) => {
+        // 广播给所有连接的客户端，但每个客户端只收到其他客户端的信息
+        clients.forEach((client, clientId) => {
             if (client && client.connection && client.connection.readyState === WebSocket.OPEN) {
                 try {
+                    // 为当前客户端创建一个不包含自己的客户端列表
+                    const filteredClientsArray = Array.from(clients.values())
+                        .filter(c => c.id !== clientId) // 过滤掉当前客户端
+                        .map(c => ({
+                            id: c.id,
+                            address: c.address, // 添加address字段
+                            properties: c.properties
+                        }));
+                    
+                    // TD格式的客户端列表消息 - 使用'Clients'而不是'ClientsList'
+                    const clientsListMessage = {
+                        metadata: tdMessageFormat.metadata,
+                        signalingType: 'Clients',
+                        content: {
+                            clients: filteredClientsArray
+                        }
+                    };
+                    
                     client.connection.send(JSON.stringify(clientsListMessage));
                 } catch (error) {
-                    console.error(`向客户端 ${client.id} 发送客户端列表失败:`, error);
+                    console.error(`向客户端 ${clientId} 发送客户端列表失败:`, error);
                 }
             }
         });
@@ -216,12 +218,28 @@ function sendClientsList(ws) {
             return;
         }
         
-        // 创建客户端列表 - 包含完整客户端信息
-        const clientsArray = Array.from(clients.values()).map(client => ({
-            id: client.id,
-            address: client.address, // 添加address字段
-            properties: client.properties
-        }));
+        // 找到当前WebSocket对应的客户端ID
+        let currentClientId = null;
+        for (const [id, client] of clients.entries()) {
+            if (client.connection === ws) {
+                currentClientId = id;
+                break;
+            }
+        }
+        
+        if (!currentClientId) {
+            console.error('无法确定请求客户端列表的客户端ID');
+            return;
+        }
+        
+        // 创建客户端列表 - 只包含其他客户端的信息
+        const clientsArray = Array.from(clients.values())
+            .filter(client => client.id !== currentClientId) // 过滤掉当前客户端
+            .map(client => ({
+                id: client.id,
+                address: client.address, // 添加address字段
+                properties: client.properties
+            }));
         
         // TD格式的客户端列表消息 - 使用'Clients'而不是'ClientsList'
         const clientsListMessage = {
@@ -233,7 +251,7 @@ function sendClientsList(ws) {
         };
         
         ws.send(JSON.stringify(clientsListMessage));
-        console.log('已发送客户端列表');
+        console.log(`已向客户端 ${currentClientId} 发送不包含自身的客户端列表`);
     } catch (error) {
         console.error('发送客户端列表时出错:', error);
     }

@@ -1,31 +1,51 @@
+/**
+ * Electron渲染进程脚本 - WebRTC与TouchDesigner通信实现
+ * 本文件实现了WebRTC连接的核心逻辑，包括信令客户端、WebRTC连接管理和用户界面
+ */
+
 // 导入必要模块
-// const adapter = require('webrtc-adapter'); // 移除此依赖
-const config = require('./webrtc_config/webRTCConfig.js');
+// const adapter = require('webrtc-adapter'); // 移除此依赖，现代浏览器已内置WebRTC支持
+const config = require('./webrtc_config/webRTCConfig.js'); // 导入WebRTC配置
 
 // 全局变量
-let signalingClient = null;
-let webRTCConnection = null;
-let remoteVideo = null;
-let localClientId = null;
-let clientsList = [];
+let signalingClient = null;    // 信令客户端实例
+let webRTCConnection = null;   // WebRTC连接实例
+let remoteVideo = null;        // 远程视频元素引用
+let localClientId = null;      // 本地客户端ID
+let clientsList = [];          // 可用客户端列表
 
-// 信令客户端类 - 按照signalingClient.js实现
+/**
+ * 信令客户端类 - 负责与信令服务器通信
+ * 处理WebSocket连接、消息发送接收和客户端列表管理
+ * 与TouchDesigner兼容的信令协议实现
+ */
 class SignalingClient {
+    /**
+     * 构造函数 - 初始化信令客户端
+     */
     constructor() {
-        this.connectedToServer = false;
-        this.clients = [];
-        this.webSocket = null;
+        this.connectedToServer = false;  // 服务器连接状态
+        this.clients = [];               // 可用客户端列表
+        this.webSocket = null;           // WebSocket连接
         this.properties = {
-            timeJoined: Date.now()
+            timeJoined: Date.now()        // 加入时间戳，用于确定polite角色
         };
         
-        this.webRTCConnection = null;
+        this.webRTCConnection = null;    // WebRTC连接引用
     }
     
+    /**
+     * 设置WebRTC连接引用
+     * @param {WebRTCConnection} connection - WebRTC连接实例
+     */
     setWebRTCConnection(connection) {
         this.webRTCConnection = connection;
     }
     
+    /**
+     * 连接到信令服务器
+     * 建立WebSocket连接并设置各种事件处理器
+     */
     connect() {
         try {
             const wsUrl = config.signalingServerConfig.url;
@@ -116,58 +136,75 @@ class SignalingClient {
     }
 }
 
-// WebRTC连接类 - 完全按照webRTCConnection.js实现
+/**
+ * WebRTC连接类 - 管理WebRTC点对点连接
+ * 实现与TouchDesigner兼容的WebRTC连接建立、媒体流处理和数据通道通信
+ * 包含完美协商模式(Perfect Negotiation pattern)的实现
+ */
 class WebRTCConnection {
+    /**
+     * 构造函数 - 初始化WebRTC连接
+     * @param {SignalingClient} signalingClient - 信令客户端实例
+     */
     constructor(signalingClient) {
+        // 设置信令客户端引用
         this.signalingClient = signalingClient;
         this.signalingClient.setWebRTCConnection(this);
         
+        // 设置媒体约束
         this.mediaConstraints = config.mediaConstraints;
         
-        // 完美协商变量
-        this.polite = config.perfectNegotiation.polite;
-        this.makingOffer = config.perfectNegotiation.makingOffer;
-        this.ignoreOffer = config.perfectNegotiation.ignoreOffer;
-        this.isSettingRemoteAnswerPending = config.perfectNegotiation.isSettingRemoteAnswerPending;
+        // 完美协商变量 - 用于处理协商冲突
+        this.polite = config.perfectNegotiation.polite;  // 是否为礼貌方
+        this.makingOffer = config.perfectNegotiation.makingOffer;  // 是否正在创建offer
+        this.ignoreOffer = config.perfectNegotiation.ignoreOffer;  // 是否忽略收到的offer
+        this.isSettingRemoteAnswerPending = config.perfectNegotiation.isSettingRemoteAnswerPending;  // 是否正在设置远程answer
         
-        this.peerConnection = null;
-        this.target = null;
-        this.mouseDataChannel = null;
-        this.keyboardDataChannel = null;
+        // 连接状态变量
+        this.peerConnection = null;  // RTCPeerConnection实例
+        this.target = null;          // 目标客户端ID
+        this.mouseDataChannel = null;  // 鼠标数据通道
+        this.keyboardDataChannel = null;  // 键盘数据通道
     }
     
+    /**
+     * 创建对等连接
+     * 初始化RTCPeerConnection，设置事件处理器，创建数据通道
+     */
     createPeerConnection() {
+        // 创建RTCPeerConnection实例
         this.peerConnection = new RTCPeerConnection(config.peerConnectionConfig);
         
-        // 设置事件处理器
-        this.peerConnection.onconnectionstatechange = this.handleConnectionStateChange.bind(this);
-        this.peerConnection.ondatachannel = this.handleDataChannel.bind(this);
-        this.peerConnection.onicecandidate = this.handleIceCandidate.bind(this);
-        this.peerConnection.onicecandidateerror = this.handleIceCandidateError.bind(this);
-        this.peerConnection.oniceconnectionstatechange = this.handleIceConnectionStateChange.bind(this);
-        this.peerConnection.onicegatheringstatechange = this.handleIceGatheringStateChange.bind(this);
-        this.peerConnection.onnegotiationneeded = this.handleNegotiationNeeded.bind(this);
-        this.peerConnection.onsignalingstatechange = this.handleSignalingStateChange.bind(this);
-        this.peerConnection.ontrack = this.handleTrack;
-        this.peerConnection.removeTrack = this.handleRemoveTrack.bind(this);
+        // 设置各种事件处理器
+        this.peerConnection.onconnectionstatechange = this.handleConnectionStateChange.bind(this);  // 连接状态变化
+        this.peerConnection.ondatachannel = this.handleDataChannel.bind(this);  // 接收到新的数据通道
+        this.peerConnection.onicecandidate = this.handleIceCandidate.bind(this);  // 新的ICE候选
+        this.peerConnection.onicecandidateerror = this.handleIceCandidateError.bind(this);  // ICE候选错误
+        this.peerConnection.oniceconnectionstatechange = this.handleIceConnectionStateChange.bind(this);  // ICE连接状态变化
+        this.peerConnection.onicegatheringstatechange = this.handleIceGatheringStateChange.bind(this);  // ICE收集状态变化
+        this.peerConnection.onnegotiationneeded = this.handleNegotiationNeeded.bind(this);  // 需要协商
+        this.peerConnection.onsignalingstatechange = this.handleSignalingStateChange.bind(this);  // 信令状态变化
+        this.peerConnection.ontrack = this.handleTrack;  // 接收到媒体轨道
+        this.peerConnection.removeTrack = this.handleRemoveTrack.bind(this);  // 移除轨道
         
-        // 初始化远程视频流
+        // 初始化远程视频流 - 准备接收远程视频
         let remoteStream = new MediaStream();
         remoteVideo = document.getElementById("videoStream");
         remoteVideo.srcObject = remoteStream;
         
-        // 创建数据通道
+        // 创建鼠标数据通道 - 必须使用TouchDesigner期望的名称"MouseData"
         this.mouseDataChannel = this.peerConnection.createDataChannel(config.dataChannels.mouse.label);
         this.mouseDataChannel.onopen = () => console.log('[WEBRTC] 鼠标数据通道已打开');
         this.mouseDataChannel.onclose = () => console.log('[WEBRTC] 鼠标数据通道已关闭');
         this.mouseDataChannel.onerror = (e) => console.error('[WEBRTC] 鼠标数据通道错误:', e);
         
+        // 创建键盘数据通道 - 必须使用TouchDesigner期望的名称"KeyboardData"
         this.keyboardDataChannel = this.peerConnection.createDataChannel(config.dataChannels.keyboard.label);
         this.keyboardDataChannel.onopen = () => console.log('[WEBRTC] 键盘数据通道已打开');
         this.keyboardDataChannel.onclose = () => console.log('[WEBRTC] 键盘数据通道已关闭');
         this.keyboardDataChannel.onerror = (e) => console.error('[WEBRTC] 键盘数据通道错误:', e);
         
-        // 创建本地视频流
+        // 创建本地视频流 - 用于发送到远程端
         this.createLocalStream();
     }
     
@@ -280,19 +317,28 @@ class WebRTCConnection {
         updateUI('连接状态', '连接已关闭');
     }
     
+    /**
+     * 开始通话 - 初始化与目标客户端的WebRTC连接
+     * 这是与TouchDesigner兼容的关键方法
+     * @param {string} address - 目标客户端ID
+     * @param {Object} properties - 目标客户端属性，包含timeJoined
+     */
     onCallStart(address, properties) {
         // 设置远程地址作为目标
         this.target = address;
         
-        // 设置polite状态
+        // 设置polite状态 - 基于加入时间确定谁是polite方
+        // 这是完美协商的关键，加入时间早的一方为polite方
         this.polite = this.signalingClient.properties.timeJoined < properties.timeJoined;
         
         // 创建新的对等连接
         this.createPeerConnection();
         
-        // 添加仅接收视频的收发器
+        // 添加仅接收视频的收发器 - 与TouchDesigner兼容的关键步骤!
+        // 必须使用addTransceiver并设置direction为recvonly
         this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
         
+        // 更新UI显示连接状态
         updateUI('连接状态', '正在与 ' + address + ' 建立连接...');
     }
     
@@ -428,29 +474,38 @@ class WebRTCConnection {
         }
     }
     
+    /**
+     * 处理收到的Offer消息
+     * 实现完美协商模式，处理可能的协商冲突
+     * @param {Object} messageObj - 收到的Offer消息对象
+     */
     onMessageReceivedOffer(messageObj) {
         console.log('[WEBRTC] 收到Offer');
         
+        // 如果没有对等连接，创建一个
         if (this.peerConnection === null) {
             this.createPeerConnection();
         }
         
-        // 检查是否可以接受offer
+        // 检查是否可以接受offer - 完美协商的关键逻辑
+        // 只有在未创建offer且连接状态稳定或正在设置远程answer时才能接受
         const readyForOffer = !this.makingOffer && 
                              (this.peerConnection.signalingState === 'stable' || 
                               this.isSettingRemoteAnswerPending);
-        const offerCollision = !readyForOffer;
+        const offerCollision = !readyForOffer;  // 判断是否发生offer冲突
         
+        // 非礼貌方在冲突时忽略收到的offer - 完美协商的核心
         this.ignoreOffer = !this.polite && offerCollision;
         if (this.ignoreOffer) {
             console.log('[WEBRTC] 忽略offer以避免冲突');
             return;
         }
         
-        // 设置目标
+        // 设置目标客户端ID
         this.target = messageObj.sender;
         
         // 获取timeJoined属性，确保它存在
+        // 这个属性用于确定polite角色
         let remoteTimeJoined = 0;
         if (messageObj.content && 
             messageObj.content.properties && 
@@ -459,20 +514,24 @@ class WebRTCConnection {
         }
         
         // 设置polite状态，确保不会因为缺少timeJoined属性而出错
+        // 加入时间早的一方为polite方
         this.polite = this.signalingClient.properties.timeJoined < remoteTimeJoined;
         
-        // 处理offer
+        // 处理offer - 标准的WebRTC协商流程
         this.peerConnection.setRemoteDescription({
             type: 'offer', 
             sdp: messageObj.content.sdp
         })
         .then(() => {
+            // 创建应答
             return this.peerConnection.createAnswer();
         })
         .then((answer) => {
+            // 设置本地描述
             return this.peerConnection.setLocalDescription(answer);
         })
         .then(() => {
+            // 发送应答给对方
             this.onMessageSendingAnswer(
                 messageObj.sender,
                 this.peerConnection.localDescription.sdp
@@ -483,6 +542,11 @@ class WebRTCConnection {
         });
     }
     
+    /**
+     * 处理收到的Answer消息
+     * 完成WebRTC连接的建立
+     * @param {Object} messageObj - 收到的Answer消息对象
+     */
     onMessageReceivedAnswer(messageObj) {
         console.log('[WEBRTC] 收到Answer');
         
