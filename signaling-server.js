@@ -1,395 +1,245 @@
 const WebSocket = require('ws');
-const http = require('http');
-const express = require('express');
-const app = express();
-const port = process.env.PORT || 3000;
 
-// 创建HTTP服务器
-const server = http.createServer(app);
+// 信令服务器配置
+const PORT = process.env.PORT || 9000;
 
-// 创建WebSocket服务器
-const wss = new WebSocket.Server({ server });
-
-// 存储连接的客户端
+// 客户端连接存储
 const clients = new Map();
 
-// WebSocket连接处理
-wss.on('connection', (ws) => {
-    const clientId = Date.now().toString();
-    // 添加客户端类型信息
-    const clientInfo = {
-        ws: ws,
-        type: 'unknown', // 默认类型
-        lastUpdated: Date.now() // 添加最后更新时间
-    };
-    clients.set(clientId, clientInfo);
-    
-    console.log(`新客户端连接: ${clientId}`);
-    
-    // 检查用户代理或连接特征，判断是否为TouchDesigner
-    if (ws.protocol && ws.protocol.includes('TouchDesigner')) {
-        clientInfo.type = 'touchdesigner';
-        console.log(`自动识别客户端 ${clientId} 为TouchDesigner类型`);
+// 信令消息模板 - 严格匹配TouchDesigner期望的格式
+const tdMessageTemplate = {
+    metadata: {
+        apiVersion: '1.0.1',
+        compVersion: '1.0.1',
+        compOrigin: 'WebRTC',
+        projectName: 'TDWebRTCWebDemo'
     }
+};
+
+// 创建WebSocket服务器
+const server = new WebSocket.Server({ port: PORT });
+
+console.log(`信令服务器启动在端口 ${PORT}`);
+
+// 客户端ID计数器
+let clientCounter = 0;
+
+// 当客户端连接时的处理
+server.on('connection', function(ws) {
+    // 为客户端生成唯一ID，使用简单的计数器
+    const clientId = 'client_' + (++clientCounter);
     
-    // 发送客户端ID - 使用TouchDesigner格式
-    ws.send(JSON.stringify({
-        connectionId: clientId,
-        messageType: "Connected"
-    }));
-    
-    // 同时发送标准格式的连接消息，兼容Electron客户端
-    ws.send(JSON.stringify({
-        type: 'connect',
-        id: clientId
-    }));
-    
-    // 如果是新客户端连接，通知所有其他客户端
-    broadcastClientsList();
-    
-    // 为TouchDesigner客户端设置自动列表更新定时器
-    let listUpdateInterval;
-    
-    // 延迟一小段时间后再发送客户端列表，让TouchDesigner有时间处理连接消息
-    setTimeout(() => {
-        // 查找所有Electron客户端
-        const electronClients = [];
-        clients.forEach((info, id) => {
-            if (info.type === 'electron' && id !== clientId) {
-                electronClients.push({ id, type: 'electron' });
-            }
-        });
-        
-        console.log(`向客户端 ${clientId} 发送electron客户端列表:`, 
-            electronClients.map(c => c.id).join(', ') || "空列表");
-        
-        // 发送TouchDesigner专用格式的客户端列表
-        ws.send(JSON.stringify({
-            messageType: 'ClientsList',
-            clients: electronClients.map(c => c.id)
-        }));
-        
-        // 同时发送标准格式，兼容Electron
-        ws.send(JSON.stringify({
-            type: 'clients-list',
-            clients: electronClients
-        }));
-        
-        // 如果这可能是TouchDesigner客户端，设置定期更新
-        if (clientInfo.type === 'unknown' || clientInfo.type === 'touchdesigner') {
-            // 每5秒自动发送一次客户端列表更新给TouchDesigner客户端
-            listUpdateInterval = setInterval(() => {
-                if (clients.has(clientId)) {
-                    const currentElectronClients = [];
-                    clients.forEach((info, id) => {
-                        if (info.type === 'electron' && id !== clientId) {
-                            currentElectronClients.push(id);
-                        }
-                    });
-                    
-                    console.log(`定期更新: 向客户端 ${clientId} 发送客户端列表:`, 
-                        currentElectronClients.join(', ') || "空列表");
-                    
-                    // 发送TouchDesigner格式
-                    try {
-                        ws.send(JSON.stringify({
-                            messageType: 'ClientsList',
-                            clients: currentElectronClients
-                        }));
-                    } catch (error) {
-                        console.error(`发送更新给客户端 ${clientId} 失败:`, error);
-                        clearInterval(listUpdateInterval);
-                    }
-                } else {
-                    // 如果客户端不再存在，清除定时器
-                    clearInterval(listUpdateInterval);
-                }
-            }, 5000);
-        }
-    }, 1000); // 延迟1秒，确保TouchDesigner准备好接收列表
-    
-    // 处理收到的消息
-    ws.on('message', (message) => {
-        try {
-            const data = JSON.parse(message);
-            const messageType = data.type || data.signalingType || data.messageType || 'unknown';
-            console.log(`收到来自 ${clientId} 的消息类型:`, messageType);
-            
-            // 如果是TouchDesigner的列表请求格式，发送客户端列表
-            if (data.messageType === 'ListClients') {
-                console.log(`收到TouchDesigner格式的客户端列表请求: ${clientId}`);
-                
-                // 查找所有Electron客户端
-                const electronClients = [];
-                clients.forEach((info, id) => {
-                    if (info.type === 'electron' && id !== clientId) {
-                        electronClients.push(id); // TouchDesigner只需要ID
-                    }
-                });
-                
-                console.log(`向TouchDesigner客户端 ${clientId} 发送客户端列表:`, electronClients.join(', '));
-                
-                // 发送TouchDesigner格式
-                ws.send(JSON.stringify({
-                    messageType: 'ClientsList',
-                    clients: electronClients
-                }));
-                return;
-            }
-            
-            // 检查是否为TouchDesigner特有的消息格式，如果是则自动标记客户端
-            if ((data.signalingType || data.messageType) && !data.type) {
-                if (clientInfo.type === 'unknown') {
-                    clientInfo.type = 'touchdesigner';
-                    clients.set(clientId, clientInfo);
-                    console.log(`通过消息格式将客户端 ${clientId} 标记为TouchDesigner`);
-                    
-                    // 当确认是TouchDesigner后，立即通知所有Electron客户端
-                    clients.forEach((info, id) => {
-                        if (info.type === 'electron') {
-                            console.log(`通知Electron客户端 ${id} 有新的TouchDesigner客户端 ${clientId}`);
-                            info.ws.send(JSON.stringify({
-                                type: 'clients-list',
-                                clients: [{ id: clientId, type: 'touchdesigner' }]
-                            }));
-                        }
-                    });
-                }
-                
-                // 处理TouchDesigner格式的信令消息
-                if (data.signalingType === 'Offer' || data.signalingType === 'Answer' || data.signalingType === 'Ice') {
-                    // 优先使用targetId，如果不存在则使用target
-                    const targetId = data.targetId || data.target;
-                    
-                    if (targetId && clients.has(targetId)) {
-                        // 直接转发，不进行格式转换
-                        console.log(`转发TouchDesigner ${data.signalingType}消息到目标 ${targetId}`);
-                        clients.get(targetId).ws.send(message.toString());
-                    } else {
-                        console.log(`目标客户端 ${targetId} 不存在或未连接，检查是否正确设置targetId或target字段`);
-                    }
-                }
-                
-                return;
-            }
-            
-            // 处理不同类型的标准消息
-            switch (data.type) {
-                case 'register-client-type':
-                    // 注册客户端类型
-                    if (data.clientType) {
-                        const clientInfo = clients.get(clientId);
-                        clientInfo.type = data.clientType;
-                        clients.set(clientId, clientInfo);
-                        console.log(`客户端 ${clientId} 注册为类型: ${data.clientType}`);
-                        
-                        // 通知所有客户端有新客户端注册
-                        broadcastClientsList();
-                        
-                        // 特殊处理: 如果这是Electron客户端，通知所有TouchDesigner客户端
-                        if (data.clientType === 'electron') {
-                            broadcastToTouchDesignerClients(clientId);
-                        }
-                    }
-                    break;
-                case 'list-clients':
-                    // 发送当前连接的客户端列表，包含类型信息
-                    const clientsList = getClientsList(clientId);
-                    console.log(`向客户端 ${clientId} 发送客户端列表: `, 
-                        clientsList.map(c => `${c.id} (${c.type})`).join(', '));
-                    
-                    // 判断客户端类型，发送对应格式
-                    if (clientInfo.type === 'touchdesigner') {
-                        // TouchDesigner格式
-                        ws.send(JSON.stringify({
-                            messageType: 'ClientsList',
-                            clients: clientsList.map(client => client.id)
-                        }));
-                    } else {
-                        // 标准格式
-                        ws.send(JSON.stringify({
-                            type: 'clients-list',
-                            clients: clientsList
-                        }));
-                    }
-                    break;
-                case 'offer':
-                    // 记录offer信息
-                    console.log(`客户端 ${data.sender} 向 ${data.target || data.targetId} 发送offer`);
-                    
-                    // 转发给目标客户端，优先使用target，如果不存在则使用targetId
-                    const offerTargetId = data.target || data.targetId;
-                    if (offerTargetId && clients.has(offerTargetId)) {
-                        const targetInfo = clients.get(offerTargetId);
-                        
-                        // 检查目标是否为TouchDesigner客户端
-                        if (targetInfo.type === 'touchdesigner') {
-                            // 转换为TouchDesigner格式
-                            console.log(`转换为TouchDesigner格式的offer消息`);
-                            
-                            targetInfo.ws.send(JSON.stringify({
-                                signalingType: 'Offer',
-                                targetId: offerTargetId,
-                                senderId: data.sender,
-                                content: {
-                                    sdp: data.sdp
-                                }
-                            }));
-                        } else {
-                            targetInfo.ws.send(message.toString());
-                        }
-                    } else {
-                        console.log(`目标客户端 ${offerTargetId} 不存在或未连接，检查是否正确设置target或targetId字段`);
-                    }
-                    break;
-                case 'answer':
-                    // 优先使用target，如果不存在则使用targetId
-                    const answerTargetId = data.target || data.targetId;
-                    console.log(`客户端 ${data.sender} 向 ${answerTargetId} 发送answer`);
-                    
-                    // 转发给目标客户端
-                    if (answerTargetId && clients.has(answerTargetId)) {
-                        const targetInfo = clients.get(answerTargetId);
-                        
-                        // 检查目标是否为TouchDesigner客户端
-                        if (targetInfo.type === 'touchdesigner') {
-                            // 转换为TouchDesigner格式
-                            console.log(`转换为TouchDesigner格式的answer消息`);
-                            
-                            targetInfo.ws.send(JSON.stringify({
-                                signalingType: 'Answer',
-                                targetId: answerTargetId,
-                                senderId: data.sender,
-                                content: {
-                                    sdp: data.sdp
-                                }
-                            }));
-                        } else {
-                            targetInfo.ws.send(message.toString());
-                        }
-                    } else {
-                        console.log(`目标客户端 ${answerTargetId} 不存在或未连接，检查是否正确设置target或targetId字段`);
-                    }
-                    break;
-                case 'ice-candidate':
-                    // 优先使用target，如果不存在则使用targetId
-                    const iceTargetId = data.target || data.targetId;
-                    console.log(`客户端 ${data.sender} 向 ${iceTargetId} 发送ICE候选`);
-                    
-                    // 转发给目标客户端
-                    if (iceTargetId && clients.has(iceTargetId)) {
-                        const targetInfo = clients.get(iceTargetId);
-                        
-                        // 检查目标是否为TouchDesigner客户端
-                        if (targetInfo.type === 'touchdesigner') {
-                            // 转换为TouchDesigner格式
-                            console.log(`转换为TouchDesigner格式的ICE候选消息`);
-                            
-                            targetInfo.ws.send(JSON.stringify({
-                                signalingType: 'Ice',
-                                targetId: iceTargetId,
-                                senderId: data.sender,
-                                content: {
-                                    sdpCandidate: data.candidate.candidate,
-                                    sdpMLineIndex: data.candidate.sdpMLineIndex,
-                                    sdpMid: data.candidate.sdpMid
-                                }
-                            }));
-                        } else {
-                            targetInfo.ws.send(message.toString());
-                        }
-                    } else {
-                        console.log(`目标客户端 ${iceTargetId} 不存在或未连接，检查是否正确设置target或targetId字段`);
-                    }
-                    break;
-            }
-        } catch (error) {
-            console.error('处理消息时出错:', error);
+    // 存储客户端连接
+    clients.set(clientId, {
+        id: clientId,
+        connection: ws,
+        properties: {
+            timeJoined: Date.now(),
+            clientType: 'unknown' // 默认客户端类型
         }
     });
     
-    // 断开连接处理
-    ws.on('close', () => {
-        console.log(`客户端断开连接: ${clientId}`);
-        
-        // 清除定时器
-        if (listUpdateInterval) {
-            clearInterval(listUpdateInterval);
+    console.log(`客户端 ${clientId} 已连接`);
+    
+    // 发送连接确认和分配的ID - 使用TouchDesigner期望的格式
+    ws.send(JSON.stringify({
+        metadata: tdMessageTemplate.metadata,
+        signalingType: 'Connected',
+        sender: 'server',
+        target: clientId,
+        connectionId: clientId,
+        content: {
+            clientId: clientId,
+            properties: {
+                timeJoined: Date.now()
+            }
         }
+    }));
+    
+    // 广播客户端列表更新
+    broadcastClientList();
+    
+    // 处理客户端消息
+    ws.on('message', function(message) {
+        try {
+            const messageObj = JSON.parse(message);
+            console.log(`收到来自客户端 ${clientId} 的消息类型:`, messageObj.signalingType || 'unknown');
+            
+            // 获取客户端实例，确保它存在
+            const clientData = clients.get(clientId);
+            if (!clientData) {
+                console.error(`错误: 找不到客户端 ${clientId} 的数据`);
+                return;
+            }
+            
+            // 处理客户端信息更新 - 使用新格式
+            if (messageObj.signalingType === 'ClientInfo' && messageObj.content && messageObj.content.properties) {
+                // 更新客户端属性
+                clientData.properties = {
+                    ...clientData.properties,
+                    ...messageObj.content.properties
+                };
+                console.log(`更新客户端 ${clientId} 属性:`, clientData.properties);
+            }
+            
+            // 处理不同类型的消息 - 只支持signalingType格式
+            if (messageObj.signalingType === 'ListClients') {
+                // 向请求的客户端发送客户端列表
+                sendClientList(ws);
+            } 
+            // 处理WebRTC信令消息 (Offer/Answer/Ice/CallStart/CallEnd等)
+            else if (messageObj.signalingType) {
+                // 添加发送者ID和确保content和properties存在
+                messageObj.sender = clientId;
+                
+                if (!messageObj.content) {
+                    messageObj.content = {};
+                }
+                
+                if (!messageObj.content.properties && (messageObj.signalingType === 'Offer' || messageObj.signalingType === 'Answer' || messageObj.signalingType === 'CallStart')) {
+                    messageObj.content.properties = clientData.properties;
+                }
+                
+                // 如果有指定目标，则转发给目标客户端
+                if (messageObj.target && clients.has(messageObj.target)) {
+                    const targetClientData = clients.get(messageObj.target);
+                    if (targetClientData && targetClientData.connection.readyState === WebSocket.OPEN) {
+                        // 安全处理: 确保目标客户端可用
+                        try {
+                            targetClientData.connection.send(JSON.stringify(messageObj));
+                            console.log(`将 ${messageObj.signalingType} 消息从 ${clientId} 转发到 ${messageObj.target}`);
+                        } catch (e) {
+                            console.error(`向客户端 ${messageObj.target} 发送消息失败:`, e);
+                        }
+                    } else {
+                        console.log(`目标客户端 ${messageObj.target} 不可用或连接未打开`);
+                    }
+                } 
+                // 如果没有指定目标，则广播给所有其他客户端
+                else if (!messageObj.target) {
+                    broadcastToOthers(clientId, messageObj);
+                    console.log(`广播 ${messageObj.signalingType} 消息从 ${clientId} 到所有其他客户端`);
+                }
+            }
+            
+        } catch (error) {
+            console.error(`处理来自客户端 ${clientId} 的消息时出错:`, error);
+        }
+    });
+    
+    // 处理客户端断开连接
+    ws.on('close', function() {
+        console.log(`客户端 ${clientId} 已断开连接`);
         
+        // 向所有其他客户端广播断开通知
+        const disconnectMessage = {
+            metadata: tdMessageTemplate.metadata,
+            signalingType: "ClientDisconnected",
+            sender: clientId,
+            content: {}
+        };
+        
+        broadcastToOthers(clientId, disconnectMessage);
+        
+        // 从Map中移除客户端
         clients.delete(clientId);
         
-        // 通知其他客户端有客户端断开连接
-        clients.forEach((clientInfo) => {
-            clientInfo.ws.send(JSON.stringify({
-                type: 'client-disconnected',
-                id: clientId
-            }));
-        });
-        
         // 广播更新的客户端列表
-        broadcastClientsList();
+        broadcastClientList();
+    });
+    
+    // 处理错误
+    ws.on('error', function(error) {
+        console.error(`客户端 ${clientId} 连接错误:`, error);
+        clients.delete(clientId);
+        broadcastClientList();
     });
 });
 
-// 向所有TouchDesigner客户端广播Electron客户端信息
-function broadcastToTouchDesignerClients(electronClientId) {
-    console.log(`向所有TouchDesigner客户端广播Electron客户端 ${electronClientId}`);
-    
-    clients.forEach((info, id) => {
-        if (info.type === 'touchdesigner' || info.type === 'unknown') {
-            // 对于TD客户端，使用TouchDesigner格式发送客户端列表
-            info.ws.send(JSON.stringify({
-                messageType: 'ClientsList',
-                clients: [electronClientId]
-            }));
-            
-            // 同时发送标准格式，以确保兼容性
-            info.ws.send(JSON.stringify({
-                type: 'clients-list',
-                clients: [{ id: electronClientId, type: 'electron' }]
-            }));
-        }
-    });
-}
-
-// 获取客户端列表，排除当前客户端
-function getClientsList(currentClientId) {
-    const clientsList = [];
-    clients.forEach((info, id) => {
-        if (id !== currentClientId) {
-            clientsList.push({
-                id: id,
-                type: info.type
-            });
-        }
-    });
-    return clientsList;
-}
-
-// 广播客户端列表给所有连接的客户端
-function broadcastClientsList() {
-    clients.forEach((clientInfo, id) => {
-        const clientsList = getClientsList(id);
+// 向所有客户端广播客户端列表
+function broadcastClientList() {
+    try {
+        const clientIds = Array.from(clients.keys());
         
-        // 根据客户端类型发送不同格式的消息
-        if (clientInfo.type === 'touchdesigner') {
-            // TouchDesigner格式 - 只发送ID数组
-            clientInfo.ws.send(JSON.stringify({
-                messageType: 'ClientsList',
-                clients: clientsList.map(client => client.id)
-            }));
-        } else {
-            // 标准格式 - 发送完整客户端信息
-            clientInfo.ws.send(JSON.stringify({
-                type: 'clients-list',
-                clients: clientsList
-            }));
-        }
-    });
+        // 为所有客户端创建客户端列表消息
+        // 使用TouchDesigner兼容的格式
+        const clientListMessage = {
+            metadata: tdMessageTemplate.metadata,
+            signalingType: 'ClientsList',
+            sender: 'server',
+            target: '',
+            content: {
+                clients: clientIds
+            }
+        };
+        
+        // 广播给所有连接的客户端
+        clients.forEach(client => {
+            try {
+                if (client && client.connection && client.connection.readyState === WebSocket.OPEN) {
+                    client.connection.send(JSON.stringify(clientListMessage));
+                }
+            } catch (e) {
+                console.error(`向客户端 ${client.id} 发送客户端列表失败:`, e);
+            }
+        });
+    } catch (error) {
+        console.error('广播客户端列表时出错:', error);
+    }
 }
 
-// 启动服务器
-server.listen(port, () => {
-    console.log(`信令服务器运行在 http://localhost:${port}`);
+// 向特定客户端发送客户端列表
+function sendClientList(ws) {
+    try {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            console.error('无法发送客户端列表: WebSocket未打开');
+            return;
+        }
+        
+        const clientIds = Array.from(clients.keys());
+        
+        // 使用TouchDesigner期望的格式
+        const clientListMessage = {
+            metadata: tdMessageTemplate.metadata,
+            signalingType: 'ClientsList',
+            sender: 'server',
+            target: '',
+            content: {
+                clients: clientIds
+            }
+        };
+        
+        ws.send(JSON.stringify(clientListMessage));
+    } catch (error) {
+        console.error('发送客户端列表时出错:', error);
+    }
+}
+
+// 广播消息给除了指定客户端之外的所有客户端
+function broadcastToOthers(senderId, message) {
+    try {
+        clients.forEach((client, id) => {
+            if (id !== senderId && client && client.connection && client.connection.readyState === WebSocket.OPEN) {
+                try {
+                    client.connection.send(JSON.stringify(message));
+                } catch (e) {
+                    console.error(`向客户端 ${id} 广播消息失败:`, e);
+                }
+            }
+        });
+    } catch (error) {
+        console.error('广播消息时出错:', error);
+    }
+}
+
+// 处理服务器错误
+server.on('error', function(error) {
+    console.error('服务器错误:', error);
+});
+
+// 优雅地处理进程终止
+process.on('SIGINT', function() {
+    console.log('服务器关闭中...');
+    server.close();
+    process.exit(0);
 });
