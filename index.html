@@ -44,6 +44,37 @@
         .connecting {
             color: #FFC107;
         }
+        
+        #tracks-control {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            background-color: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .track-button {
+            padding: 8px 15px;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .track-button.active {
+            background-color: #4CAF50;
+        }
+        
+        .track-button:not(.active) {
+            background-color: #555;
+        }
+        
+        .track-button:hover:not(.active) {
+            background-color: #777;
+        }
     </style>
 </head>
 <body>
