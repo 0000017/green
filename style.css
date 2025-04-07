@@ -87,22 +87,104 @@ canvas {
 /* 连接状态样式 */
 #connection-status {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    padding: 8px 12px;
+    bottom: 20px;
+    left: 55px; /* 调整位置，避免被i按钮遮挡 */
+    padding: 8px 12px 8px 16px; /* 左侧增加内边距 */
+    background-color: rgba(30, 30, 30, 0.9); /* 更深的背景色 */
     border-radius: 5px;
     font-size: 14px;
-    z-index: 10;
-    transition: opacity 0.5s;
-    opacity: 1;
+    z-index: 99;
+    transition: all 0.3s ease-in-out;
+    cursor: default;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* 更明显的阴影 */
+    transform-origin: left center;
+    min-width: 100px; /* 确保最小宽度 */
+    white-space: nowrap; /* 防止文本换行 */
 }
 
-#connection-status.connected {
-    background-color: rgba(40, 167, 69, 0.8);
-    color: white;
+.connected {
+    color: #4CAF50;
+    border-left: 3px solid #4CAF50 !important;
 }
 
-#connection-status.disconnected {
-    background-color: rgba(220, 53, 69, 0.8);
+.disconnected {
+    color: #F44336;
+    border-left: 3px solid #F44336 !important;
+}
+
+.connecting {
+    color: #FFC107;
+    border-left: 3px solid #FFC107 !important;
+}
+
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-30px) scale(0.7); /* 更明显的缩放和移动 */
+    margin-left: -20px;
+}
+
+.status-toggle {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(0, 0, 0, 0.8); /* 更深的背景色 */
     color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 110;
+    font-size: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.3); /* 更明显的边框 */
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4); /* 更明显的阴影 */
+    transition: all 0.2s ease;
+}
+
+.status-toggle:hover {
+    background-color: rgba(40, 40, 40, 0.95);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* 轨道管理UI */
+#tracks-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 220px; /* 放在状态显示右侧，增大距离 */
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 5px;
+    padding: 8px;
+    z-index: 99;
+    transition: all 0.3s ease-in-out;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.track-button {
+    background-color: rgba(50, 50, 50, 0.7);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    text-align: left;
+}
+
+.track-button:hover {
+    background-color: rgba(70, 70, 70, 0.9);
+}
+
+.track-button.active {
+    background-color: rgba(0, 123, 255, 0.7);
+    border-left: 2px solid #4CAF50;
 }

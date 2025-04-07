@@ -2,84 +2,18 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>green</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #0f1419;
-            color: #ffffff;
-            overflow: hidden;
-        }
-        
-        #videoStream {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background-color: #000000;
-        }
-        
-        #connection-status {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 10px;
-            background-color: rgba(0,0,0,0.7);
-            border-radius: 5px;
-            z-index: 100;
-        }
-        
-        .connected {
-            color: #4CAF50;
-        }
-        
-        .disconnected {
-            color: #F44336;
-        }
-        
-        .connecting {
-            color: #FFC107;
-        }
-        
-        #tracks-control {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            z-index: 100;
-            background-color: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 5px;
-        }
-        
-        .track-button {
-            padding: 8px 15px;
-            border: none;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        
-        .track-button.active {
-            background-color: #4CAF50;
-        }
-        
-        .track-button:not(.active) {
-            background-color: #555;
-        }
-        
-        .track-button:hover:not(.active) {
-            background-color: #777;
-        }
-    </style>
+    <title>Green</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- 保留video元素作为备用，但现在主要使用canvas -->
     <video id="videoStream" autoplay playsinline></video>
+    
+    <!--webrtc状态显示切换按钮 -->
+    <div id="status-toggle" class="status-toggle">i</div>
+    
+    <!-- 连接状态信息 (将由JavaScript动态创建) -->
+    
+    <script src="./webrtc_config/ui.js"></script>
     <script src="./webrtc_config/renderer.js"></script>
 </body>
 </html>

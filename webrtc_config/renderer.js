@@ -3,8 +3,14 @@
  * 本文件实现了WebRTC连接的核心逻辑，包括信令客户端、WebRTC连接管理和用户界面
  */
 
+/**
+ * WebRTC通信模块
+ * 处理WebRTC连接、信令和媒体流
+ */
+
 // 导入必要模块
 // const adapter = require('webrtc-adapter'); // 移除此依赖，现代浏览器已内置WebRTC支持
+const { ipcRenderer } = require('electron');
 const config = require('./webrtc_config/webRTCConfig.js'); // 导入WebRTC配置
 
 // 全局变量
@@ -14,6 +20,19 @@ let remoteVideo = null;        // 远程视频元素引用
 let localClientId = null;      // 本地客户端ID
 let videoTracks = [];          // 存储接收到的视频轨道
 let currentTrackIndex = 0;     // 当前显示的视频轨道索引
+let peerConnection;
+let dataChannel;
+let mediaStream;
+let videoElement;
+let wsConnection;
+let receivedSdp = false;
+let wsUrl = 'ws://localhost:8080'; // 默认WebSocket地址
+let connectionRetryCount = 0;
+const MAX_RETRY_COUNT = 5;
+const RETRY_DELAY = 3000; // 重连延迟（毫秒）
+
+// 全局变量存储轨道列表
+let availableTracks = [];
 
 /**
  * 信令客户端类 - 负责与信令服务器通信
@@ -215,76 +234,13 @@ class WebRTCConnection {
         this.createLocalStream();
     }
     
-    async createLocalStream() {
-        try {
-            // 创建Canvas作为视频源
-        const canvas = document.createElement('canvas');
-            canvas.width = 640;
-            canvas.height = 480;
-        document.body.appendChild(canvas);
-        canvas.style.position = 'absolute';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.zIndex = '-1';
-        canvas.style.opacity = '0.5';
-        
-        const ctx = canvas.getContext('2d');
-        
-            // 创建动画
-        const animationInterval = setInterval(() => {
-            // 绘制渐变背景
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, 'blue');
-            gradient.addColorStop(1, 'purple');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // 绘制时间戳
-            ctx.fillStyle = 'white';
-                ctx.font = '24px Arial';
-            const date = new Date();
-            ctx.fillText(date.toLocaleTimeString(), 50, 50);
-                ctx.fillText(`客户端ID: ${localClientId || '未连接'}`, 50, 80);
-            
-            // 绘制移动的圆形
-            const time = Date.now() / 1000;
-            const x = canvas.width / 2 + Math.cos(time) * 100;
-            const y = canvas.height / 2 + Math.sin(time) * 100;
-            ctx.beginPath();
-            ctx.arc(x, y, 30, 0, Math.PI * 2);
-            ctx.fillStyle = 'orange';
-            ctx.fill();
-            }, 33); // 约30fps
-            
-            window.animationInterval = animationInterval;
-            
-            // 从Canvas获取视频流
-            const stream = canvas.captureStream(30);
-            window.localStream = stream;
-            
-            // 创建本地视频预览
-            const localVideo = document.createElement('video');
-            localVideo.id = 'localVideoPreview';
-            localVideo.autoplay = true;
-            localVideo.muted = true;
-            localVideo.style.position = 'absolute';
-            localVideo.style.bottom = '10px';
-            localVideo.style.right = '10px';
-            localVideo.style.width = '160px';
-            localVideo.style.height = '120px';
-            localVideo.style.border = '1px solid white';
-            localVideo.style.zIndex = '10';
-            document.body.appendChild(localVideo);
-            localVideo.srcObject = stream;
-            
-            // 添加轨道到peer连接
-            stream.getTracks().forEach(track => {
-                this.peerConnection.addTrack(track, stream);
-            });
-            
-        } catch (error) {
-            console.error('[WEBRTC] 创建本地流失败:', error);
-        }
+    /**
+     * 创建本地媒体流 - 在当前应用场景中不需要本地视频源
+     * 但保留此方法以便未来扩展
+     */
+    createLocalStream() {
+        console.log('[WEBRTC] 跳过创建本地流 - 此应用仅接收远程视频');
+        return Promise.resolve(null); // 返回空的Promise
     }
     
     deletePeerConnection() {
@@ -327,12 +283,6 @@ class WebRTCConnection {
         
         // 更新UI
         updateUI('连接状态', '连接已关闭');
-        
-        // 移除轨道控制UI
-        const tracksControl = document.getElementById('tracks-control');
-        if (tracksControl) {
-            tracksControl.remove();
-        }
     }
     
     /**
@@ -354,9 +304,6 @@ class WebRTCConnection {
         
         // 添加仅接收视频的收发器 - 与TouchDesigner兼容的关键步骤!
         // 必须使用addTransceiver并设置direction为recvonly
-        this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
-        
-        // 添加第二个视频接收器 - 用于接收TD发送的第二个视频轨道
         this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
         
         // 更新UI显示连接状态
@@ -466,18 +413,31 @@ class WebRTCConnection {
         
         // 只处理视频轨道
         if (event.track.kind === 'video') {
-            // 保存轨道到videoTracks数组
-            videoTracks.push(event.track);
-            console.log(`[WEBRTC] 已保存视频轨道 ${videoTracks.length}，轨道ID: ${event.track.id}`);
+            // 直接使用最新的轨道，不再保存历史轨道
+            videoTracks = [event.track]; // 只保留最新的轨道
+            currentTrackIndex = 0;
             
-            // 如果这是第一个轨道，默认显示它
-            if (videoTracks.length === 1) {
-                switchToTrack(0);
+            // 立即显示新轨道
+            const videoElement = document.getElementById('videoStream');
+            if (videoElement) {
+                // 创建或重用MediaStream
+                let stream = videoElement.srcObject;
+                if (!stream) {
+                    stream = new MediaStream();
+                }
+                
+                // 移除所有现有轨道
+                const existingTracks = stream.getTracks();
+                existingTracks.forEach(track => stream.removeTrack(track));
+                
+                // 添加新轨道
+                stream.addTrack(event.track);
+                videoElement.srcObject = stream;
             }
             
             // 更新UI状态
-            updateUI('连接状态', `已连接到远程视频流 - 共${videoTracks.length}个轨道`);
-            updateTracksUI();
+            updateUI('连接状态', '已连接到远程视频流');
+            updateTracksUI(); // 更新轨道UI（虽然现在只有一个轨道）
         } else {
             // 处理其他类型的轨道（如音频）
             if (remoteVideo && remoteVideo.srcObject) {
@@ -522,10 +482,9 @@ class WebRTCConnection {
         if (this.peerConnection === null) {
             this.createPeerConnection();
             
-            // 在收到Offer时添加两个视频接收器，确保可以接收TD发送的所有视频轨道
+            // 在收到Offer时添加视频接收器，确保可以接收TD发送的视频轨道
             this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
-            this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
-            console.log('[WEBRTC] 已添加两个视频接收器准备接收TD视频流');
+            console.log('[WEBRTC] 已添加视频接收器准备接收TD视频流');
         }
         
         // 检查是否可以接受offer - 完美协商的关键逻辑
@@ -802,126 +761,164 @@ class WebRTCConnection {
     }
 }
 
-// UI更新函数
-function updateUI(section, message) {
-    console.log(`UI更新 [${section}]:`, message);
-    
-    // 更新状态显示
-    let statusElement = document.getElementById('connection-status');
-    if (statusElement) {
-        statusElement.textContent = message;
+/**
+ * 更新UI状态
+ * @param {string} type - 要更新的UI元素类型
+ * @param {string} content - 要显示的内容
+ */
+function updateUI(type, content) {
+    if (type === '连接状态') {
+        const statusElement = document.getElementById('connection-status');
+        if (statusElement) {
+            statusElement.textContent = content;
+            
+            // 根据内容设置状态类
+            if (content.includes('已连接') || content.includes('已建立')) {
+                statusElement.className = 'connected';
+            } else if (content.includes('断开') || content.includes('失败') || content.includes('错误')) {
+                statusElement.className = 'disconnected';
+            } else {
+                statusElement.className = 'connecting';
+            }
+        }
     }
 }
 
-// 初始化应用
-window.onload = function() {
-    console.log('初始化应用...');
+// 启动应用
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[APP] WebRTC视频接收器已启动');
     
     // 初始化UI
     initializeUI();
     
-    // 创建信令客户端和WebRTC连接
+    // 初始化视频元素
+    remoteVideo = document.getElementById('videoStream');
+    
+    // 创建信令客户端
     signalingClient = new SignalingClient();
+    
+    // 创建WebRTC连接
     webRTCConnection = new WebRTCConnection(signalingClient);
     
     // 连接到信令服务器
     signalingClient.connect();
-};
+    
+    console.log('[APP] 初始化完成，等待连接...');
+});
 
-// 切换到指定轨道
-function switchToTrack(trackIndex) {
-    if (trackIndex >= 0 && trackIndex < videoTracks.length) {
-        console.log(`[UI] 切换到视频轨道 ${trackIndex+1}`);
-        currentTrackIndex = trackIndex;
-        
-        // 确保remoteVideo有一个MediaStream
-        if (!remoteVideo.srcObject) {
-            remoteVideo.srcObject = new MediaStream();
-        }
-        
-        // 移除当前所有视频轨道
-        const currentTracks = remoteVideo.srcObject.getVideoTracks();
-        currentTracks.forEach(track => {
-            remoteVideo.srcObject.removeTrack(track);
-        });
-        
-        // 添加选定的轨道
-        remoteVideo.srcObject.addTrack(videoTracks[trackIndex]);
-        
-        // 更新UI显示
-        updateTracksUI();
-    } else {
-        console.error(`[UI] 无效的轨道索引: ${trackIndex}`);
-    }
+// 简化switchToTrack函数，因为现在只会有一个轨道
+function switchToTrack(index) {
+    console.log('[WEBRTC] 当前只保留最新的轨道，无需切换');
+    return; // 不需要执行任何操作
 }
 
-// 更新轨道UI
+// 简化updateTracksUI函数，因为现在只会有一个轨道
 function updateTracksUI() {
     // 查找或创建轨道控制容器
     let tracksControl = document.getElementById('tracks-control');
-    if (!tracksControl) {
-        tracksControl = document.createElement('div');
-        tracksControl.id = 'tracks-control';
-        document.body.appendChild(tracksControl);
+    if (tracksControl) {
+        // 由于只保留最新轨道，这里可以隐藏或移除轨道选择UI
+        tracksControl.style.display = 'none';
     }
-    
-    // 更新内容
-    tracksControl.innerHTML = `
-        <div style="color:white;margin-bottom:10px;">视频轨道选择 (${videoTracks.length}个可用):</div>
-        <div id="track-buttons">
-            ${videoTracks.map((track, index) => `
-                <button 
-                    class="track-button ${index === currentTrackIndex ? 'active' : ''}"
-                    onclick="window.switchToTrack(${index})">
-                    视频 ${index + 1}
-                </button>
-            `).join('')}
-        </div>
-    `;
 }
 
 // 将switchToTrack函数暴露给全局
 window.switchToTrack = switchToTrack;
 
-// 初始化界面
-function initializeUI() {
-    // 创建视频元素
-    if (!document.getElementById('videoStream')) {
-        const videoElem = document.createElement('video');
-        videoElem.id = 'videoStream';
-        videoElem.autoplay = true;
-        videoElem.style.width = '100%';
-        videoElem.style.height = '100vh';
-        videoElem.style.objectFit = 'contain';
-        document.body.appendChild(videoElem);
+// 更新连接状态的封装函数，便于调用
+function updateConnectionStatusWrapper(status, message) {
+    // 使用全局函数更新状态（来自ui.js）
+    if (typeof window.updateConnectionStatus === 'function') {
+        window.updateConnectionStatus(status, message);
+    } else {
+        console.log(`连接状态: ${status} - ${message}`);
     }
-    
-    // 创建简化的控制面板 - 只显示连接状态和断开按钮
-    const controlPanel = document.createElement('div');
-    controlPanel.className = 'control-panel';
-    controlPanel.style.position = 'absolute';
-    controlPanel.style.top = '20px';
-    controlPanel.style.left = '20px';
-    controlPanel.style.padding = '15px';
-    controlPanel.style.backgroundColor = 'rgba(0,0,0,0.7)';
-    controlPanel.style.borderRadius = '5px';
-    controlPanel.style.color = 'white';
-    controlPanel.style.zIndex = '100';
-    
-    controlPanel.innerHTML = `
-        <h3 style="margin-top:0;">WebRTC视频接收器</h3>
-        <div id="connection-status">未连接</div>
-        <div style="margin-top:10px;">
-            <button id="disconnect-btn" style="padding:5px 10px;">断开连接</button>
-        </div>
-    `;
-    
-    document.body.appendChild(controlPanel);
-    
-    // 添加断开按钮事件
-    document.getElementById('disconnect-btn').addEventListener('click', () => {
-        if (webRTCConnection) {
-            webRTCConnection.endCall();
-        }
-    });
 }
+
+// 初始化连接状态
+function initConnectionStatus() {
+    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+        updateConnectionStatusWrapper('connected', '已连接');
+        // 连接成功后获取轨道列表
+        requestTracksList();
+    } else {
+        updateConnectionStatusWrapper('disconnected', '未连接');
+    }
+}
+
+// 请求获取可用轨道列表
+function requestTracksList() {
+    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+        try {
+            const trackRequest = {
+                type: 'get_tracks'
+            };
+            wsConnection.send(JSON.stringify(trackRequest));
+            console.log('已发送轨道列表请求');
+        } catch (error) {
+            console.error('发送轨道请求失败:', error);
+        }
+    }
+}
+
+// 处理获取到的轨道列表
+function handleTracksResponse(tracks) {
+    console.log('获取到轨道列表:', tracks);
+    availableTracks = tracks || [];
+    
+    // 使用UI模块更新轨道显示
+    if (typeof window.updateTracks === 'function') {
+        window.updateTracks(availableTracks);
+    }
+}
+
+// 轨道选择处理函数
+function selectTrack(trackId) {
+    if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+        try {
+            const selectRequest = {
+                type: 'select_track',
+                trackId: trackId
+            };
+            wsConnection.send(JSON.stringify(selectRequest));
+            console.log('已选择轨道:', trackId);
+        } catch (error) {
+            console.error('发送轨道选择请求失败:', error);
+        }
+    }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('WebRTC初始化...');
+    videoElement = document.getElementById('videoStream');
+    initWebSocket(); // 启动WebSocket连接
+    // 检查连接状态并更新显示
+    setTimeout(initConnectionStatus, 1000);
+    
+    // 设置轨道选择回调
+    window.onTrackSelected = selectTrack;
+});
+
+// 在WebSocket消息处理中添加轨道列表处理
+// ... existing code ...
+
+// 在WebSocket连接回调中添加如下代码：
+wsConnection.onmessage = function(event) {
+    try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'track_list') {
+            // 处理轨道列表
+            handleTracksResponse(msg.tracks);
+        } else if (msg.type === 'track_selected') {
+            // 处理轨道选择确认
+            console.log('轨道已选择:', msg.trackId);
+            // 这里可以添加其他处理逻辑
+        }
+        // ... 处理其他消息类型
+    } catch (error) {
+        console.error('处理WebSocket消息时出错:', error);
+    }
+};
+
+// ... existing code ...
