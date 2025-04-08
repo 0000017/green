@@ -1,5 +1,10 @@
-const { app, BrowserWindow, globalShortcut } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
+
+// 添加应用错误处理
+process.on('uncaughtException', (error) => {
+    console.error('未捕获的异常:', error);
+});
 
 // 创建主窗口
 function createWindow() {
@@ -17,10 +22,15 @@ function createWindow() {
         frame: false
     });
 
+    // 添加页面加载错误处理
+    win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+        console.error('页面加载失败:', errorDescription);
+    });
+
     win.loadFile('index.html');
     
     // 开发时可以打开开发者工具
-    // win.webContents.openDevTools();
+    win.webContents.openDevTools();
     
     // 创建窗口后立即设置为全屏
     win.setFullScreen(true);
@@ -36,6 +46,8 @@ function createWindow() {
     win.on('closed', () => {
         globalShortcut.unregisterAll();
     });
+
+    console.log('主窗口已创建');
 }
 
 app.whenReady().then(() => {
@@ -58,4 +70,11 @@ app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
     }
+});
+
+// 在现有的ipcMain监听器部分添加以下代码
+ipcMain.on('emotion-data', (event, data) => {
+    // 你可以在这里处理接收到的表情数据
+    // 例如，将其记录下来或传递给其他进程
+    console.log('接收到表情数据:', data);
 });
