@@ -13,11 +13,13 @@
     "touchdesigner",
     "webrtc"
   ],
-  "author": "",
+  "author": "mao",
   "license": "MIT",
   "dependencies": {
+   
     "electron": "^35.1.2",
     "express": "^4.18.2",
+    "face-api.js": "^0.22.2",
     "opencv.js": "^1.2.1",
     "p5": "^1.11.3",
     "serialport": "^13.0.0",

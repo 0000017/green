@@ -42,11 +42,22 @@ function createWindow() {
         }
     });
     
+    // 注册Ctrl+E显示/隐藏表情识别悬浮窗口快捷键
+    globalShortcut.register('CommandOrControl+E', () => {
+        win.webContents.executeJavaScript(`
+            if (typeof window.toggleEmotionWindow === 'function') {
+                window.toggleEmotionWindow();
+            } else {
+                console.error('表情识别窗口切换函数未定义');
+            }
+        `);
+    });
+    
     // 当窗口关闭时注销快捷键
     win.on('closed', () => {
         globalShortcut.unregisterAll();
     });
-
+    
     console.log('主窗口已创建');
 }
 
