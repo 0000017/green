@@ -1,4 +1,20 @@
 // emotion-recognition.js
+// Canvas polyfill，解决兼容性问题
+if (!HTMLCanvasElement.prototype.toBlob) {
+    Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+        value: function(callback, type, quality) {
+            const dataURL = this.toDataURL(type, quality);
+            const binStr = atob(dataURL.split(',')[1]);
+            const len = binStr.length;
+            const arr = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                arr[i] = binStr.charCodeAt(i);
+            }
+            callback(new Blob([arr], {type: type || 'image/png'}));
+        }
+    });
+}
+
 class EmotionRecognition {
     constructor() {
         this.videoElement = null;

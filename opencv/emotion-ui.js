@@ -6,10 +6,9 @@ let floatingVideoElement;
 let canvasElement;
 let currentEmotionText;
 let emotionBar;
-let floatingToggleButton; // 悬浮窗口的切换按钮
-let floatingCloseButton; // 悬浮窗口的关闭按钮
+let statusDot; // 状态指示点
 let floatingWindow; // 悬浮窗口元素
-let isFloatingWindowVisible = false; // 悬浮窗口是否可见
+let isFloatingWindowVisible = true; // 悬浮窗口是否可见
 let isInitializing = false; // 是否正在初始化
 
 // 初始化函数
@@ -28,25 +27,24 @@ async function init() {
         
         floatingVideoElement = document.getElementById('floating-video');
         canvasElement = document.getElementById('outputCanvas');
-        floatingToggleButton = document.getElementById('floating-toggle-btn');
-        floatingCloseButton = document.getElementById('floating-close-btn');
+        statusDot = document.getElementById('recognition-status-dot');
         currentEmotionText = document.getElementById('current-emotion');
         emotionBar = document.getElementById('emotion-bar');
         
-        if (!floatingVideoElement || !canvasElement || !floatingToggleButton || 
-            !floatingCloseButton || !currentEmotionText || !emotionBar) {
+        if (!floatingVideoElement || !canvasElement || !statusDot || !currentEmotionText || !emotionBar) {
             throw new Error('找不到所需UI元素');
         }
         
-        // 设置按钮状态
-        floatingToggleButton.textContent = '正在初始化...';
+        // 设置状态点初始状态
+        updateStatusDot('yellow'); // 初始化中为黄色
+        statusDot.style.cursor = 'not-allowed'; // 初始化时不可点击
         
         // 尝试获取摄像头权限
         console.log('请求摄像头权限...');
         const stream = await navigator.mediaDevices.getUserMedia({
             video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
+                width: { ideal: 1280 }, // 增大视频分辨率
+                height: { ideal: 960 },
                 facingMode: "user"
             }
         });
@@ -76,25 +74,20 @@ async function init() {
         // 创建表情识别实例
         emotionRecognition = new EmotionRecognition();
         
-        // 设置按钮点击事件
-        floatingToggleButton.addEventListener('click', toggleEmotionRecognition);
-        floatingCloseButton.addEventListener('click', toggleFloatingWindow);
+        // 设置状态点点击事件
+        statusDot.addEventListener('click', toggleEmotionRecognition);
         
         // 监听表情识别事件
         document.addEventListener('emotionDetected', onEmotionDetected);
         
-        // 添加悬浮窗口拖动功能
-        makeDraggable(floatingWindow);
-        
-        // 默认显示悬浮窗口
-        showFloatingWindow();
-        
         // 初始化表情识别
         console.log('初始化表情识别...');
-        initEmotionRecognition();
+        await initEmotionRecognition();
         
-        // 将toggleEmotionWindow暴露给全局，以便可以用快捷键触发
-        window.toggleEmotionWindow = toggleFloatingWindow;
+        // 初始化完成后自动开始识别
+        if (!isRecognitionActive && emotionRecognition) {
+            toggleEmotionRecognition();
+        }
         
     } catch (err) {
         console.error('初始化失败:', err);
@@ -103,68 +96,38 @@ async function init() {
     }
 }
 
+// 更新状态指示点颜色和状态
+function updateStatusDot(color) {
+    if (statusDot) {
+        statusDot.style.backgroundColor = color;
+        if (color === 'yellow') {
+            statusDot.style.cursor = 'not-allowed';
+        } else {
+            statusDot.style.cursor = 'pointer';
+        }
+    }
+}
+
 // 显示悬浮窗口
 function showFloatingWindow() {
     floatingWindow.style.display = 'block';
     isFloatingWindowVisible = true;
     
-    // 设置悬浮窗口位置（右上角）
+    // 设置悬浮窗口位置（固定在右上角）
     floatingWindow.style.right = '20px';
     floatingWindow.style.top = '20px';
     
-    // 设置视频和画布尺寸
-    const floatingWidth = 320; // 悬浮窗口宽度
-    const floatingHeight = 240; // 悬浮窗口高度
-    floatingVideoElement.width = floatingWidth - 40; // 减去内边距
-    floatingVideoElement.height = floatingHeight - 100; // 减去头部和面板高度
+    // 设置视频和画布尺寸（放大两倍）
+    const floatingWidth = 640; // 原来的320 * 2
+    const floatingHeight = 480; // 原来的240 * 2
+    floatingVideoElement.width = floatingWidth - 40;
+    floatingVideoElement.height = floatingHeight - 100;
     canvasElement.width = floatingVideoElement.width;
     canvasElement.height = floatingVideoElement.height;
     
     // 确保摄像头流传递到悬浮窗口视频元素
     if (floatingVideoElement.srcObject === null && videoElement.srcObject) {
         floatingVideoElement.srcObject = videoElement.srcObject;
-    }
-}
-
-// 使元素可拖动
-function makeDraggable(element) {
-    const header = element.querySelector('.floating-header');
-    let isDragging = false;
-    let offsetX, offsetY;
-    
-    header.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        offsetX = e.clientX - element.getBoundingClientRect().left;
-        offsetY = e.clientY - element.getBoundingClientRect().top;
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        
-        const x = e.clientX - offsetX;
-        const y = e.clientY - offsetY;
-        
-        element.style.left = `${x}px`;
-        element.style.top = `${y}px`;
-    });
-    
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
-    });
-}
-
-// 切换悬浮窗口显示/隐藏
-function toggleFloatingWindow() {
-    if (isFloatingWindowVisible) {
-        floatingWindow.style.display = 'none';
-        isFloatingWindowVisible = false;
-        
-        // 如果正在识别，则停止
-        if (isRecognitionActive) {
-            toggleEmotionRecognition();
-        }
-    } else {
-        showFloatingWindow();
     }
 }
 
@@ -176,12 +139,7 @@ async function initEmotionRecognition() {
     }
     
     isInitializing = true;
-    
-    // 确保按钮存在
-    if (floatingToggleButton) {
-        floatingToggleButton.textContent = '正在初始化...';
-        floatingToggleButton.disabled = true;
-    }
+    updateStatusDot('yellow');
     
     try {
         console.log('开始初始化表情识别模块...');
@@ -195,23 +153,17 @@ async function initEmotionRecognition() {
         const initialized = await emotionRecognition.init(floatingVideoElement, canvasElement);
         if (initialized) {
             console.log('表情识别模块初始化成功');
-            if (floatingToggleButton) {
-                floatingToggleButton.textContent = '开启识别';
-                floatingToggleButton.disabled = false;
-            }
+            updateStatusDot('red');
+            return true;
         } else {
             console.error('表情识别模块初始化失败');
-            if (floatingToggleButton) {
-                floatingToggleButton.textContent = '无法初始化';
-                floatingToggleButton.disabled = true;
-            }
+            updateStatusDot('red');
+            return false;
         }
     } catch (error) {
         console.error('初始化表情识别时出错:', error);
-        if (floatingToggleButton) {
-            floatingToggleButton.textContent = '初始化错误';
-            floatingToggleButton.disabled = true;
-        }
+        updateStatusDot('red');
+        return false;
     } finally {
         isInitializing = false;
     }
@@ -219,13 +171,8 @@ async function initEmotionRecognition() {
 
 // 切换表情识别
 function toggleEmotionRecognition() {
-    if (!emotionRecognition) {
-        console.error('表情识别模块未初始化');
-        return;
-    }
-    
-    if (floatingToggleButton && floatingToggleButton.disabled) {
-        console.log('按钮被禁用，忽略点击');
+    if (!emotionRecognition || isInitializing) {
+        console.error('表情识别模块未初始化或正在初始化中');
         return;
     }
     
@@ -235,18 +182,12 @@ function toggleEmotionRecognition() {
         // 启动表情识别
         console.log('开始表情识别');
         emotionRecognition.start();
-        if (floatingToggleButton) {
-            floatingToggleButton.textContent = '关闭识别';
-            floatingToggleButton.classList.add('active');
-        }
+        updateStatusDot('green'); // 识别中为绿色
     } else {
         // 停止表情识别
         console.log('停止表情识别');
         emotionRecognition.stop();
-        if (floatingToggleButton) {
-            floatingToggleButton.textContent = '开启识别';
-            floatingToggleButton.classList.remove('active');
-        }
+        updateStatusDot('red'); // 未识别为红色
         if (currentEmotionText) {
             currentEmotionText.textContent = '未检测';
         }
@@ -330,11 +271,10 @@ function addStyles() {
     .emotion-panel {
         position: absolute;
         bottom: 10px;
-        right: 10px;
+        left: 10px;
         width: 200px;
-        background: rgba(255, 0, 0, 0);
+        background: rgba(0, 0, 0, 0.5);
         border-radius: 8px;
-        color: white;
         padding: 10px;
         font-family: Arial, sans-serif;
         z-index: 100;
@@ -350,31 +290,13 @@ function addStyles() {
     .panel-header h3 {
         margin: 0;
         font-size: 16px;
-    }
-    
-    .panel-header button {
-        background: #4CAF50;
-        border: none;
-        color: white;
-        padding: 5px 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-    }
-    
-    .panel-header button.active {
-        background: #F44336;
-    }
-    
-    .panel-header button:disabled {
-        background: #9E9E9E;
-        cursor: not-allowed;
+        color: #4CAF50;
     }
     
     .emotion-status {
         margin-bottom: 8px;
         font-size: 14px;
-        color: green;
+        color: #4CAF50;
     }
     
     .emotion-bar-container {
@@ -392,18 +314,43 @@ function addStyles() {
         transition: width 0.3s ease, background-color 0.3s ease;
     }
     
+    /* 状态指示点 */
+    .status-indicator {
+        display: flex;
+        align-items: center;
+    }
+    
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: red;
+        margin-right: 8px;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .status-dot:hover {
+        transform: scale(1.2);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    
     /* 悬浮窗口样式 */
     .emotion-floating-window {
         position: fixed;
-        width: 320px;
-        height: 240px;
+        width: 480px; /* 原来的320 * 2 */
+        height: 360px; /* 原来的240 * 2 */
+        top: 20px;
+        right: 20px;
         background: rgba(0, 0, 0, 0.8);
         border-radius: 8px;
         color: white;
         font-family: Arial, sans-serif;
-        z-index: 9999; /* 提高z-index确保在最上层 */
+        z-index: 9999;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         overflow: hidden;
+        box-sizing: border-box;
     }
     
     .floating-header {
@@ -412,12 +359,12 @@ function addStyles() {
         align-items: center;
         padding: 8px 12px;
         background: rgba(0, 0, 0, 0.5);
-        cursor: move;
     }
     
     .floating-header h3 {
         margin: 0;
         font-size: 14px;
+        color: white;
     }
     
     .floating-header button {
@@ -431,6 +378,15 @@ function addStyles() {
     
     .floating-header button:hover {
         color: #4CAF50;
+    }
+    
+    .floating-header button.active {
+        color: #4CAF50;
+    }
+    
+    .floating-header button:disabled {
+        color: #9E9E9E;
+        cursor: not-allowed;
     }
     
     .floating-content {

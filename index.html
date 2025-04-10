@@ -37,24 +37,25 @@
     <!-- 表情识别悬浮窗口 -->
     <div id="emotion-floating-window" class="emotion-floating-window">
         <div class="floating-header">
-            <h3>表情识别</h3>
-            <button id="floating-toggle-btn" disabled>等待初始化...</button>
-            <button id="floating-close-btn">×</button>
+            <h3>情感数据</h3>
+            <div class="status-indicator">
+                <span class="status-dot" id="recognition-status-dot" role="button"></span>
+            </div>
         </div>
         <div class="floating-content">
             <div class="video-container">
                 <video id="floating-video" autoplay playsinline></video>
                 <canvas id="outputCanvas" class="overlay-canvas"></canvas>
-            </div>
-            <div class="emotion-panel">
-                <div class="panel-header">
-                    <h3>当前情绪</h3>
-                </div>
-                <div class="emotion-status">
-                    <span id="current-emotion">未检测</span>
-                </div>
-                <div class="emotion-bar-container">
-                    <div id="emotion-bar" class="emotion-bar"></div>
+                <div class="emotion-panel">
+                    <div class="panel-header">
+                        <h3>当前情绪</h3>
+                    </div>
+                    <div class="emotion-status">
+                        <span id="current-emotion">未检测</span>
+                    </div>
+                    <div class="emotion-bar-container">
+                        <div id="emotion-bar" class="emotion-bar"></div>
+                    </div>
                 </div>
             </div>
         </div>
