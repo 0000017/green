@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Green</title>
     <link rel="stylesheet" href="style.css">
+    <!-- 3D情感模型样式 -->
+    <link rel="stylesheet" href="./three/emotion-model.css">
     
     <!-- HTML5 Canvas polyfill，解决兼容性问题 -->
     <script>
@@ -46,7 +48,7 @@
             <div class="video-container">
                 <video id="floating-video" autoplay playsinline></video>
                 <canvas id="outputCanvas" class="overlay-canvas"></canvas>
-                <div class="emotion-panel">
+                <div class="emotion-panel" id="emotion-panel">
                     <div class="panel-header">
                         <h3>当前情绪</h3>
                     </div>
@@ -56,10 +58,14 @@
                     <div class="emotion-bar-container">
                         <div id="emotion-bar" class="emotion-bar"></div>
                     </div>
+                    <!-- 生物传感器数据区域将由JS动态添加 -->
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- 3D情感模型容器 -->
+    <div id="emotion-model-container"></div>
     
     <!-- 调试信息区域 -->
     <div id="debug-info"></div>
@@ -69,5 +75,47 @@
     <script src="./opencv/emotion-ui.js"></script>
     <script src="./webrtc_config/ui.js"></script>
     <script src="./webrtc_config/renderer.js"></script>
+    
+    <!-- 生物传感器模块 -->
+    <script>
+        // 加载Arduino生物传感器模块和情感3D模型
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                // 加载生物传感器模块
+                const biometricData = require('./arhuino/biometric-data');
+                const biometricUI = require('./arhuino/biometric-ui');
+                const emotionFusion = require('./arhuino/emotion-fusion');
+                
+                // 加载3D情感模型
+                const emotionModel = require('./three/emotion-model');
+                
+                // 初始化生物传感器UI
+                setTimeout(() => {
+                    // 初始化生物传感器UI
+                    biometricUI.init('#emotion-panel').catch(err => {
+                        console.error('初始化生物传感器UI失败:', err);
+                    });
+                    
+                    // 初始化情感融合模块
+                    emotionFusion.init();
+                    
+                    // 初始化3D情感模型
+                    emotionModel.init('#emotion-model-container');
+                    
+                    // 添加情感融合数据监听
+                    emotionFusion.addUpdateListener((fusedData) => {
+                        // 可以在这里处理融合后的情感数据，但已经通过事件通知3D模型了
+                        console.log('融合情感数据更新:', fusedData);
+                    });
+                    
+                    console.log('所有情感相关模块初始化完成');
+                }, 1000); // 延迟初始化，确保emotion-panel已加载
+                
+                console.log('模块加载成功');
+            } catch (err) {
+                console.error('加载模块失败:', err);
+            }
+        });
+    </script>
 </body>
 </html>
