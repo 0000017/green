@@ -7,11 +7,13 @@ try {
     if (typeof window !== 'undefined' && window.THREE) {
         console.log('使用全局THREE对象');
         THREE = window.THREE;
-    } else {
+    } else if (typeof require === 'function') {
         console.log('尝试require导入THREE');
         THREE = require('three');
+    } else {
+        throw new Error('无法加载THREE.js库');
     }
-    console.log('THREE.js版本:', THREE.REVISION);
+    console.log('THREE.js版本:', THREE.REVISION || 'unknown');
 } catch (err) {
     console.error('无法加载THREE库:', err);
     // 如果THREE对象加载失败，提供一个占位对象，以防脚本继续执行
@@ -30,6 +32,11 @@ try {
         Mesh: function() { return { position: {x:0,y:0,z:0}, add: function(){}, userData: {} }; },
         Line: function() { return {}; },
         BufferGeometry: function() { return { setFromPoints: function(){return this;}, dispose: function(){} }; },
+        BufferAttribute: function() { return {}; },
+        CanvasTexture: function() { return {}; },
+        Points: function() { return { position: {x:0,y:0,z:0}, add: function(){}, userData: {} }; },
+        ShaderMaterial: function() { return {}; },
+        AdditiveBlending: 2,
         BackSide: 0,
         AmbientLight: function() { return {}; },
         DirectionalLight: function() { return { position: {set: function(){}} }; }
@@ -138,22 +145,38 @@ class EmotionModel {
         this.camera = null;
         this.renderer = null;
         this.controls = null;
+        
+        // 移除原有的emotionSphere，改为纯粒子系统
         this.emotionSphere = null;
-        this.baseSphereRadius = 8; // 基础球体半径
-        this.emotionTrail = [];
-        this.maxTrailPoints = 100;
+        
+        // 坐标系范围 - 放大三倍
+        this.axisLength = 300;
         this.axisHelpers = [];
         this.labels = {};
         this.animationId = null;
         this.isInitialized = false;
+        
+        // 情感数据
         this.lastEmotionData = {
-            X: 0,      // 效价 (-100 to +100)
-            Y: 0,      // 唤醒度 (0 to 100)
-            Z: '未检测',  // 情感类型
+            Y: 0,      // 效价 (-100 to +100)，原来是X轴
+            Z: 0,      // 唤醒度 (0 to 100)，原来是Y轴
+            X: '未检测',  // 情感类型，原来是Z轴
             confidence: 0 // 置信度
         };
         
-        // 定义情感类型颜色映射 - 现在只用于标签显示，颜色由X轴决定
+        // 情感类型在X轴上的位置映射 - 放大三倍
+        this.emotionXPos = {
+            '开心': 240,     // X轴靠前
+            '惊讶': 180,
+            '中性': 150,
+            '恐惧': 120,
+            '悲伤': 90,
+            '厌恶': 60,
+            '愤怒': 30,     // X轴靠后
+            '未检测': 0
+        };
+        
+        // 情感类型的颜色映射 - 用于粒子基础颜色
         this.emotionColors = {
             '开心': 0xffeb3b,   // 黄色
             '悲伤': 0x3f51b5,   // 蓝色
@@ -165,25 +188,11 @@ class EmotionModel {
             '未检测': 0x9e9e9e   // 灰色
         };
         
-        // 情感类型到位置的映射
-        this.emotionZPos = {
-            '开心': 80,
-            '惊讶': 50,
-            '中性': 0,
-            '悲伤': -50,
-            '恐惧': -60,
-            '愤怒': -70,
-            '厌恶': -80,
-            '未检测': 0
-        };
-        
-        // X轴颜色映射 (-100到+100 对应蓝到红)
-        this.negativeColor = new THREE.Color(0x0000ff); // 蓝色 - 负效价
-        this.positiveColor = new THREE.Color(0xff0000); // 红色 - 正效价
-        
-        // 粒子系统
+        // 粒子系统参数
+        this.baseParticleCount = 300; // 基础粒子数量
+        this.currentParticleCount = 300; // 当前显示的粒子数量
+        this.maxParticleCount = 1000; // 最大粒子数量限制
         this.particles = null;
-        this.particleCount = 200;
         this.particleSystem = null;
     }
     
@@ -194,20 +203,10 @@ class EmotionModel {
             
             console.log('初始化情感3D模型...');
             
-            // 再次确保THREE对象可用
+            // 确保THREE对象可用
             if (!THREE || typeof THREE.Scene !== 'function') {
                 console.error('THREE.js库未正确加载！请确保在页面中引入three.js库');
-                
-                // 尝试重新加载
-                try {
-                    if (typeof window !== 'undefined') {
-                        THREE = window.THREE || require('three');
-                        console.log('重新加载THREE成功，版本:', THREE.REVISION);
-                    }
-                } catch (reloadErr) {
-                    console.error('重新加载THREE失败:', reloadErr);
-                    return false;
-                }
+                return false;
             }
             
             // 获取容器元素
@@ -221,35 +220,35 @@ class EmotionModel {
                 console.log('已创建新的情感模型容器');
             }
             
-            // 设置容器样式
+            // 设置容器样式 - 调整为更大的尺寸
             this.container.style.position = 'absolute';
             this.container.style.bottom = '20px';
             this.container.style.right = '20px';
-            this.container.style.width = '300px';
-            this.container.style.height = '300px';
+            this.container.style.width = '500px';
+            this.container.style.height = '500px';
             this.container.style.zIndex = '1000';
             this.container.style.overflow = 'hidden';
             
             // 创建场景
             this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(0xffffff); // 设置白色背景
+            this.scene.background = new THREE.Color(0x000000); // 黑色背景
             
             // 创建透视相机
             const aspect = this.container.clientWidth / this.container.clientHeight;
-            this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+            this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 2000);
             
-            // 设置相机位置为参考图中的视角 - 斜上方45度角视角
-            this.camera.position.set(200, 150, 200);
-            this.camera.lookAt(0, 0, 0);
+            // 设置相机位置 - 放大三倍
+            this.camera.position.set(600, 300, 600);
+            this.camera.lookAt(75, 120, 0);
             
             // 创建渲染器
             this.renderer = new THREE.WebGLRenderer({ 
                 antialias: true,
-                alpha: false  // 禁用透明背景
+                alpha: true
             });
             this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
             this.renderer.setPixelRatio(window.devicePixelRatio);
-            this.renderer.setClearColor(0xf5f5f5, 1); // 淡灰色背景，接近参考图
+            this.renderer.setClearColor(0x000000, 1);
             this.container.appendChild(this.renderer.domElement);
             
             // 添加OrbitControls（如果可用）
@@ -257,24 +256,20 @@ class EmotionModel {
                 this.controls = new OrbitControls(this.camera, this.renderer.domElement);
                 this.controls.enableDamping = true; // 添加阻尼效果
                 this.controls.dampingFactor = 0.05;
-                this.controls.rotateSpeed = 0.3;
-                this.controls.minDistance = 50;
-                this.controls.maxDistance = 400;
+                this.controls.rotateSpeed = 0.5;
+                this.controls.minDistance = 150;  // 调整最小距离
+                this.controls.maxDistance = 1200; // 调整最大距离
                 
-                // 设置初始视角，使情感球体清晰可见
-                this.controls.target.set(0, 0, 0);
+                // 设置初始视角 - 与camera.lookAt保持一致
+                this.controls.target.set(75, 120, 0);
                 
                 // 限制垂直旋转角度，保持在俯视角度
-                this.controls.minPolarAngle = Math.PI / 8; // 约22.5度
+                this.controls.minPolarAngle = Math.PI / 6; // 约30度
                 this.controls.maxPolarAngle = Math.PI / 2.5; // 约72度
                 
                 this.controls.update();
                 
                 console.log('已启用OrbitControls');
-            } else {
-                // 设置默认相机位置
-                this.camera.position.set(150, 100, 150);
-                this.camera.lookAt(0, 0, 0);
             }
             
             // 添加灯光以改善可视化效果
@@ -285,17 +280,14 @@ class EmotionModel {
             directionalLight.position.set(200, 200, 200);
             this.scene.add(directionalLight);
             
-            // 创建坐标轴和网格
+            // 创建简化的坐标系 - 只使用正向轴
             this.createAxisHelpers();
-            
-            // 创建情感球体
-            this.createEmotionSphere();
             
             // 创建坐标轴标签
             this.createAxisLabels();
             
-            // 添加轨迹线
-            this.createTrailLine();
+            // 创建粒子系统
+            this.createParticleSystem();
             
             // 添加窗口大小变化监听
             window.addEventListener('resize', this.onWindowResize.bind(this));
@@ -320,284 +312,168 @@ class EmotionModel {
         }
     }
     
-    // 创建坐标轴辅助和网格
+    // 创建坐标轴辅助 - 只使用正向轴，符合参考图
     createAxisHelpers() {
-        // 移除旧的复杂网格，改为简洁的坐标系
-        
-        // 创建简洁的X轴 (效价)
+        // 创建X轴 (情感类型) 放在X轴的位置上
         const xAxisGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(-120, 0, 0),
-            new THREE.Vector3(120, 0, 0)
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(this.axisLength, 0, 0)
         ]);
-        const xAxisMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+        const xAxisMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
         const xAxis = new THREE.Line(xAxisGeometry, xAxisMaterial);
         this.scene.add(xAxis);
         this.axisHelpers.push(xAxis);
         
         // 创建X轴箭头
-        const xArrowGeometry = new THREE.ConeGeometry(3, 10, 8);
-        const xArrowMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const xArrowGeometry = new THREE.ConeGeometry(3, 6, 8);
+        const xArrowMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
         const xArrow = new THREE.Mesh(xArrowGeometry, xArrowMaterial);
-        xArrow.position.set(120, 0, 0);
+        xArrow.position.set(this.axisLength, 0, 0);
         xArrow.rotation.z = -Math.PI / 2;
         this.scene.add(xArrow);
         this.axisHelpers.push(xArrow);
         
-        // 创建Y轴 (唤醒度)
+        // 创建Y轴 (效价) 放在Y轴的位置上
         const yAxisGeometry = new THREE.BufferGeometry().setFromPoints([
             new THREE.Vector3(0, 0, 0),
-            new THREE.Vector3(0, 120, 0)
+            new THREE.Vector3(0, this.axisLength, 0)
         ]);
-        const yAxisMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+        const yAxisMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
         const yAxis = new THREE.Line(yAxisGeometry, yAxisMaterial);
         this.scene.add(yAxis);
         this.axisHelpers.push(yAxis);
         
         // 创建Y轴箭头
-        const yArrowGeometry = new THREE.ConeGeometry(3, 10, 8);
-        const yArrowMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const yArrowGeometry = new THREE.ConeGeometry(3, 6, 8);
+        const yArrowMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
         const yArrow = new THREE.Mesh(yArrowGeometry, yArrowMaterial);
-        yArrow.position.set(0, 120, 0);
+        yArrow.position.set(0, this.axisLength, 0);
         this.scene.add(yArrow);
         this.axisHelpers.push(yArrow);
         
-        // 创建Z轴 (情感类型)
+        // 创建Z轴 (唤醒度) 放在Z轴的位置上
         const zAxisGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0, -120),
-            new THREE.Vector3(0, 0, 120)
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, this.axisLength)
         ]);
-        const zAxisMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+        const zAxisMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 2 });
         const zAxis = new THREE.Line(zAxisGeometry, zAxisMaterial);
         this.scene.add(zAxis);
         this.axisHelpers.push(zAxis);
         
         // 创建Z轴箭头
-        const zArrowGeometry = new THREE.ConeGeometry(3, 10, 8);
-        const zArrowMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const zArrowGeometry = new THREE.ConeGeometry(3, 6, 8);
+        const zArrowMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
         const zArrow = new THREE.Mesh(zArrowGeometry, zArrowMaterial);
-        zArrow.position.set(0, 0, 120);
+        zArrow.position.set(0, 0, this.axisLength);
         zArrow.rotation.x = Math.PI / 2;
         this.scene.add(zArrow);
         this.axisHelpers.push(zArrow);
         
         // 添加原点标记
         const originGeometry = new THREE.SphereGeometry(2, 16, 16);
-        const originMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const originMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const originSphere = new THREE.Mesh(originGeometry, originMaterial);
         originSphere.position.set(0, 0, 0);
         this.scene.add(originSphere);
         this.axisHelpers.push(originSphere);
         
-        // 添加简单的网格线 - 只在XZ平面上显示
-        const gridSize = 200;
-        const gridDivisions = 10;
-        const gridColor = 0xCCCCCC;
-        
-        const grid = new THREE.GridHelper(gridSize, gridDivisions, gridColor, gridColor);
-        grid.position.y = 0;
-        grid.material.transparent = true;
-        grid.material.opacity = 0.3;
-        this.scene.add(grid);
-        this.axisHelpers.push(grid);
-    }
-    
-    // 创建情感球体
-    createEmotionSphere() {
-        // 创建情感球体几何体 - 使用更小的半径，更接近参考图
-        const geometry = new THREE.SphereGeometry(6, 32, 32);
-        
-        // 创建发光材质 - 初始为中性色
-        const material = new THREE.MeshPhongMaterial({
-            color: 0xd84dff, // 紫色，接近参考图
-            shininess: 80,
-            transparent: true,
-            opacity: 0.7
-        });
-        
-        // 创建发光球体
-        this.emotionSphere = new THREE.Mesh(geometry, material);
-        this.emotionSphere.position.set(0, 0, 0);
-        this.scene.add(this.emotionSphere);
-        
-        // 添加情感球体光晕
-        this.addGlow(this.emotionSphere);
-        
-        // 创建粒子系统
-        this.createParticleSystem();
-    }
-    
-    // 创建粒子系统
-    createParticleSystem() {
-        // 创建粒子几何体
-        const particlesGeometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(this.particleCount * 3);
-        const colors = new Float32Array(this.particleCount * 3);
-        const sizes = new Float32Array(this.particleCount);
-        
-        // 初始化粒子位置和颜色
-        for (let i = 0; i < this.particleCount; i++) {
-            // 随机分布在球体周围
-            const radius = this.baseSphereRadius * 3;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.random() * Math.PI;
-            
-            const x = radius * Math.sin(phi) * Math.cos(theta);
-            const y = radius * Math.sin(phi) * Math.sin(theta);
-            const z = radius * Math.cos(phi);
-            
-            positions[i * 3] = x;
-            positions[i * 3 + 1] = y;
-            positions[i * 3 + 2] = z;
-            
-            // 初始颜色为白色
-            colors[i * 3] = 1;
-            colors[i * 3 + 1] = 1;
-            colors[i * 3 + 2] = 1;
-            
-            // 随机大小
-            sizes[i] = 2 + Math.random() * 2;
+        // 添加刻度线
+        // X轴刻度
+        for (let i = 20; i <= this.axisLength; i += 20) {
+            const tickGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(i, 0, 0),
+                new THREE.Vector3(i, 5, 0)
+            ]);
+            const tickMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+            const tick = new THREE.Line(tickGeometry, tickMaterial);
+            this.scene.add(tick);
+            this.axisHelpers.push(tick);
         }
         
-        // 设置粒子几何体属性
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        // Y轴刻度
+        for (let i = 20; i <= this.axisLength; i += 20) {
+            const tickGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, i, 0),
+                new THREE.Vector3(5, i, 0)
+            ]);
+            const tickMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+            const tick = new THREE.Line(tickGeometry, tickMaterial);
+            this.scene.add(tick);
+            this.axisHelpers.push(tick);
+        }
         
-        // 创建粒子材质 - 使用自定义着色器增强外观
-        const particleTexture = this.createParticleTexture();
-        
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 3,
-            sizeAttenuation: true,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.8,
-            map: particleTexture
-        });
-        
-        // 创建粒子系统
-        this.particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
-        this.scene.add(this.particleSystem);
-        
-        // 保存粒子数据以便更新
-        this.particles = {
-            positions: positions,
-            colors: colors,
-            sizes: sizes,
-            velocities: new Float32Array(this.particleCount * 3),
-            geometry: particlesGeometry
-        };
-    }
-    
-    // 创建粒子纹理
-    createParticleTexture() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 64;
-        canvas.height = 64;
-        const context = canvas.getContext('2d');
-        
-        // 创建一个圆形渐变
-        const gradient = context.createRadialGradient(
-            32, 32, 0,
-            32, 32, 32
-        );
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
-        gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.3)');
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        
-        // 绘制圆形
-        context.fillStyle = gradient;
-        context.beginPath();
-        context.arc(32, 32, 32, 0, Math.PI * 2);
-        context.fill();
-        
-        // 创建Three.js纹理
-        const texture = new THREE.Texture(canvas);
-        texture.needsUpdate = true;
-        return texture;
-    }
-    
-    // 添加发光效果
-    addGlow(object) {
-        // 创建更大的球体作为光晕
-        const glowGeometry = new THREE.SphereGeometry(this.baseSphereRadius * 1.7, 32, 32);
-        const glowMaterial = new THREE.MeshBasicMaterial({
-            color: object.material.color,
-            transparent: true,
-            opacity: 0.3,
-            side: THREE.BackSide
-        });
-        
-        const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-        object.add(glowMesh);
-        
-        // 保存引用以便更新颜色
-        object.userData.glowMesh = glowMesh;
+        // Z轴刻度
+        for (let i = 20; i <= this.axisLength; i += 20) {
+            const tickGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, i),
+                new THREE.Vector3(5, 0, i)
+            ]);
+            const tickMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+            const tick = new THREE.Line(tickGeometry, tickMaterial);
+            this.scene.add(tick);
+            this.axisHelpers.push(tick);
+        }
     }
     
     // 创建坐标轴标签
     createAxisLabels() {
-        // 清除原有DOM标签，改为使用CSS样式定位
+        // 使用Three.js文本精灵替代HTML标签
+        const createTextSprite = (text, position, color = 0xffffff) => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const fontSize = 36; // 增大字体大小
+            canvas.width = 512; // 增大画布尺寸
+            canvas.height = 128;
+            
+            context.font = `bold ${fontSize}px Arial`; // 加粗字体
+            context.fillStyle = '#ffffff';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({
+                map: texture,
+                color: color,
+                transparent: true,
+                depthWrite: false
+            });
+            
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.position.copy(position);
+            sprite.scale.set(90, 30, 1); // 增大标签尺寸
+            this.scene.add(sprite);
+            
+            return sprite;
+        };
         
-        // X轴标签 (效价)
-        const xLabel = document.createElement('div');
-        xLabel.className = 'axis-label x-axis-label';
-        xLabel.textContent = 'X轴 (效价)';
-        xLabel.style.position = 'absolute';
-        xLabel.style.right = '10%';
-        xLabel.style.bottom = '48%';
-        xLabel.style.fontSize = '14px';
-        this.container.appendChild(xLabel);
-        this.labels.xLabel = xLabel;
+        // X轴标签 (情感类型) - 调整位置
+        const xLabelPos = new THREE.Vector3(this.axisLength + 45, 0, 0);
+        const xLabel = createTextSprite('X轴 (情感类型)', xLabelPos, 0xff0000);
+        this.axisHelpers.push(xLabel);
         
-        // 标注范围
-        const xRangeLabel = document.createElement('div');
-        xRangeLabel.className = 'axis-label x-range-label';
-        xRangeLabel.textContent = '-100~+100';
-        xRangeLabel.style.position = 'absolute';
-        xRangeLabel.style.right = '10%';
-        xRangeLabel.style.bottom = '44%';
-        xRangeLabel.style.fontSize = '12px';
-        xRangeLabel.style.color = '#666';
-        this.container.appendChild(xRangeLabel);
-        this.labels.xRangeLabel = xRangeLabel;
+        // Y轴标签 (效价) - 调整位置
+        const yLabelPos = new THREE.Vector3(0, this.axisLength + 45, 0);
+        const yLabel = createTextSprite('Y轴 (效价)', yLabelPos, 0x00ff00);
+        this.axisHelpers.push(yLabel);
         
-        // Y轴标签 (唤醒度)
-        const yLabel = document.createElement('div');
-        yLabel.className = 'axis-label y-axis-label';
-        yLabel.textContent = 'Y轴 (唤醒度)';
-        yLabel.style.position = 'absolute';
-        yLabel.style.left = '10%';
-        yLabel.style.top = '10%';
-        yLabel.style.fontSize = '14px';
-        this.container.appendChild(yLabel);
-        this.labels.yLabel = yLabel;
+        // Y轴范围标签 - 调整位置
+        const yRangePos = new THREE.Vector3(0, this.axisLength + 45, 30);
+        const yRange = createTextSprite('-100~+100', yRangePos, 0x00ff00);
+        this.axisHelpers.push(yRange);
         
-        // 标注范围
-        const yRangeLabel = document.createElement('div');
-        yRangeLabel.className = 'axis-label y-range-label';
-        yRangeLabel.textContent = '0~100';
-        yRangeLabel.style.position = 'absolute';
-        yRangeLabel.style.left = '10%';
-        yRangeLabel.style.top = '14%';
-        yRangeLabel.style.fontSize = '12px';
-        yRangeLabel.style.color = '#666';
-        this.container.appendChild(yRangeLabel);
-        this.labels.yRangeLabel = yRangeLabel;
+        // Z轴标签 (唤醒度) - 调整位置
+        const zLabelPos = new THREE.Vector3(0, 0, this.axisLength + 45);
+        const zLabel = createTextSprite('Z轴 (唤醒度)', zLabelPos, 0x0000ff);
+        this.axisHelpers.push(zLabel);
         
-        // Z轴标签 (情感类型)
-        const zLabel = document.createElement('div');
-        zLabel.className = 'axis-label z-axis-label';
-        zLabel.textContent = 'Z轴 (情感类型)';
-        zLabel.style.position = 'absolute';
-        zLabel.style.right = '35%';
-        zLabel.style.bottom = '10%';
-        zLabel.style.fontSize = '14px';
-        this.container.appendChild(zLabel);
-        this.labels.zLabel = zLabel;
+        // Z轴范围标签 - 调整位置
+        const zRangePos = new THREE.Vector3(0, 0, this.axisLength + 45, 30);
+        const zRange = createTextSprite('0~100', zRangePos, 0x0000ff);
+        this.axisHelpers.push(zRange);
         
-        // 当前情感类型标签
+        // 仍然保留当前情感类型标签为HTML，便于更新
         const emotionTypeLabel = document.createElement('div');
         emotionTypeLabel.className = 'emotion-type-label';
         emotionTypeLabel.textContent = '未检测';
@@ -606,499 +482,328 @@ class EmotionModel {
         emotionTypeLabel.style.top = '5%';
         emotionTypeLabel.style.transform = 'translateX(-50%)';
         emotionTypeLabel.style.background = 'rgba(0, 0, 0, 0.7)';
-        emotionTypeLabel.style.padding = '5px 10px';
-        emotionTypeLabel.style.borderRadius = '4px';
+        emotionTypeLabel.style.padding = '8px 15px'; // 增大内边距
+        emotionTypeLabel.style.borderRadius = '6px'; // 增大圆角
+        emotionTypeLabel.style.color = '#ffffff';
+        emotionTypeLabel.style.fontSize = '24px'; // 增大字体
+        emotionTypeLabel.style.fontWeight = 'bold'; // 加粗字体
         this.container.appendChild(emotionTypeLabel);
         this.labels.emotionType = emotionTypeLabel;
         
-        // 添加坐标系的名称标签 - 显示在左上角
+        // 添加坐标系的名称标签
         const coordSystemLabel = document.createElement('div');
         coordSystemLabel.className = 'axis-label coord-system-label';
         coordSystemLabel.textContent = '情感三维坐标系';
         coordSystemLabel.style.position = 'absolute';
-        coordSystemLabel.style.left = '10px';
-        coordSystemLabel.style.top = '10px';
-        coordSystemLabel.style.fontSize = '16px';
+        coordSystemLabel.style.left = '15px';
+        coordSystemLabel.style.top = '15px';
+        coordSystemLabel.style.fontSize = '24px'; // 增大字体
         coordSystemLabel.style.fontWeight = 'bold';
+        coordSystemLabel.style.color = '#ffffff';
+        coordSystemLabel.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)'; // 添加文字阴影增强可读性
         this.container.appendChild(coordSystemLabel);
         this.labels.coordSystemLabel = coordSystemLabel;
     }
     
-    // 创建轨迹线
-    createTrailLine() {
-        // 初始化一个点
-        const points = [new THREE.Vector3(0, 0, 0)];
+    // 创建粒子系统
+    createParticleSystem() {
+        // 创建粒子几何体
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(this.maxParticleCount * 3);
+        const colors = new Float32Array(this.maxParticleCount * 3);
+        const sizes = new Float32Array(this.maxParticleCount);
         
-        // 创建轨迹线几何体
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        // 初始化粒子位置在远离中心的位置
+        for (let i = 0; i < this.maxParticleCount; i++) {
+            const i3 = i * 3;
+            // 将初始粒子放在视野外
+            positions[i3] = (Math.random() - 0.5) * 1000;
+            positions[i3 + 1] = (Math.random() - 0.5) * 1000;
+            positions[i3 + 2] = (Math.random() - 0.5) * 1000;
+            
+            // 初始颜色为暗灰色（几乎看不见）
+            colors[i3] = 0.3;     // 增加初始可见度
+            colors[i3 + 1] = 0.3;
+            colors[i3 + 2] = 0.3;
+            
+            // 初始大小很小
+            sizes[i] = 0.5;
+        }
         
-        // 创建轨迹线材质
-        const material = new THREE.LineBasicMaterial({
-            color: 0x4fc3f7,
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        
+        // 创建粒子纹理
+        const particleTexture = this.createDefaultParticleTexture();
+        
+        // 使用PointsMaterial，移除发光效果
+        const material = new THREE.PointsMaterial({
+            size: 15, // 保持粒子大小
+            sizeAttenuation: true,
+            map: particleTexture,
+            alphaTest: 0.5,      // 增加透明度测试阈值
             transparent: true,
-            opacity: 0.6,
-            linewidth: 1
+            vertexColors: true,
+            blending: THREE.NormalBlending, // 使用普通混合模式替代加法混合
+            depthWrite: true,    // 启用深度写入
+            depthTest: true      // 确保深度测试
         });
         
-        // 创建轨迹线
-        this.trailLine = new THREE.Line(geometry, material);
-        this.scene.add(this.trailLine);
+        // 创建粒子系统
+        this.particleSystem = new THREE.Points(geometry, material);
+        this.scene.add(this.particleSystem);
+        
+        this.particles = {
+            positions: positions,
+            colors: colors,
+            sizes: sizes,
+            velocities: new Float32Array(this.maxParticleCount * 3),
+            targetPositions: new Float32Array(this.maxParticleCount * 3),
+            active: new Array(this.maxParticleCount).fill(false), // 跟踪粒子是否激活
+            life: new Array(this.maxParticleCount).fill(0), // 粒子寿命
+            maxLife: new Array(this.maxParticleCount).fill(0) // 粒子最大寿命
+        };
+        
+        // 初始化粒子速度
+        for (let i = 0; i < this.maxParticleCount * 3; i++) {
+            this.particles.velocities[i] = 0;
+            this.particles.targetPositions[i] = this.particles.positions[i];
+        }
+    }
+    
+    // 创建默认粒子纹理 - 移除发光效果，使用实心圆点
+    createDefaultParticleTexture() {
+        const canvas = document.createElement('canvas');
+        // 保持高分辨率提高清晰度
+        canvas.width = 128; 
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        
+        // 创建圆形实心粒子，移除径向渐变发光效果
+        ctx.fillStyle = '#ffffff'; // 纯白色
+        ctx.beginPath();
+        ctx.arc(64, 64, 60, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 添加边缘以增强立体感
+        ctx.strokeStyle = 'rgba(200, 200, 200, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        return texture;
     }
     
     // 处理情感数据更新
     handleEmotionUpdate(event) {
-        const emotionData = event.detail;
+        if (!event || !event.detail) return;
         
-        if (!emotionData) return;
+        const data = event.detail;
         
-        // 添加调试日志
-        console.log('情感模型接收到数据:', emotionData);
+        // 检查数据字段并记录接收到的原始数据
+        console.log('接收到情感数据:', data);
         
-        // 更新最后的情感数据
-        this.lastEmotionData = emotionData;
-        
-        // 更新模型位置
-        this.updateEmotionModel(emotionData);
-    }
-    
-    // 更新情感模型
-    updateEmotionModel(emotionData) {
-        if (!this.emotionSphere) {
-            console.error('情感球体未初始化');
+        // 数据适配 - 确保与新的坐标轴定义匹配
+        // 检查必要的字段是否存在
+        if (data.valence === undefined || data.arousal === undefined || 
+            (data.dominant_emotion === undefined && data.emotion === undefined)) {
+            console.warn('情感数据格式不完整:', data);
             return;
         }
         
-        const { X, Y, Z, confidence } = emotionData;
+        // 提取情感类型 - 兼容不同的字段名
+        const emotionType = data.dominant_emotion || data.emotion || '未检测';
         
-        // 添加调试日志
-        console.log(`更新情感模型: X=${X}, Y=${Y}, Z=${Z}, 置信度=${confidence}`);
+        // 使用新的坐标轴定义存储数据
+        this.lastEmotionData = {
+            Y: data.valence,              // Y轴 - 效价 (-100 to +100)
+            Z: data.arousal,              // Z轴 - 唤醒度 (0 to 100)
+            X: emotionType,               // X轴 - 情感类型
+            confidence: data.confidence || 0.5
+        };
         
-        // 映射X坐标 (效价) 范围从 -100~100 到 -100~100
-        const xPos = X;
+        console.log('处理后的情感数据映射:', this.lastEmotionData);
         
-        // 映射Y坐标 (唤醒度) 范围从 0~100 到 0~100
-        const yPos = Y;
-        
-        // 获取Z坐标 (情感类型) 使用预定义的情感位置或默认值0
-        const zPos = this.emotionZPos[Z] || 0;
-        
-        // 添加直接设置位置的代码，确保位置发生变化
-        this.emotionSphere.position.set(xPos, yPos, zPos);
-        
-        // 基于X轴位置(-100到+100)计算颜色 - 从蓝色到红色的渐变
-        const colorPosition = (X + 100) / 200; // 归一化为0-1
-        const color = new THREE.Color().lerpColors(
-            this.negativeColor,
-            this.positiveColor,
-            colorPosition
-        );
-        
-        // 基于Y轴位置(0到100)调整明暗
-        const brightness = 0.3 + (Y / 100) * 0.7; // 0.3-1.0
-        color.multiplyScalar(brightness);
-        
-        // 更新情感球体颜色和不透明度
-        this.updateEmotionColor(color, confidence);
-        this.updateEmotionSize(confidence);
-        
-        // 更新轨迹
-        this.updateTrail(xPos, yPos, zPos);
-        
-        // 更新粒子系统 - 基于情感类型改变粒子行为
-        this.updateParticles(X, Y, Z, confidence);
-        
-        // 更新情感类型标签 - 使用类似参考图的格式
+        // 更新情感类型标签
         if (this.labels.emotionType) {
-            // 添加置信度显示，格式：情感类型 (置信度%)
-            const confidencePercent = Math.round(confidence * 100);
-            this.labels.emotionType.textContent = `${Z} (${confidencePercent}%)`;
+            this.labels.emotionType.textContent = `${this.lastEmotionData.X} (${Math.round(this.lastEmotionData.confidence * 100)}%)`;
             
-            // 根据情感类型设置不同的颜色
-            switch(Z) {
-                case '开心':
-                    this.labels.emotionType.style.background = 'rgba(255, 193, 7, 0.8)'; // 金黄色
-                    break;
-                case '悲伤':
-                    this.labels.emotionType.style.background = 'rgba(33, 150, 243, 0.8)'; // 蓝色
-                    break;
-                case '愤怒':
-                    this.labels.emotionType.style.background = 'rgba(244, 67, 54, 0.8)'; // 红色
-                    break;
-                case '惊讶':
-                    this.labels.emotionType.style.background = 'rgba(255, 152, 0, 0.8)'; // 橙色
-                    break;
-                case '恐惧':
-                    this.labels.emotionType.style.background = 'rgba(156, 39, 176, 0.8)'; // 紫色
-                    break;
-                case '厌恶':
-                    this.labels.emotionType.style.background = 'rgba(76, 175, 80, 0.8)'; // 绿色
-                    break;
-                case '中性':
-                    this.labels.emotionType.style.background = 'rgba(158, 158, 158, 0.8)'; // 灰色
-                    break;
-                default:
-                    this.labels.emotionType.style.background = 'rgba(97, 97, 97, 0.8)'; // 深灰色
-            }
+            // 根据情感类型设置标签颜色
+            const color = this.emotionColors[this.lastEmotionData.X] || this.emotionColors['未检测'];
+            const r = ((color >> 16) & 255);
+            const g = ((color >> 8) & 255);
+            const b = (color & 255);
+            this.labels.emotionType.style.color = `rgb(${r}, ${g}, ${b})`;
         }
         
-        // 确保渲染器更新
-        if (this.renderer && this.scene && this.camera) {
-            this.renderer.render(this.scene, this.camera);
-        }
+        // 计算当前应显示的粒子数量（基于置信度）
+        const confidenceScale = Math.min(Math.max(this.lastEmotionData.confidence, 0.3), 1.0);
+        this.currentParticleCount = Math.round(this.baseParticleCount * confidenceScale);
+        
+        // 限制粒子数量在最大范围内
+        this.currentParticleCount = Math.min(this.currentParticleCount, this.maxParticleCount);
+        
+        // 更新粒子系统
+        this.updateParticleSystem();
     }
     
-    // 更新情感球体颜色 - 现在接收THREE.Color对象
-    updateEmotionColor(color, confidence) {
-        // 根据置信度调整不透明度
-        const opacity = 0.3 + confidence * 0.7;
-        
-        // 更新主球体颜色和不透明度
-        this.emotionSphere.material.color.copy(color);
-        this.emotionSphere.material.opacity = opacity;
-        
-        // 更新光晕颜色
-        if (this.emotionSphere.userData.glowMesh) {
-            this.emotionSphere.userData.glowMesh.material.color.copy(color);
-            this.emotionSphere.userData.glowMesh.material.opacity = opacity * 0.4;
-        }
-    }
-    
-    // 更新情感球体大小
-    updateEmotionSize(confidence) {
-        // 置信度越高，球体越大
-        const minScale = 0.7;  // 最小缩放比例
-        const maxScale = 1.5;  // 最大缩放比例
-        
-        // 计算当前缩放比例
-        const scale = minScale + (confidence * (maxScale - minScale));
-        
-        // 应用平滑缩放
-        const currentScale = this.emotionSphere.scale.x;
-        const newScale = currentScale + (scale - currentScale) * 0.1;
-        
-        // 更新球体缩放
-        this.emotionSphere.scale.set(newScale, newScale, newScale);
-    }
-    
-    // 更新轨迹线
-    updateTrail(x, y, z) {
-        // 添加新点到轨迹
-        this.emotionTrail.push(new THREE.Vector3(x, y, z));
-        
-        // 限制轨迹点数量
-        if (this.emotionTrail.length > this.maxTrailPoints) {
-            this.emotionTrail.shift();
-        }
-        
-        // 更新轨迹线几何体
-        const geometry = new THREE.BufferGeometry().setFromPoints(this.emotionTrail);
-        this.trailLine.geometry.dispose();
-        this.trailLine.geometry = geometry;
-    }
-    
-    // 更新粒子系统
-    updateParticles(X, Y, Z, confidence) {
+    // 更新粒子系统以反映当前情感状态
+    updateParticleSystem() {
         if (!this.particleSystem || !this.particles) return;
         
-        const positions = this.particles.positions;
-        const colors = this.particles.colors;
-        const sizes = this.particles.sizes;
-        const velocities = this.particles.velocities;
+        // 获取情感数据
+        const valence = this.lastEmotionData.Y; // 效价 (-100 to +100) - Y轴
+        const arousal = this.lastEmotionData.Z; // 唤醒度 (0 to 100) - Z轴
+        const emotionType = this.lastEmotionData.X; // 情感类型 - X轴
+        const confidence = this.lastEmotionData.confidence; // 0 to 1
         
-        // 基于情感类型设置不同的行为模式
-        let behavior = 'normal';
-        let speed = 0.2 + (confidence * 0.5);
-        let turbulence = 0.1;
-        let sizeMultiplier = 1.0;
+        // 检查情感类型是否存在于映射中，如果不存在则使用"未检测"
+        const validEmotionType = this.emotionXPos.hasOwnProperty(emotionType) ? emotionType : '未检测';
         
-        switch (Z) {
-            case '开心':
-                behavior = 'expand';
-                speed = 0.4 + (confidence * 0.6);
-                turbulence = 0.05;
-                sizeMultiplier = 1.5;
-                break;
-            case '悲伤':
-                behavior = 'contract';
-                speed = 0.1 + (confidence * 0.3);
-                turbulence = 0.02;
-                sizeMultiplier = 0.8;
-                break;
-            case '愤怒':
-                behavior = 'turbulent';
-                speed = 0.3 + (confidence * 0.7);
-                turbulence = 0.3;
-                sizeMultiplier = 1.4;
-                break;
-            case '惊讶':
-                behavior = 'burst';
-                speed = 0.5 + (confidence * 0.5);
-                turbulence = 0.15;
-                sizeMultiplier = 1.3;
-                break;
-            case '恐惧':
-                behavior = 'erratic';
-                speed = 0.2 + (confidence * 0.4);
-                turbulence = 0.25;
-                sizeMultiplier = 0.9;
-                break;
-            case '厌恶':
-                behavior = 'repel';
-                speed = 0.3 + (confidence * 0.4);
-                turbulence = 0.2;
-                sizeMultiplier = 1.1;
-                break;
-            case '中性':
-                behavior = 'calm';
-                speed = 0.1;
-                turbulence = 0.01;
-                sizeMultiplier = 1.0;
-                break;
-        }
+        // 获取情感类型的X轴位置
+        const emotionTypePos = this.emotionXPos[validEmotionType];
         
-        // 计算情感球体位置，作为粒子系统的中心
-        const centerX = this.emotionSphere.position.x;
-        const centerY = this.emotionSphere.position.y;
-        const centerZ = this.emotionSphere.position.z;
+        // 获取情感类型的基础颜色
+        const emotionColor = this.emotionColors[validEmotionType] || this.emotionColors['未检测'];
+        const r = ((emotionColor >> 16) & 255) / 255;
+        const g = ((emotionColor >> 8) & 255) / 255;
+        const b = (emotionColor & 255) / 255;
         
-        // 生成与X轴位置对应的颜色 (-100到+100 映射到蓝到红)
-        const colorPosition = (X + 100) / 200; // 归一化为0-1
-        const baseColor = new THREE.Color().lerpColors(
-            this.negativeColor,
-            this.positiveColor,
-            colorPosition
-        );
+        // 确保arousal和valence是数值型，如果不是则使用默认值
+        const safeArousal = typeof arousal === 'number' ? arousal : 0;
+        const safeValence = typeof valence === 'number' ? valence : 0;
         
-        // Y轴影响亮度
-        const brightness = 0.5 + (Y / 100) * 0.5; // 0.5-1.0
+        // 亮度影响因子（基于唤醒度）- 调整为正常亮度
+        const brightness = Math.max(0.7, safeArousal / 100 * 1.2);
         
-        // 更新每个粒子
-        for (let i = 0; i < this.particleCount; i++) {
+        // 遍历活跃粒子
+        for (let i = 0; i < this.currentParticleCount; i++) {
             const i3 = i * 3;
             
-            // 获取当前位置
-            let x = positions[i3];
-            let y = positions[i3 + 1];
-            let z = positions[i3 + 2];
-            
-            // 计算到中心的距离
-            const dx = x - centerX;
-            const dy = y - centerY;
-            const dz = z - centerZ;
-            const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
-            
-            // 基于行为模式更新速度和位置
-            switch (behavior) {
-                case 'expand':
-                    // 粒子向外扩散
-                    velocities[i3] = (dx / distance) * speed;
-                    velocities[i3 + 1] = (dy / distance) * speed;
-                    velocities[i3 + 2] = (dz / distance) * speed;
-                    break;
-                case 'contract':
-                    // 粒子向内收缩
-                    velocities[i3] = -(dx / distance) * speed * 0.5;
-                    velocities[i3 + 1] = -(dy / distance) * speed * 0.5;
-                    velocities[i3 + 2] = -(dz / distance) * speed * 0.5;
-                    break;
-                case 'turbulent':
-                    // 湍流运动
-                    velocities[i3] += (Math.random() - 0.5) * turbulence;
-                    velocities[i3 + 1] += (Math.random() - 0.5) * turbulence;
-                    velocities[i3 + 2] += (Math.random() - 0.5) * turbulence;
-                    break;
-                case 'burst':
-                    // 爆发式运动
-                    if (Math.random() > 0.95) {
-                        velocities[i3] = (Math.random() - 0.5) * speed * 3;
-                        velocities[i3 + 1] = (Math.random() - 0.5) * speed * 3;
-                        velocities[i3 + 2] = (Math.random() - 0.5) * speed * 3;
-                    }
-                    break;
-                case 'erratic':
-                    // 不规则运动
-                    if (Math.random() > 0.7) {
-                        velocities[i3] = (Math.random() - 0.5) * speed * 2;
-                        velocities[i3 + 1] = (Math.random() - 0.5) * speed * 2;
-                        velocities[i3 + 2] = (Math.random() - 0.5) * speed * 2;
-                    }
-                    break;
-                case 'repel':
-                    // 排斥运动
-                    if (distance < this.baseSphereRadius * 5) {
-                        velocities[i3] = (dx / distance) * speed;
-                        velocities[i3 + 1] = (dy / distance) * speed;
-                        velocities[i3 + 2] = (dz / distance) * speed;
-                    }
-                    break;
-                case 'calm':
-                    // 平静运动
-                    velocities[i3] *= 0.95;
-                    velocities[i3 + 1] *= 0.95;
-                    velocities[i3 + 2] *= 0.95;
-                    velocities[i3 + 1] -= 0.01; // 轻微下沉
-                    break;
-                default:
-                    // 默认行为
-                    velocities[i3] += (Math.random() - 0.5) * 0.1;
-                    velocities[i3 + 1] += (Math.random() - 0.5) * 0.1;
-                    velocities[i3 + 2] += (Math.random() - 0.5) * 0.1;
+            // 激活粒子
+            if (!this.particles.active[i]) {
+                this.particles.active[i] = true;
+                this.particles.life[i] = 0;
+                this.particles.maxLife[i] = 30 + Math.random() * 100; // 随机生命周期
+                
+                // 起始位置设置在情感点附近的随机位置 - 调整偏移比例
+                const offsetScale = 90; // 放大三倍
+                this.particles.positions[i3] = Math.max(0, emotionTypePos) + (Math.random() - 0.5) * offsetScale; // X轴 - 情感类型
+                this.particles.positions[i3 + 1] = Math.max(0, (safeValence + 100) / 2 / 100 * this.axisLength) + (Math.random() - 0.5) * offsetScale; // Y轴 - 效价
+                this.particles.positions[i3 + 2] = Math.max(0, (safeArousal / 100) * this.axisLength) + (Math.random() - 0.5) * offsetScale; // Z轴 - 唤醒度
             }
             
-            // 应用速度
-            positions[i3] += velocities[i3];
-            positions[i3 + 1] += velocities[i3 + 1];
-            positions[i3 + 2] += velocities[i3 + 2];
+            // 更新生命周期
+            this.particles.life[i]++;
             
-            // 限制粒子距离，防止飞得太远
-            const newDistance = Math.sqrt(
-                Math.pow(positions[i3] - centerX, 2) + 
-                Math.pow(positions[i3 + 1] - centerY, 2) + 
-                Math.pow(positions[i3 + 2] - centerZ, 2)
-            );
+            // 计算生命周期百分比
+            const lifePercent = this.particles.life[i] / this.particles.maxLife[i];
             
-            if (newDistance > this.baseSphereRadius * 10) {
-                // 重置回合理范围
-                const angle1 = Math.random() * Math.PI * 2;
-                const angle2 = Math.random() * Math.PI;
-                const radius = this.baseSphereRadius * (3 + Math.random() * 5);
-                
-                positions[i3] = centerX + radius * Math.sin(angle2) * Math.cos(angle1);
-                positions[i3 + 1] = centerY + radius * Math.sin(angle2) * Math.sin(angle1);
-                positions[i3 + 2] = centerZ + radius * Math.cos(angle2);
-                
-                velocities[i3] = 0;
-                velocities[i3 + 1] = 0;
-                velocities[i3 + 2] = 0;
+            // 计算目标位置 - 确保始终在正轴上
+            // 情感类型在X轴
+            const targetX = emotionTypePos;
+            
+            // Y轴是效价(-100到+100)，映射到0-100范围
+            const mappedValence = (safeValence + 100) / 2; // 将-100到100映射到0到100
+            const targetY = (mappedValence / 100) * this.axisLength; // 映射到0到axisLength
+            
+            // Z轴是唤醒度(0到100)
+            const targetZ = (safeArousal / 100) * this.axisLength;
+            
+            // 粒子簇的大小基于置信度 - 放大
+            const clusterSize = 150 * (1 - confidence * 0.7); // 放大三倍
+            
+            // 随机偏移，创建云状效果，但确保粒子不会进入负轴区域
+            const randomOffsetX = (Math.random() * 0.7) * clusterSize;
+            const randomOffsetY = (Math.random() * 0.7) * clusterSize;
+            const randomOffsetZ = (Math.random() * 0.7) * clusterSize;
+            
+            // 设置粒子的目标位置，确保在正轴范围内
+            this.particles.targetPositions[i3] = Math.max(0, targetX + randomOffsetX); // X轴 - 情感类型
+            this.particles.targetPositions[i3 + 1] = Math.max(0, targetY + randomOffsetY); // Y轴 - 效价
+            this.particles.targetPositions[i3 + 2] = Math.max(0, targetZ + randomOffsetZ); // Z轴 - 唤醒度
+            
+            // 计算粒子大小和颜色基于生命周期
+            const sizeFactor = Math.sin(lifePercent * Math.PI); // 0->1->0
+            const colorFactor = Math.sin(lifePercent * Math.PI); // 直接使用完整周期，移除淡入淡出效果
+            
+            // 根据情感类型调整颜色，使用更饱和的颜色
+            this.particles.colors[i3] = Math.min(1.0, r * brightness) * colorFactor;
+            this.particles.colors[i3 + 1] = Math.min(1.0, g * brightness) * colorFactor;
+            this.particles.colors[i3 + 2] = Math.min(1.0, b * brightness) * colorFactor;
+            
+            // 调整粒子大小 - 更大更明显
+            this.particles.sizes[i] = (20 + confidence * 40) * sizeFactor; // 进一步放大粒子
+            
+            // 如果粒子寿命结束，重置它
+            if (lifePercent >= 1.0) {
+                this.particles.active[i] = false;
             }
-            
-            // 更新颜色 - 每个粒子根据距离中心的远近调整基础颜色
-            const distanceFactor = Math.min(newDistance / (this.baseSphereRadius * 5), 1);
-            const particleColor = baseColor.clone();
-            
-            // 调整亮度 - 融合Y轴的亮度影响
-            particleColor.multiplyScalar(brightness * (1 - distanceFactor * 0.5));
-            
-            // 设置颜色
-            colors[i3] = particleColor.r;
-            colors[i3 + 1] = particleColor.g;
-            colors[i3 + 2] = particleColor.b;
-            
-            // 更新粒子大小 - 情感强度(confidence)和情感类型(Z)影响
-            const baseSizeFactor = 0.5 + confidence * 0.5; // 0.5-1.0
-            const distanceSizeFactor = 1.0 - (distanceFactor * 0.3); // 距离越远越小
-            // 加入随机波动
-            const pulseFactor = 1.0 + (0.1 * Math.sin(Date.now() * 0.001 + i * 0.1));
-            
-            // 计算最终大小
-            sizes[i] = (2 + Math.random() * 3) * baseSizeFactor * sizeMultiplier * distanceSizeFactor * pulseFactor;
         }
         
-        // 更新粒子系统的几何体
-        this.particles.geometry.attributes.position.needsUpdate = true;
-        this.particles.geometry.attributes.color.needsUpdate = true;
-        this.particles.geometry.attributes.size.needsUpdate = true;
+        // 隐藏未使用的粒子（将它们移到视野外）
+        for (let i = this.currentParticleCount; i < this.maxParticleCount; i++) {
+            const i3 = i * 3;
+            // 将非活跃粒子放在视野外
+            this.particles.positions[i3] = 9999;
+            this.particles.positions[i3 + 1] = 9999;
+            this.particles.positions[i3 + 2] = 9999;
+            // 设置颜色为透明
+            this.particles.colors[i3] = 0;
+            this.particles.colors[i3 + 1] = 0;
+            this.particles.colors[i3 + 2] = 0;
+            // 设置大小为0
+            this.particles.sizes[i] = 0;
+        }
+        
+        // 更新几何体属性
+        this.particleSystem.geometry.attributes.position.needsUpdate = true;
+        this.particleSystem.geometry.attributes.color.needsUpdate = true;
+        this.particleSystem.geometry.attributes.size.needsUpdate = true;
     }
     
-    // 处理窗口大小变化
-    onWindowResize() {
-        if (!this.container || !this.camera || !this.renderer) return;
+    // 更新粒子位置（平滑过渡效果）
+    updateParticlePositions() {
+        if (!this.particles) return;
         
-        // 更新相机宽高比
-        this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
-        this.camera.updateProjectionMatrix();
+        const damping = 0.15; // 阻尼系数 - 增加为更快的反应
+        const dt = 0.016; // 时间步长
         
-        // 更新渲染器大小
-        this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+        // 更新粒子位置
+        for (let i = 0; i < this.currentParticleCount; i++) {
+            const i3 = i * 3;
+            
+            if (this.particles.active[i]) {
+                // 简单的弹簧物理系统
+                for (let j = 0; j < 3; j++) {
+                    const idx = i3 + j;
+                    const force = (this.particles.targetPositions[idx] - this.particles.positions[idx]) * damping;
+                    this.particles.velocities[idx] += force;
+                    this.particles.velocities[idx] *= 0.95; // 阻力
+                    this.particles.positions[idx] += this.particles.velocities[idx] * dt;
+                }
+                
+                // 添加一些随机运动使粒子看起来更活跃
+                this.particles.positions[i3] += (Math.random() - 0.5) * 0.3;
+                this.particles.positions[i3 + 1] += (Math.random() - 0.5) * 0.3;
+                this.particles.positions[i3 + 2] += (Math.random() - 0.5) * 0.3;
+            }
+        }
     }
     
     // 动画循环
     animate() {
-        if (!this.isInitialized) return;
-        
         this.animationId = requestAnimationFrame(this.animate.bind(this));
         
-        // 检查并确保情感球体存在
-        if (!this.emotionSphere) {
-            console.error('情感球体不存在，无法进行动画渲染');
-            return;
-        }
-        
-        // 如果有轨道控制器，使用它
+        // 更新控制器
         if (this.controls) {
             this.controls.update();
-        } else {
-            // 否则使用默认的旋转动画
-            const time = Date.now() * 0.0002;
-            const radius = 200;
-            this.camera.position.x = Math.sin(time) * radius;
-            this.camera.position.z = Math.cos(time) * radius;
-            this.camera.lookAt(0, 0, 0);
         }
         
-        // 更新粒子动画
-        if (this.particleSystem && this.particles) {
-            // 添加一些轻微自动动画，即使没有情感数据更新也能有动态效果
-            const positions = this.particles.positions;
-            const velocities = this.particles.velocities;
-            const sizes = this.particles.sizes;
-            
-            // 获取当前时间用于动画效果
-            const time = Date.now() * 0.001;
-            
-            for (let i = 0; i < this.particleCount; i++) {
-                const i3 = i * 3;
-                
-                // 添加一点随机运动
-                velocities[i3] += (Math.random() - 0.5) * 0.03;
-                velocities[i3 + 1] += (Math.random() - 0.5) * 0.03;
-                velocities[i3 + 2] += (Math.random() - 0.5) * 0.03;
-                
-                // 阻尼因子 - 让粒子不会加速太快
-                velocities[i3] *= 0.99;
-                velocities[i3 + 1] *= 0.99;
-                velocities[i3 + 2] *= 0.99;
-                
-                // 应用速度
-                positions[i3] += velocities[i3];
-                positions[i3 + 1] += velocities[i3 + 1];
-                positions[i3 + 2] += velocities[i3 + 2];
-                
-                // 脉动大小效果 - 即使没有情感数据更新，粒子也会有呼吸感
-                const pulseFactor = 1.0 + 0.2 * Math.sin(time * 2 + i * 0.1);
-                sizes[i] = Math.max(sizes[i] * 0.98, 1.0) * pulseFactor;
-                
-                // 检查粒子是否飞得太远，如果是则重置位置
-                const centerX = this.emotionSphere.position.x;
-                const centerY = this.emotionSphere.position.y; 
-                const centerZ = this.emotionSphere.position.z;
-                
-                const dx = positions[i3] - centerX;
-                const dy = positions[i3 + 1] - centerY;
-                const dz = positions[i3 + 2] - centerZ;
-                const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                
-                if (distance > this.baseSphereRadius * 15) {
-                    // 重置到情感球周围
-                    const angle1 = Math.random() * Math.PI * 2;
-                    const angle2 = Math.random() * Math.PI;
-                    const radius = this.baseSphereRadius * (3 + Math.random() * 4);
-                    
-                    positions[i3] = centerX + radius * Math.sin(angle2) * Math.cos(angle1);
-                    positions[i3 + 1] = centerY + radius * Math.sin(angle2) * Math.sin(angle1);
-                    positions[i3 + 2] = centerZ + radius * Math.cos(angle2);
-                    
-                    // 重置速度
-                    velocities[i3] = 0;
-                    velocities[i3 + 1] = 0;
-                    velocities[i3 + 2] = 0;
-                }
-            }
-            
-            // 更新粒子系统
-            this.particles.geometry.attributes.position.needsUpdate = true;
-            this.particles.geometry.attributes.size.needsUpdate = true;
-        }
+        // 更新粒子位置
+        this.updateParticlePositions();
         
         // 渲染场景
         if (this.renderer && this.scene && this.camera) {
@@ -1106,63 +811,113 @@ class EmotionModel {
         }
     }
     
-    // 停止渲染
-    stop() {
-        if (this.animationId) {
+    // 窗口大小调整响应
+    onWindowResize() {
+        if (!this.camera || !this.renderer || !this.container) return;
+        
+        const width = this.container.clientWidth;
+        const height = this.container.clientHeight;
+        
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
+    }
+    
+    // 停止动画并清理资源
+    dispose() {
+        // 停止动画循环
+        if (this.animationId !== null) {
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
         }
-    }
-    
-    // 清理资源
-    dispose() {
-        this.stop();
         
         // 移除事件监听器
-        window.removeEventListener('resize', this.onWindowResize);
-        document.removeEventListener('emotionFusionUpdate', this.handleEmotionUpdate);
+        window.removeEventListener('resize', this.onWindowResize.bind(this));
+        document.removeEventListener('emotionFusionUpdate', this.handleEmotionUpdate.bind(this));
         
-        // 清理Three.js资源
-        if (this.scene) {
-            this.scene.traverse((object) => {
-                if (object.geometry) {
-                    object.geometry.dispose();
-                }
-                if (object.material) {
-                    if (Array.isArray(object.material)) {
-                        object.material.forEach(material => material.dispose());
-                    } else {
-                        object.material.dispose();
-                    }
+        // 清理标签
+        if (this.labels) {
+            Object.values(this.labels).forEach(label => {
+                if (label && label.parentNode) {
+                    label.parentNode.removeChild(label);
                 }
             });
+            this.labels = {};
         }
         
-        // 处理OrbitControls
-        if (this.controls) {
-            this.controls.dispose();
-            this.controls = null;
-        }
-        
-        // 移除DOM元素
-        Object.values(this.labels).forEach(label => {
-            if (label && label.parentNode) {
-                label.parentNode.removeChild(label);
+        // 清理场景中的对象
+        if (this.scene) {
+            // 移除坐标轴辅助
+            this.axisHelpers.forEach(helper => {
+                this.scene.remove(helper);
+            });
+            this.axisHelpers = [];
+            
+            // 移除粒子系统
+            if (this.particleSystem) {
+                this.scene.remove(this.particleSystem);
+                this.particleSystem.geometry.dispose();
+                this.particleSystem.material.dispose();
+                this.particleSystem = null;
             }
-        });
+            
+            // 清空场景
+            while (this.scene.children.length > 0) {
+                const object = this.scene.children[0];
+                this.scene.remove(object);
+            }
+        }
         
-        // 移除渲染器和容器
+        // 清理渲染器
         if (this.renderer) {
-            if (this.renderer.domElement && this.renderer.domElement.parentNode) {
-                this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
-            }
             this.renderer.dispose();
+            if (this.container && this.renderer.domElement) {
+                this.container.removeChild(this.renderer.domElement);
+            }
+            this.renderer = null;
         }
         
+        // 重置属性
+        this.camera = null;
+        this.scene = null;
+        this.controls = null;
+        this.container = null;
         this.isInitialized = false;
+        this.particles = null;
+        
+        console.log('情感3D模型已释放资源');
     }
 }
 
-// 创建并导出单例
-const emotionModel = new EmotionModel();
-module.exports = emotionModel; 
+// 导出模块
+if (typeof module !== 'undefined' && module.exports) {
+    // 创建实例并导出
+    const emotionModel = new EmotionModel();
+    module.exports = emotionModel;
+} else {
+    // 浏览器环境，将其附加到窗口对象
+    window.EmotionModel = EmotionModel;
+    window.emotionModel = new EmotionModel();
+}
+
+// 创建实例并自动初始化 - 改为仅在浏览器环境且没有require时执行
+if (typeof module === 'undefined' || !module.exports) {
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            console.log('情感3D模型模块加载完成，等待初始化...');
+            // 如果window.emotionModel已存在，则不需要再创建
+            if (!window.emotionModel) {
+                window.emotionModel = new EmotionModel();
+            }
+            
+            // 延迟初始化，确保容器元素已创建
+            setTimeout(() => {
+                if (window.emotionModel && typeof window.emotionModel.init === 'function') {
+                    window.emotionModel.init();
+                }
+            }, 1000);
+        } catch (err) {
+            console.error('初始化情感3D模型失败:', err);
+        }
+    });
+} 

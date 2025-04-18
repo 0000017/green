@@ -148,9 +148,17 @@
                     // 添加情感融合数据监听
                     emotionFusion.addUpdateListener((fusedData) => {
                         // 测试直接调用模型更新，避免事件监听可能存在的问题
-                        if (emotionModel.updateEmotionModel) {
+                        if (emotionModel.handleEmotionUpdate) {
                             console.log('直接调用模型更新:', fusedData);
-                            emotionModel.updateEmotionModel(fusedData);
+                            // 创建一个包含detail的对象，模拟自定义事件格式
+                            emotionModel.handleEmotionUpdate({
+                                detail: {
+                                    valence: fusedData.X,  // 效价 - 新Y轴
+                                    arousal: fusedData.Y,  // 唤醒度 - 新Z轴
+                                    dominant_emotion: fusedData.Z,  // 情感类型 - 新X轴
+                                    confidence: fusedData.confidence
+                                }
+                            });
                         }
                         console.log('融合情感数据更新:', fusedData);
                     });
@@ -161,9 +169,9 @@
                         // 创建测试事件
                         const testEvent = new CustomEvent('emotionFusionUpdate', {
                             detail: {
-                                X: 50,
-                                Y: 70, 
-                                Z: '开心',
+                                valence: 50,  // 效价 - Y轴
+                                arousal: 70,  // 唤醒度 - Z轴
+                                dominant_emotion: '开心', // 情感类型 - X轴
                                 confidence: 0.9
                             }
                         });
