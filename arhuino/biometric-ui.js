@@ -10,28 +10,39 @@ class BiometricUI {
         this.connectButton = null;
         this.statusElement = null;
         this.valuesContainer = null;
-        this.chartContainer = null;
-        this.chart = null;
         this.connected = false;
-        this.dataPoints = [];
+        this.dataHistory = {
+            bpm: [],
+            ibi: [],
+            rmssd: [],
+            gsr: []
+        };
+        this.historyLimit = 30; // 保存最近30个数据点
         this.defaultPort = 'COM5'; // 默认使用COM5端口
         
         // 缓存DOM引用以提高性能
         this.domElements = {};
+        this.charts = {};
     }
 
     // 初始化UI
     async init(containerSelector = '#emotion-panel') {
         try {
-            console.log('初始化生物传感器UI...');
+            console.log('初始化生物传感器UI...', containerSelector);
             
-            // 获取容器元素
+            // 尝试获取容器元素
             this.container = document.querySelector(containerSelector);
+            console.log('容器元素查找结果:', this.container);
+            
             if (!this.container) {
-                throw new Error(`找不到容器元素: ${containerSelector}`);
+                console.error(`找不到容器元素: ${containerSelector}，将等待500ms后重试`);
+                // 尝试等待容器元素渲染完成
+                await new Promise(resolve => setTimeout(resolve, 500));
+                this.container = document.querySelector(containerSelector);
+                console.log('重试查找容器元素结果:', this.container);
             }
             
-            // 创建UI元素
+            // 即使找不到特定容器也创建UI，但放在body中
             await this.createUI();
             
             // 绑定事件监听器
@@ -52,139 +63,165 @@ class BiometricUI {
 
     // 创建UI元素
     async createUI() {
-        // 添加必要的CSS样式
-        this.addStyles();
-        
-        // 创建生物传感器面板
-        const biometricPanel = document.createElement('div');
-        biometricPanel.id = 'biometric-panel';
-        biometricPanel.className = 'biometric-panel';
-        
-        // 创建连接控制区
-        const connectionControls = document.createElement('div');
-        connectionControls.className = 'connection-controls';
-        
-        // 创建端口选择器 (隐藏, 但保留功能以防需要)
-        this.portSelector = document.createElement('select');
-        this.portSelector.id = 'port-selector';
-        this.portSelector.className = 'port-selector';
-        this.portSelector.style.display = 'none'; // 隐藏选择器
-        
-        // 添加默认端口选项
-        const defaultOption = document.createElement('option');
-        defaultOption.value = this.defaultPort;
-        defaultOption.textContent = this.defaultPort;
-        defaultOption.selected = true;
-        this.portSelector.appendChild(defaultOption);
-        
-        // 创建连接状态显示
-        this.statusElement = document.createElement('div');
-        this.statusElement.id = 'biometric-status';
-        this.statusElement.className = 'biometric-status';
-        this.statusElement.textContent = '未连接';
-        
-        // 创建连接按钮
-        this.connectButton = document.createElement('button');
-        this.connectButton.id = 'connect-button';
-        this.connectButton.className = 'connect-button';
-        this.connectButton.textContent = '断开连接';
-        this.connectButton.style.display = 'none'; // 默认隐藏按钮，采用自动连接
-        
-        // 将控制元素添加到连接控制区
-        connectionControls.appendChild(this.portSelector);
-        connectionControls.appendChild(this.connectButton);
-        connectionControls.appendChild(this.statusElement);
-        
-        // 创建数据显示区
-        this.valuesContainer = document.createElement('div');
-        this.valuesContainer.id = 'biometric-values';
-        this.valuesContainer.className = 'biometric-values';
-        
-        // 创建度量数据元素
-        const metricsToDisplay = [
-            { id: 'bpm', label: '心率', unit: 'BPM' },
-            { id: 'ibi', label: '心跳间隔', unit: 'ms' },
-            { id: 'rmssd', label: 'RMSSD', unit: 'ms' },
-            { id: 'gsr', label: 'GSR', unit: '' }
-        ];
-        
-        metricsToDisplay.forEach(metric => {
-            const metricElement = document.createElement('div');
-            metricElement.className = 'biometric-metric';
+        try {
+            console.log('开始创建生物传感器UI...');
             
-            const labelElement = document.createElement('span');
-            labelElement.className = 'metric-label';
-            labelElement.textContent = metric.label;
+            // 添加必要的CSS样式
+            this.addStyles();
             
-            const valueElement = document.createElement('span');
-            valueElement.id = `biometric-${metric.id}`;
-            valueElement.className = 'metric-value';
-            valueElement.textContent = '--';
+            // 查找情感窗口容器
+            const emotionWindow = document.querySelector('#emotion-floating-window');
+            const emotionContent = document.querySelector('.floating-content');
+            console.log('查找情感窗口结果:', emotionWindow);
+            console.log('查找情感内容区域结果:', emotionContent);
             
-            const unitElement = document.createElement('span');
-            unitElement.className = 'metric-unit';
-            unitElement.textContent = metric.unit;
+            // 创建生物传感器面板
+            const biometricPanel = document.createElement('div');
+            biometricPanel.id = 'biometric-panel';
+            biometricPanel.className = 'biometric-panel';
             
-            metricElement.appendChild(labelElement);
-            metricElement.appendChild(valueElement);
-            metricElement.appendChild(unitElement);
+            // 创建连接状态显示
+            this.statusElement = document.createElement('div');
+            this.statusElement.id = 'biometric-status';
+            this.statusElement.className = 'biometric-status';
+            this.statusElement.textContent = '未连接';
             
-            this.valuesContainer.appendChild(metricElement);
+            // 隐藏端口选择器但保留功能
+            this.portSelector = document.createElement('select');
+            this.portSelector.id = 'port-selector';
+            this.portSelector.className = 'port-selector';
+            this.portSelector.style.display = 'none';
             
-            // 缓存DOM引用
-            this.domElements[metric.id] = valueElement;
-        });
-        
-        // 创建融合指标显示
-        const fusedMetricsElement = document.createElement('div');
-        fusedMetricsElement.className = 'fused-metrics';
-        
-        // 创建效价指标显示
-        const valenceElement = document.createElement('div');
-        valenceElement.className = 'fused-metric';
-        
-        const valenceLabel = document.createElement('span');
-        valenceLabel.className = 'metric-label';
-        valenceLabel.textContent = '效价';
-        
-        const valenceValue = document.createElement('span');
-        valenceValue.id = 'biometric-valence';
-        valenceValue.className = 'metric-value';
-        valenceValue.textContent = '0';
-        
-        valenceElement.appendChild(valenceLabel);
-        valenceElement.appendChild(valenceValue);
-        
-        // 创建唤醒度指标显示
-        const arousalElement = document.createElement('div');
-        arousalElement.className = 'fused-metric';
-        
-        const arousalLabel = document.createElement('span');
-        arousalLabel.className = 'metric-label';
-        arousalLabel.textContent = '唤醒度';
-        
-        const arousalValue = document.createElement('span');
-        arousalValue.id = 'biometric-arousal';
-        arousalValue.className = 'metric-value';
-        arousalValue.textContent = '0';
-        
-        arousalElement.appendChild(arousalLabel);
-        arousalElement.appendChild(arousalValue);
-        
-        fusedMetricsElement.appendChild(valenceElement);
-        fusedMetricsElement.appendChild(arousalElement);
-        
-        // 缓存DOM引用
-        this.domElements['valence'] = valenceValue;
-        this.domElements['arousal'] = arousalValue;
-        
-        // 将元素添加到面板
-        biometricPanel.appendChild(connectionControls);
-        biometricPanel.appendChild(this.valuesContainer);
-        biometricPanel.appendChild(fusedMetricsElement);
-        
-        // 将面板添加到容器
-        this.container.appendChild(biometricPanel);
+            // 添加默认端口选项
+            const defaultOption = document.createElement('option');
+            defaultOption.value = this.defaultPort;
+            defaultOption.textContent = this.defaultPort;
+            defaultOption.selected = true;
+            this.portSelector.appendChild(defaultOption);
+            
+            // 创建数据显示区
+            this.valuesContainer = document.createElement('div');
+            this.valuesContainer.id = 'biometric-values';
+            this.valuesContainer.className = 'biometric-values';
+            
+            // 创建度量数据元素 - 垂直排列
+            const metricsToDisplay = [
+                { id: 'bpm', label: '心率', unit: 'BPM', color: '#4fd1c5' },
+                { id: 'ibi', label: '心跳间隔', unit: 'ms', color: '#63b3ed' },
+                { id: 'rmssd', label: 'RMSSD', unit: 'ms', color: '#9f7aea' },
+                { id: 'gsr', label: 'GSR', unit: '', color: '#f6ad55' }
+            ];
+            
+            metricsToDisplay.forEach(metric => {
+                const metricElement = document.createElement('div');
+                metricElement.className = 'biometric-metric';
+                
+                // 创建指标数据和标签部分
+                const metricInfo = document.createElement('div');
+                metricInfo.className = 'metric-info';
+                
+                const labelElement = document.createElement('span');
+                labelElement.className = 'metric-label';
+                labelElement.textContent = metric.label;
+                
+                const valueElement = document.createElement('span');
+                valueElement.id = `biometric-${metric.id}`;
+                valueElement.className = 'metric-value';
+                valueElement.textContent = '0';
+                valueElement.style.color = metric.color;
+                
+                const unitElement = document.createElement('span');
+                unitElement.className = 'metric-unit';
+                unitElement.textContent = metric.unit;
+                
+                metricInfo.appendChild(labelElement);
+                metricInfo.appendChild(valueElement);
+                metricInfo.appendChild(unitElement);
+                
+                // 创建图表容器
+                const chartContainer = document.createElement('div');
+                chartContainer.id = `chart-${metric.id}`;
+                chartContainer.className = 'metric-chart';
+                
+                // 创建SVG元素用于绘制折线图
+                const svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svgElement.setAttribute('width', '100%');
+                svgElement.setAttribute('height', '100%');
+                svgElement.setAttribute('viewBox', '0 0 100 30');
+                svgElement.setAttribute('preserveAspectRatio', 'none');
+                
+                // 创建折线图的路径
+                const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathElement.setAttribute('stroke', metric.color);
+                pathElement.setAttribute('stroke-width', '1');
+                pathElement.setAttribute('fill', 'none');
+                
+                svgElement.appendChild(pathElement);
+                chartContainer.appendChild(svgElement);
+                
+                // 将元素添加到指标容器
+                metricElement.appendChild(metricInfo);
+                metricElement.appendChild(chartContainer);
+                
+                this.valuesContainer.appendChild(metricElement);
+                
+                // 缓存DOM引用
+                this.domElements[metric.id] = valueElement;
+                this.charts[metric.id] = pathElement;
+            });
+            
+            // 将元素添加到面板
+            biometricPanel.appendChild(this.statusElement);
+            biometricPanel.appendChild(this.portSelector);
+            biometricPanel.appendChild(this.valuesContainer);
+            
+            // 创建隐藏的连接按钮 (自动连接模式)
+            this.connectButton = document.createElement('button');
+            this.connectButton.id = 'connect-button';
+            this.connectButton.className = 'connect-button';
+            this.connectButton.textContent = '连接';
+            this.connectButton.style.display = 'none';
+            biometricPanel.appendChild(this.connectButton);
+            
+            console.log('UI元素创建完成，尝试添加到DOM...');
+            
+            // 决定面板添加位置
+            if (emotionWindow) {
+                // 将面板添加到情感窗口之后
+                emotionWindow.parentNode.insertBefore(biometricPanel, emotionWindow.nextSibling);
+                console.log('面板已添加到情感窗口的后面');
+            } else if (emotionContent) {
+                // 添加到情感内容区域内部
+                emotionContent.appendChild(biometricPanel);
+                console.log('面板已添加到情感内容区域内部');
+            } else if (this.container) {
+                // 添加到容器附近
+                if (this.container.parentNode) {
+                    this.container.parentNode.insertBefore(biometricPanel, this.container.nextSibling);
+                    console.log('面板已添加到容器的后面');
+                } else {
+                    this.container.appendChild(biometricPanel);
+                    console.log('面板已添加到容器内部');
+                }
+            } else {
+                // 如果都找不到，直接添加到body
+                document.body.appendChild(biometricPanel);
+                console.log('找不到合适位置，面板已添加到body');
+            }
+            
+            // 设置面板样式以匹配情感窗口宽度
+            if (emotionWindow) {
+                const computedStyle = window.getComputedStyle(emotionWindow);
+                const width = computedStyle.width;
+                console.log('情感窗口宽度:', width);
+                biometricPanel.style.width = width;
+                biometricPanel.style.marginTop = '10px';
+            }
+            
+            console.log('生物传感器UI创建完成');
+        } catch (err) {
+            console.error('创建生物传感器UI时出错:', err);
+        }
     }
 
     // 绑定事件监听器
@@ -330,7 +367,19 @@ class BiometricUI {
             // 重置数据显示
             Object.keys(this.domElements).forEach(key => {
                 if (this.domElements[key]) {
-                    this.domElements[key].textContent = '--';
+                    this.domElements[key].textContent = '0';
+                }
+            });
+            
+            // 清空历史数据
+            Object.keys(this.dataHistory).forEach(key => {
+                this.dataHistory[key] = [];
+            });
+            
+            // 重置图表
+            Object.keys(this.charts).forEach(key => {
+                if (this.charts[key]) {
+                    this.charts[key].setAttribute('d', '');
                 }
             });
         }
@@ -351,168 +400,201 @@ class BiometricUI {
 
     // 更新UI显示数据
     updateUI(data) {
-        if (!this.connected) return;
+        if (!this.connected || !data) return;
         
-        // 更新基本数据显示
-        if (this.domElements.bpm) {
-            this.domElements.bpm.textContent = Math.round(data.bpm);
-        }
-        
-        if (this.domElements.ibi) {
-            this.domElements.ibi.textContent = Math.round(data.ibi);
-        }
-        
-        if (this.domElements.rmssd) {
-            this.domElements.rmssd.textContent = data.rmssd.toFixed(1);
-        }
-        
-        if (this.domElements.gsr) {
-            this.domElements.gsr.textContent = data.gsrValue;
-        }
-        
-        // 获取计算的情感指标
-        const emotionMetrics = biometricSensors.getEmotionMetrics();
-        
-        // 更新融合指标
-        if (this.domElements.valence) {
-            this.domElements.valence.textContent = Math.round(emotionMetrics.valenceFromHRV);
+        try {
+            // 确保数据有效
+            const bpm = data.bpm !== undefined && !isNaN(data.bpm) ? Math.round(data.bpm) : null;
+            const ibi = data.ibi !== undefined && !isNaN(data.ibi) ? Math.round(data.ibi) : null;
+            const rmssd = data.rmssd !== undefined && !isNaN(data.rmssd) ? parseFloat(data.rmssd.toFixed(1)) : null;
+            const gsrValue = data.gsrValue !== undefined ? data.gsrValue : null;
             
-            // 根据值设置颜色
-            const hue = 120 + (emotionMetrics.valenceFromHRV / 100) * 120;
-            this.domElements.valence.style.color = `hsl(${hue}, 80%, 50%)`;
-        }
-        
-        if (this.domElements.arousal) {
-            this.domElements.arousal.textContent = Math.round(emotionMetrics.arousal);
+            // 更新数据历史
+            if (bpm !== null) this.updateDataHistory('bpm', bpm);
+            if (ibi !== null) this.updateDataHistory('ibi', ibi);
+            if (rmssd !== null) this.updateDataHistory('rmssd', rmssd);
+            if (gsrValue !== null) this.updateDataHistory('gsr', gsrValue);
             
-            // 根据值设置颜色
-            const brightness = 40 + (emotionMetrics.arousal / 100) * 40;
-            this.domElements.arousal.style.color = `hsl(0, 80%, ${brightness}%)`;
+            // 更新显示
+            if (bpm !== null) this.updateMetric('bpm', bpm);
+            if (ibi !== null) this.updateMetric('ibi', ibi);
+            if (rmssd !== null) this.updateMetric('rmssd', rmssd.toFixed(1));
+            if (gsrValue !== null) this.updateMetric('gsr', gsrValue);
+            
+            // 更新图表
+            this.updateCharts();
+        } catch (err) {
+            console.error('更新生物传感器UI时出错:', err);
         }
+    }
+    
+    // 更新数据历史
+    updateDataHistory(metricId, value) {
+        // 确保值是有效数值
+        if (this.dataHistory[metricId] && !isNaN(value) && value !== null && value !== undefined) {
+            this.dataHistory[metricId].push(value);
+            
+            // 限制历史记录长度
+            if (this.dataHistory[metricId].length > this.historyLimit) {
+                this.dataHistory[metricId].shift();
+            }
+        }
+    }
+    
+    // 更新指标显示
+    updateMetric(metricId, value) {
+        if (this.domElements[metricId]) {
+            this.domElements[metricId].textContent = value;
+        }
+    }
+    
+    // 更新图表
+    updateCharts() {
+        Object.keys(this.charts).forEach(metricId => {
+            if (this.charts[metricId] && this.dataHistory[metricId].length > 0) {
+                const data = this.dataHistory[metricId];
+                const path = this.createSVGPath(data);
+                this.charts[metricId].setAttribute('d', path);
+            }
+        });
+    }
+    
+    // 创建SVG路径
+    createSVGPath(data) {
+        if (!data || data.length === 0) return '';
+        
+        // 找出最大值和最小值来缩放数据
+        const validData = data.filter(value => !isNaN(value) && value !== null && value !== undefined);
+        
+        // 如果没有有效数据，返回空路径
+        if (validData.length === 0) return '';
+        
+        const min = Math.min(...validData);
+        const max = Math.max(...validData);
+        const range = max - min || 1; // 避免除以零
+        
+        // 创建路径数据，确保跳过无效值
+        let pathPoints = [];
+        let moveCommand = true; // 是否需要使用M命令（移动到）而不是L命令（连线到）
+        
+        validData.forEach((value, index) => {
+            const x = (index / (validData.length - 1)) * 100;
+            const y = 30 - ((value - min) / range) * 25; // 将数据缩放到5-30范围内，并反转Y轴
+            
+            // 确保坐标是有效数字
+            if (!isNaN(x) && !isNaN(y)) {
+                if (moveCommand) {
+                    pathPoints.push(`M${x},${y}`);
+                    moveCommand = false;
+                } else {
+                    pathPoints.push(`L${x},${y}`);
+                }
+            } else {
+                // 如果遇到无效坐标，下一个有效点需要使用M命令
+                moveCommand = true;
+            }
+        });
+        
+        return pathPoints.join(' ');
     }
 
     // 添加样式
     addStyles() {
-        const styleElement = document.createElement('style');
-        styleElement.textContent = `
-            .biometric-panel {
-                background-color: #1a1a1a;
-                border-radius: 8px;
-                padding: 10px;
-                margin-top: 10px;
-                font-family: Arial, sans-serif;
-                color: #e0e0e0;
-            }
+        try {
+            console.log('添加生物传感器UI样式...');
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .biometric-panel {
+                    background-color: #1a1a1a;
+                    border-radius: 8px;
+                    padding: 10px;
+                    margin-top: 10px;
+                    font-family: Arial, sans-serif;
+                    color: #e0e0e0;
+                    width: 100%;
+                    box-sizing: border-box;
+                    border: 2px solid #333; /* 添加边框增强可见性 */
+                    z-index: 1000; /* 确保UI在顶层 */
+                }
+                
+                .biometric-status {
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    color: #ccc;
+                    background-color: #333;
+                    margin-bottom: 8px;
+                    text-align: center;
+                }
+                
+                .biometric-status.connected {
+                    background-color: #2b593f;
+                    color: #a3ffd7;
+                }
+                
+                .biometric-status.error {
+                    background-color: #592b2b;
+                    color: #ffa3a3;
+                }
+                
+                .biometric-values {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+                
+                .biometric-metric {
+                    background-color: #222;
+                    padding: 8px;
+                    border-radius: 4px;
+                    display: flex;
+                    align-items: center;
+                    height: 30px;
+                }
+                
+                .metric-info {
+                    display: flex;
+                    align-items: baseline;
+                    width: 100px;
+                    flex-shrink: 0;
+                }
+                
+                .metric-label {
+                    font-size: 11px;
+                    color: #999;
+                    margin-right: 5px;
+                    width: 60px;
+                }
+                
+                .metric-value {
+                    font-size: 16px;
+                    font-weight: bold;
+                    margin-right: 3px;
+                }
+                
+                .metric-unit {
+                    font-size: 10px;
+                    color: #777;
+                }
+                
+                .metric-chart {
+                    flex-grow: 1;
+                    height: 30px;
+                    background-color: #1a1a1a;
+                    border-radius: 3px;
+                    overflow: hidden;
+                }
+                
+                .connect-button {
+                    display: none;
+                }
+            `;
             
-            .connection-controls {
-                display: flex;
-                align-items: center;
-                margin-bottom: 8px;
-                gap: 8px;
-            }
-            
-            .port-selector {
-                flex: 1;
-                background-color: #333;
-                color: #e0e0e0;
-                border: 1px solid #555;
-                border-radius: 4px;
-                padding: 4px;
-                font-size: 12px;
-            }
-            
-            .connect-button {
-                background-color: #444;
-                color: #e0e0e0;
-                border: 1px solid #555;
-                border-radius: 4px;
-                padding: 4px 8px;
-                cursor: pointer;
-                font-size: 12px;
-                transition: background-color 0.2s;
-            }
-            
-            .connect-button:hover {
-                background-color: #555;
-            }
-            
-            .connect-button.connected {
-                background-color: #33665e;
-            }
-            
-            .connect-button.connected:hover {
-                background-color: #407d73;
-            }
-            
-            .biometric-status {
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                color: #ccc;
-                background-color: #333;
-                width: 100%;
-                text-align: center;
-            }
-            
-            .biometric-status.connected {
-                background-color: #2b593f;
-                color: #a3ffd7;
-            }
-            
-            .biometric-status.error {
-                background-color: #592b2b;
-                color: #ffa3a3;
-            }
-            
-            .biometric-values {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                margin-bottom: 8px;
-            }
-            
-            .biometric-metric {
-                background-color: #222;
-                padding: 6px;
-                border-radius: 4px;
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .metric-label {
-                font-size: 10px;
-                color: #999;
-                margin-bottom: 2px;
-            }
-            
-            .metric-value {
-                font-size: 18px;
-                font-weight: bold;
-                color: #4fd1c5;
-            }
-            
-            .metric-unit {
-                font-size: 10px;
-                color: #777;
-                margin-left: 2px;
-            }
-            
-            .fused-metrics {
-                display: flex;
-                gap: 8px;
-            }
-            
-            .fused-metric {
-                flex: 1;
-                background-color: #222;
-                padding: 6px;
-                border-radius: 4px;
-                display: flex;
-                flex-direction: column;
-            }
-        `;
-        
-        document.head.appendChild(styleElement);
+            document.head.appendChild(styleElement);
+            console.log('生物传感器UI样式已添加');
+        } catch (err) {
+            console.error('添加生物传感器UI样式时出错:', err);
+        }
     }
 }
 

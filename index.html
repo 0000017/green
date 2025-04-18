@@ -7,6 +7,40 @@
     <!-- 3D情感模型样式 -->
     <link rel="stylesheet" href="./three/emotion-model.css">
     
+    <style>
+        /* 情感分析系统容器样式 */
+        .emotion-analysis-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 480px;
+            z-index: 9000;
+        }
+        
+        /* 调整悬浮窗口样式，使其自适应容器 */
+        .emotion-floating-window {
+            position: relative;
+            top: auto;
+            right: auto;
+            width: 100%;
+            margin: 0;
+        }
+        
+        /* 调整3D模型容器样式，使其自适应容器 */
+        #emotion-model-container {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            height: 300px;
+            top: auto;
+            right: auto;
+            margin: 0;
+        }
+    </style>
+    
     <!-- HTML5 Canvas polyfill，解决兼容性问题 -->
     <script>
     // 修复某些浏览器中的canvas兼容性问题
@@ -49,36 +83,41 @@
     <!--webrtc状态显示切换按钮 -->
     <div id="status-toggle" class="status-toggle">i</div>
     
-    <!-- 表情识别悬浮窗口 -->
-    <div id="emotion-floating-window" class="emotion-floating-window">
-        <div class="floating-header">
-            <h3>情感数据</h3>
-            <div class="status-indicator">
-                <span class="status-dot" id="recognition-status-dot" role="button"></span>
+    <!-- 情感分析系统容器 -->
+    <div id="emotion-analysis-container" class="emotion-analysis-container">
+        <!-- 表情识别窗口 -->
+        <div id="emotion-floating-window" class="emotion-floating-window">
+            <div class="floating-header">
+                <div class="status-indicator">
+                    <span class="status-dot" id="recognition-status-dot" role="button"></span>
+                </div>
             </div>
-        </div>
-        <div class="floating-content">
-            <div class="video-container">
-                <video id="floating-video" autoplay playsinline></video>
-                <canvas id="outputCanvas" class="overlay-canvas"></canvas>
-                <div class="emotion-panel" id="emotion-panel">
-                    <div class="panel-header">
-                        <h3>当前情绪</h3>
+            <div class="floating-content">
+                <div class="video-container">
+                    <video id="floating-video" autoplay playsinline></video>
+                    <canvas id="outputCanvas" class="overlay-canvas"></canvas>
+                    <div class="emotion-panel" id="emotion-panel">
+                        <div class="panel-header">
+                            <h3>面部情绪分析</h3>
+                            <div class="status-indicator">
+                                <span class="status-dot" id="panel-status-dot" role="button"></span>
+                            </div>
+                        </div>
+                        <div class="emotion-status">
+                            <span id="current-emotion" class="emotion-未检测">未检测</span>
+                        </div>
+                        <div class="emotion-bar-container">
+                            <div id="emotion-bar" class="emotion-bar"></div>
+                        </div>
+                        <!-- 生物传感器数据区域将由JS动态添加 -->
                     </div>
-                    <div class="emotion-status">
-                        <span id="current-emotion">未检测</span>
-                    </div>
-                    <div class="emotion-bar-container">
-                        <div id="emotion-bar" class="emotion-bar"></div>
-                    </div>
-                    <!-- 生物传感器数据区域将由JS动态添加 -->
                 </div>
             </div>
         </div>
+        
+        <!-- 3D情感模型容器 -->
+        <div id="emotion-model-container"></div>
     </div>
-    
-    <!-- 3D情感模型容器 -->
-    <div id="emotion-model-container"></div>
     
     <!-- 调试信息区域 -->
     <div id="debug-info"></div>
@@ -114,7 +153,7 @@
         window.THREE = require('three');
         console.log('THREE.js版本:', THREE.REVISION);
         
-        // 加载Arduino生物传感器模块和情感3D模型
+        // 加载生物传感器模块
         window.addEventListener('DOMContentLoaded', () => {
             try {
                 // 加载生物传感器模块
@@ -125,7 +164,9 @@
                 // 加载3D情感模型
                 const emotionModel = require('./three/emotion-model');
                 
-                // 初始化生物传感器UI
+                console.log('开始初始化情感分析系统...');
+                
+                // 初始化生物传感器UI和3D模型 - 增加延迟以确保DOM完全加载
                 setTimeout(() => {
                     // 检查THREE对象是否可用
                     if (typeof window.THREE === 'undefined') {
@@ -133,13 +174,21 @@
                         window.THREE = require('three');
                     }
                     
+                    console.log('检查DOM元素: #emotion-panel =', document.querySelector('#emotion-panel'));
+                    console.log('检查DOM元素: #emotion-model-container =', document.querySelector('#emotion-model-container'));
+                    
+                    // 先初始化情感融合模块
+                    emotionFusion.init();
+                        
                     // 初始化生物传感器UI
                     biometricUI.init('#emotion-panel').catch(err => {
                         console.error('初始化生物传感器UI失败:', err);
+                        // 如果初始化失败，尝试直接添加到body
+                        console.log('尝试将生物传感器UI添加到容器...');
+                        biometricUI.init('#emotion-analysis-container').catch(err2 => {
+                            console.error('添加到容器也失败:', err2);
+                        });
                     });
-                    
-                    // 初始化情感融合模块
-                    emotionFusion.init();
                     
                     // 初始化3D情感模型
                     const modelInitResult = emotionModel.init('#emotion-model-container');
@@ -149,7 +198,7 @@
                     emotionFusion.addUpdateListener((fusedData) => {
                         // 测试直接调用模型更新，避免事件监听可能存在的问题
                         if (emotionModel.handleEmotionUpdate) {
-                            console.log('直接调用模型更新:', fusedData);
+                            console.log('情感数据更新:', fusedData);
                             // 创建一个包含detail的对象，模拟自定义事件格式
                             emotionModel.handleEmotionUpdate({
                                 detail: {
@@ -160,7 +209,6 @@
                                 }
                             });
                         }
-                        console.log('融合情感数据更新:', fusedData);
                     });
                     
                     // 发送测试数据
@@ -179,7 +227,7 @@
                     }, 2000);
                     
                     console.log('所有情感相关模块初始化完成');
-                }, 1000); // 延迟初始化，确保emotion-panel已加载
+                }, 2500); // 增加延迟时间，确保DOM完全加载
                 
                 console.log('模块加载成功');
             } catch (err) {

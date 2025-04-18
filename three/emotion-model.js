@@ -59,11 +59,11 @@ try {
         this.target = new THREE.Vector3();
         this.enableDamping = false;
         this.dampingFactor = 0.05;
-        this.enableZoom = true;
+        this.enableZoom = false; // 禁用缩放
         this.zoomSpeed = 1.0;
         this.enableRotate = true;
         this.rotateSpeed = 1.0;
-        this.enablePan = true;
+        this.enablePan = false; // 禁用平移
         this.panSpeed = 1.0;
         this.minDistance = 0;
         this.maxDistance = Infinity;
@@ -126,7 +126,7 @@ try {
         }
     };
     
-    console.log('使用自定义OrbitControls实现');
+    console.log('使用自定义OrbitControls实现 (仅旋转)');
 } catch (err) {
     console.error('无法实现OrbitControls:', err);
     // 创建占位OrbitControls
@@ -220,36 +220,90 @@ class EmotionModel {
                 console.log('已创建新的情感模型容器');
             }
             
-            // 设置容器样式 - 调整为更大的尺寸
-            this.container.style.position = 'absolute';
-            this.container.style.bottom = '20px';
-            this.container.style.right = '20px';
-            this.container.style.width = '500px';
-            this.container.style.height = '500px';
-            this.container.style.zIndex = '1000';
-            this.container.style.overflow = 'hidden';
+            // 重构容器布局为左侧指标面板+右侧渲染面板
+            this.container.innerHTML = ''; // 清空容器
             
-            // 创建场景
-            this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(0x000000); // 黑色背景
+            // 创建标题
+            const titleElement = document.createElement('div');
+            titleElement.className = 'emotion-model-title';
+            titleElement.textContent = '情感3D模型'; 
             
-            // 创建透视相机
-            const aspect = this.container.clientWidth / this.container.clientHeight;
-            this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 2000);
+            // 创建左侧指标面板
+            const metricsPanel = document.createElement('div');
+            metricsPanel.className = 'emotion-metrics-panel';
+            metricsPanel.appendChild(titleElement);
             
-            // 设置相机位置 - 放大三倍
-            this.camera.position.set(600, 300, 600);
-            this.camera.lookAt(75, 120, 0);
+            // 创建指标项
+            const metrics = [
+                { id: 'valence', label: '效价', value: '0', unit: '', class: 'emotion-valence' },
+                { id: 'arousal', label: '唤醒度', value: '0', unit: '', class: 'emotion-arousal' },
+                { id: 'type', label: '情感类型', value: '未检测', unit: '', class: 'emotion-type' },
+                { id: 'confidence', label: '置信度', value: '0%', unit: '', class: 'emotion-confidence' }
+            ];
+            
+            // 缓存DOM引用
+            this.metricElements = {};
+            
+            metrics.forEach(metric => {
+                const metricElement = document.createElement('div');
+                metricElement.className = `emotion-metric ${metric.class}`;
+                
+                const metricInfo = document.createElement('div');
+                metricInfo.className = 'metric-info';
+                
+                const labelElement = document.createElement('span');
+                labelElement.className = 'metric-label';
+                labelElement.textContent = metric.label;
+                
+                const valueElement = document.createElement('span');
+                valueElement.id = `emotion-${metric.id}`;
+                valueElement.className = 'metric-value';
+                valueElement.textContent = metric.value;
+                
+                const unitElement = document.createElement('span');
+                unitElement.className = 'metric-unit';
+                unitElement.textContent = metric.unit;
+                
+                metricInfo.appendChild(labelElement);
+                metricInfo.appendChild(valueElement);
+                metricInfo.appendChild(unitElement);
+                
+                metricElement.appendChild(metricInfo);
+                metricsPanel.appendChild(metricElement);
+                
+                // 缓存DOM引用
+                this.metricElements[metric.id] = valueElement;
+            });
+            
+            // 创建右侧渲染面板
+            const renderPanel = document.createElement('div');
+            renderPanel.className = 'emotion-render-panel';
+            
+            // 将两个面板添加到容器
+            this.container.appendChild(metricsPanel);
+            this.container.appendChild(renderPanel);
             
             // 创建渲染器
             this.renderer = new THREE.WebGLRenderer({ 
                 antialias: true,
                 alpha: true
             });
-            this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+            this.renderer.setSize(renderPanel.clientWidth, renderPanel.clientHeight);
             this.renderer.setPixelRatio(window.devicePixelRatio);
-            this.renderer.setClearColor(0x000000, 1);
-            this.container.appendChild(this.renderer.domElement);
+            this.renderer.setClearColor(0x111111, 1);
+            renderPanel.appendChild(this.renderer.domElement);
+            
+            // 创建场景
+            this.scene = new THREE.Scene();
+            this.scene.background = new THREE.Color(0x111111); // 深灰背景
+            
+            // 创建透视相机
+            const aspect = renderPanel.clientWidth / renderPanel.clientHeight;
+            this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 2000);
+            
+            // 设置相机位置 - 放大三倍
+            this.camera.position.set(600, 300, 600);
+            this.camera.lookAt(75, 120, 0);
             
             // 添加OrbitControls（如果可用）
             if (typeof OrbitControls === 'function') {
@@ -267,9 +321,13 @@ class EmotionModel {
                 this.controls.minPolarAngle = Math.PI / 6; // 约30度
                 this.controls.maxPolarAngle = Math.PI / 2.5; // 约72度
                 
+                // 禁用缩放和平移，只允许旋转
+                this.controls.enableZoom = false;
+                this.controls.enablePan = false;
+                
                 this.controls.update();
                 
-                console.log('已启用OrbitControls');
+                console.log('已启用OrbitControls (仅旋转)');
             }
             
             // 添加灯光以改善可视化效果
@@ -472,37 +530,6 @@ class EmotionModel {
         const zRangePos = new THREE.Vector3(0, 0, this.axisLength + 45, 30);
         const zRange = createTextSprite('0~100', zRangePos, 0x0000ff);
         this.axisHelpers.push(zRange);
-        
-        // 仍然保留当前情感类型标签为HTML，便于更新
-        const emotionTypeLabel = document.createElement('div');
-        emotionTypeLabel.className = 'emotion-type-label';
-        emotionTypeLabel.textContent = '未检测';
-        emotionTypeLabel.style.position = 'absolute';
-        emotionTypeLabel.style.left = '50%';
-        emotionTypeLabel.style.top = '5%';
-        emotionTypeLabel.style.transform = 'translateX(-50%)';
-        emotionTypeLabel.style.background = 'rgba(0, 0, 0, 0.7)';
-        emotionTypeLabel.style.padding = '8px 15px'; // 增大内边距
-        emotionTypeLabel.style.borderRadius = '6px'; // 增大圆角
-        emotionTypeLabel.style.color = '#ffffff';
-        emotionTypeLabel.style.fontSize = '24px'; // 增大字体
-        emotionTypeLabel.style.fontWeight = 'bold'; // 加粗字体
-        this.container.appendChild(emotionTypeLabel);
-        this.labels.emotionType = emotionTypeLabel;
-        
-        // 添加坐标系的名称标签
-        const coordSystemLabel = document.createElement('div');
-        coordSystemLabel.className = 'axis-label coord-system-label';
-        coordSystemLabel.textContent = '情感三维坐标系';
-        coordSystemLabel.style.position = 'absolute';
-        coordSystemLabel.style.left = '15px';
-        coordSystemLabel.style.top = '15px';
-        coordSystemLabel.style.fontSize = '24px'; // 增大字体
-        coordSystemLabel.style.fontWeight = 'bold';
-        coordSystemLabel.style.color = '#ffffff';
-        coordSystemLabel.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)'; // 添加文字阴影增强可读性
-        this.container.appendChild(coordSystemLabel);
-        this.labels.coordSystemLabel = coordSystemLabel;
     }
     
     // 创建粒子系统
@@ -598,55 +625,59 @@ class EmotionModel {
     
     // 处理情感数据更新
     handleEmotionUpdate(event) {
-        if (!event || !event.detail) return;
-        
-        const data = event.detail;
-        
-        // 检查数据字段并记录接收到的原始数据
-        console.log('接收到情感数据:', data);
-        
-        // 数据适配 - 确保与新的坐标轴定义匹配
-        // 检查必要的字段是否存在
-        if (data.valence === undefined || data.arousal === undefined || 
-            (data.dominant_emotion === undefined && data.emotion === undefined)) {
-            console.warn('情感数据格式不完整:', data);
-            return;
-        }
-        
-        // 提取情感类型 - 兼容不同的字段名
-        const emotionType = data.dominant_emotion || data.emotion || '未检测';
-        
-        // 使用新的坐标轴定义存储数据
-        this.lastEmotionData = {
-            Y: data.valence,              // Y轴 - 效价 (-100 to +100)
-            Z: data.arousal,              // Z轴 - 唤醒度 (0 to 100)
-            X: emotionType,               // X轴 - 情感类型
-            confidence: data.confidence || 0.5
-        };
-        
-        console.log('处理后的情感数据映射:', this.lastEmotionData);
-        
-        // 更新情感类型标签
-        if (this.labels.emotionType) {
-            this.labels.emotionType.textContent = `${this.lastEmotionData.X} (${Math.round(this.lastEmotionData.confidence * 100)}%)`;
+        try {
+            if (!event || !event.detail) return;
             
-            // 根据情感类型设置标签颜色
-            const color = this.emotionColors[this.lastEmotionData.X] || this.emotionColors['未检测'];
-            const r = ((color >> 16) & 255);
-            const g = ((color >> 8) & 255);
-            const b = (color & 255);
-            this.labels.emotionType.style.color = `rgb(${r}, ${g}, ${b})`;
+            // 提取情感数据
+            const data = event.detail;
+            console.log('接收到情感数据更新:', data);
+            
+            // 保存最新的情感数据
+            this.lastEmotionData = {
+                Y: data.valence || 0,        // 效价  (原X轴，现为Y轴)
+                Z: data.arousal || 0,        // 唤醒度 (原Y轴，现为Z轴)
+                X: data.dominant_emotion || '未检测', // 情感类型 (原Z轴，现为X轴)
+                confidence: data.confidence || 0  // 置信度
+            };
+            
+            // 更新UI指标显示
+            this.updateMetricDisplay();
+            
+            // 更新粒子系统
+            this.updateParticleSystem();
+        } catch (err) {
+            console.error('处理情感数据更新出错:', err);
         }
-        
-        // 计算当前应显示的粒子数量（基于置信度）
-        const confidenceScale = Math.min(Math.max(this.lastEmotionData.confidence, 0.3), 1.0);
-        this.currentParticleCount = Math.round(this.baseParticleCount * confidenceScale);
-        
-        // 限制粒子数量在最大范围内
-        this.currentParticleCount = Math.min(this.currentParticleCount, this.maxParticleCount);
-        
-        // 更新粒子系统
-        this.updateParticleSystem();
+    }
+    
+    // 更新指标显示数据
+    updateMetricDisplay() {
+        try {
+            // 更新效价
+            if (this.metricElements.valence) {
+                const valence = Math.round(this.lastEmotionData.Y);
+                this.metricElements.valence.textContent = valence;
+            }
+            
+            // 更新唤醒度
+            if (this.metricElements.arousal) {
+                const arousal = Math.round(this.lastEmotionData.Z);
+                this.metricElements.arousal.textContent = arousal;
+            }
+            
+            // 更新情感类型
+            if (this.metricElements.type) {
+                this.metricElements.type.textContent = this.lastEmotionData.X;
+            }
+            
+            // 更新置信度
+            if (this.metricElements.confidence) {
+                const confidencePercent = Math.round(this.lastEmotionData.confidence * 100);
+                this.metricElements.confidence.textContent = `${confidencePercent}%`;
+            }
+        } catch (err) {
+            console.error('更新指标显示数据时出错:', err);
+        }
     }
     
     // 更新粒子系统以反映当前情感状态
@@ -811,16 +842,24 @@ class EmotionModel {
         }
     }
     
-    // 窗口大小调整响应
+    // 处理窗口大小变化
     onWindowResize() {
-        if (!this.camera || !this.renderer || !this.container) return;
-        
-        const width = this.container.clientWidth;
-        const height = this.container.clientHeight;
-        
-        this.camera.aspect = width / height;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(width, height);
+        try {
+            if (!this.renderer || !this.camera) return;
+            
+            const renderPanel = this.container.querySelector('.emotion-render-panel');
+            if (!renderPanel) return;
+            
+            const width = renderPanel.clientWidth;
+            const height = renderPanel.clientHeight;
+            
+            this.camera.aspect = width / height;
+            this.camera.updateProjectionMatrix();
+            
+            this.renderer.setSize(width, height);
+        } catch (err) {
+            console.error('窗口大小变化处理出错:', err);
+        }
     }
     
     // 停止动画并清理资源

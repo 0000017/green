@@ -8,6 +8,7 @@ let canvasElement;
 let currentEmotionText;
 let emotionBar;
 let statusDot; // 状态指示点
+let panelStatusDot; // 面板状态指示点
 let floatingWindow; // 悬浮窗口元素
 let isFloatingWindowVisible = true; // 悬浮窗口是否可见
 let isInitializing = false; // 是否正在初始化
@@ -32,6 +33,7 @@ async function init() {
         floatingVideoElement = document.getElementById('floating-video');
         canvasElement = document.getElementById('outputCanvas');
         statusDot = document.getElementById('recognition-status-dot');
+        panelStatusDot = document.getElementById('panel-status-dot');
         currentEmotionText = document.getElementById('current-emotion');
         emotionBar = document.getElementById('emotion-bar');
         
@@ -80,6 +82,9 @@ async function init() {
         
         // 设置状态点点击事件
         statusDot.addEventListener('click', toggleEmotionRecognition);
+        if (panelStatusDot) {
+            panelStatusDot.addEventListener('click', toggleEmotionRecognition);
+        }
         
         // 监听表情识别事件
         document.addEventListener('emotionDetected', onEmotionDetected);
@@ -102,12 +107,39 @@ async function init() {
 
 // 更新状态指示点颜色和状态
 function updateStatusDot(color) {
+    // 更新主状态点
     if (statusDot) {
         statusDot.style.backgroundColor = color;
         if (color === 'yellow') {
             statusDot.style.cursor = 'not-allowed';
         } else {
             statusDot.style.cursor = 'pointer';
+        }
+    }
+    
+    // 更新面板状态点
+    if (panelStatusDot) {
+        panelStatusDot.style.backgroundColor = color;
+        if (color === 'yellow') {
+            panelStatusDot.style.cursor = 'not-allowed';
+        } else {
+            panelStatusDot.style.cursor = 'pointer';
+        }
+        
+        // 更新面板header样式 - 类似生物传感器UI
+        const panelHeader = panelStatusDot.closest('.panel-header');
+        if (panelHeader) {
+            // 移除所有状态类
+            panelHeader.classList.remove('connected', 'error', 'connecting');
+            
+            // 根据颜色添加对应状态类
+            if (color === 'green') {
+                panelHeader.classList.add('connected');
+            } else if (color === 'red') {
+                panelHeader.classList.add('error');
+            } else if (color === 'yellow') {
+                panelHeader.classList.add('connecting');
+            }
         }
     }
 }
@@ -117,20 +149,26 @@ function showFloatingWindow() {
     floatingWindow.style.display = 'block';
     isFloatingWindowVisible = true;
     
-    // 设置悬浮窗口位置（固定在右上角）
-    floatingWindow.style.right = '20px';
-    floatingWindow.style.top = '20px';
+    // 设置视频和画布尺寸
+    const floatingWidth = floatingWindow.clientWidth || 480;
+    const floatingHeight = floatingWindow.clientHeight || 360;
     
-    // 设置视频和画布尺寸（放大两倍）
-    const floatingWidth = 640; // 原来的320 * 2
-    const floatingHeight = 480; // 原来的240 * 2
-    floatingVideoElement.width = floatingWidth - 40;
-    floatingVideoElement.height = floatingHeight - 100;
-    canvasElement.width = floatingVideoElement.width;
-    canvasElement.height = floatingVideoElement.height;
+    // 调整视频和画布大小，确保比例合适
+    const videoContainerWidth = floatingWidth;
+    const videoContainerHeight = floatingHeight - 40; // 减去header高度
+    
+    if (floatingVideoElement) {
+        floatingVideoElement.width = videoContainerWidth - 20; // 减去内边距
+        floatingVideoElement.height = videoContainerHeight - 60; // 留出空间给emotion-panel
+    }
+    
+    if (canvasElement) {
+        canvasElement.width = floatingVideoElement.width;
+        canvasElement.height = floatingVideoElement.height;
+    }
     
     // 确保摄像头流传递到悬浮窗口视频元素
-    if (floatingVideoElement.srcObject === null && videoElement.srcObject) {
+    if (floatingVideoElement.srcObject === null && videoElement && videoElement.srcObject) {
         floatingVideoElement.srcObject = videoElement.srcObject;
     }
 }
@@ -213,6 +251,11 @@ function onEmotionDetected(event) {
     // 更新UI
     if (currentEmotionText) {
         currentEmotionText.textContent = emotion;
+        
+        // 移除所有情感类型的颜色类
+        currentEmotionText.className = '';
+        // 添加对应情感类型的颜色类
+        currentEmotionText.classList.add(`emotion-${emotion}`);
     }
     
     if (emotionBar) {
@@ -220,17 +263,17 @@ function onEmotionDetected(event) {
         
         // 根据表情设置不同的颜色
         const colors = {
-            '开心': '#4CAF50', // 绿色
-            '悲伤': '#2196F3', // 蓝色
-            '愤怒': '#F44336', // 红色
-            '惊讶': '#FF9800', // 橙色
-            '恐惧': '#9C27B0', // 紫色
-            '厌恶': '#795548', // 棕色
-            '中性': '#607D8B', // 灰蓝色
-            '未检测': '#9E9E9E' // 灰色
+            '开心': '#4fd1c5', // 青色
+            '悲伤': '#63b3ed', // 蓝色
+            '愤怒': '#f6ad55', // 橙色
+            '惊讶': '#9f7aea', // 紫色
+            '恐惧': '#fc8181', // 红色
+            '厌恶': '#68d391', // 绿色
+            '中性': '#cbd5e0', // 灰色
+            '未检测': '#a0aec0' // 暗灰色
         };
         
-        const color = colors[emotion] || '#9E9E9E';
+        const color = colors[emotion] || '#a0aec0';
         emotionBar.style.backgroundColor = color;
     }
     
@@ -276,12 +319,13 @@ function addStyles() {
         position: absolute;
         bottom: 10px;
         left: 10px;
-        width: 200px;
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 8px;
+        width: calc(100% - 20px);
+        background-color: rgba(26, 26, 26, 0.9);
+        border-radius: 4px;
         padding: 10px;
         font-family: Arial, sans-serif;
         z-index: 100;
+        color: #e0e0e0;
     }
     
     .panel-header {
@@ -289,24 +333,53 @@ function addStyles() {
         justify-content: space-between;
         align-items: center;
         margin-bottom: 10px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background-color: #333;
+        transition: all 0.3s ease;
     }
     
     .panel-header h3 {
         margin: 0;
-        font-size: 16px;
-        color: #4CAF50;
+        font-size: 12px;
+        color: #ccc;
+    }
+    
+    /* 状态样式 - 与生物传感器UI一致 */
+    .panel-header.connected {
+        background-color: #2b593f;
+    }
+    
+    .panel-header.connected h3 {
+        color: #a3ffd7;
+    }
+    
+    .panel-header.error {
+        background-color: #592b2b;
+    }
+    
+    .panel-header.error h3 {
+        color: #ffa3a3;
+    }
+    
+    .panel-header.connecting {
+        background-color: #594b2b;
+    }
+    
+    .panel-header.connecting h3 {
+        color: #ffe3a3;
     }
     
     .emotion-status {
         margin-bottom: 8px;
-        font-size: 14px;
-        color: #4CAF50;
+        font-size: 16px;
+        font-weight: bold;
     }
     
     .emotion-bar-container {
         width: 100%;
         height: 6px;
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(26, 26, 26, 0.7);
         border-radius: 3px;
         overflow: hidden;
     }
@@ -314,7 +387,6 @@ function addStyles() {
     .emotion-bar {
         height: 100%;
         width: 0%;
-        background: #4CAF50;
         transition: width 0.3s ease, background-color 0.3s ease;
     }
     
@@ -340,62 +412,60 @@ function addStyles() {
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     }
     
-    /* 悬浮窗口样式 */
+    /* 悬浮窗口样式 - 适应容器布局 */
     .emotion-floating-window {
-        position: fixed;
-        width: 480px; /* 原来的320 * 2 */
-        height: 360px; /* 原来的240 * 2 */
-        top: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.8);
+        width: 100%;
+        height: 360px;
+        background-color: #1a1a1a;
         border-radius: 8px;
-        color: white;
+        color: #e0e0e0;
         font-family: Arial, sans-serif;
-        z-index: 9999;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
         overflow: hidden;
         box-sizing: border-box;
+        border: 2px solid #333;
     }
     
     .floating-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 12px;
-        background: rgba(0, 0, 0, 0.5);
+        padding: 4px 8px;
+        background-color: #333;
+        margin-bottom: 8px;
     }
     
     .floating-header h3 {
         margin: 0;
-        font-size: 14px;
-        color: white;
+        font-size: 12px;
+        color: #ccc;
     }
     
     .floating-header button {
         background: transparent;
         border: none;
-        color: white;
+        color: #e0e0e0;
         cursor: pointer;
         font-size: 14px;
         padding: 0 5px;
     }
     
     .floating-header button:hover {
-        color: #4CAF50;
+        color: #4fd1c5;
     }
     
     .floating-header button.active {
-        color: #4CAF50;
+        color: #4fd1c5;
     }
     
     .floating-header button:disabled {
-        color: #9E9E9E;
+        color: #555;
         cursor: not-allowed;
     }
     
     .floating-content {
-        padding: 10px;
-        height: calc(100% - 40px);
+        padding: 0;
+        height: calc(100% - 36px);
         display: flex;
         flex-direction: column;
     }
@@ -404,7 +474,23 @@ function addStyles() {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        border-radius: 4px;
+    }
+    
+    /* 情感类型颜色映射 */
+    .emotion-开心 { color: #4fd1c5; }
+    .emotion-悲伤 { color: #63b3ed; }
+    .emotion-愤怒 { color: #f6ad55; }
+    .emotion-惊讶 { color: #9f7aea; }
+    .emotion-恐惧 { color: #fc8181; }
+    .emotion-厌恶 { color: #68d391; }
+    .emotion-中性 { color: #cbd5e0; }
+    .emotion-未检测 { color: #a0aec0; }
+    
+    /* 情感分析系统容器 */
+    .emotion-analysis-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
     `;
     document.head.appendChild(style);

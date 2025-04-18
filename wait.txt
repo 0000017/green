@@ -1,0 +1,4 @@
+1.将id="recognition-status-dot的绿点功能删除
+2.<div class="emotion-panel" id="emotion-panel">的右边超过了与<div class="emotion-panel" id="emotion-panel">的范围
+3.统一一下七种情感类型对应的颜色包括UI和三维模型
+4.三个ui（生物，表情识别，3d）的上下间距不一致
