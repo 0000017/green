@@ -1,7 +1,8 @@
 // 全局变量
 let emotionRecognition;
 let isRecognitionActive = false;
-let videoElement;
+// 避免重复声明，先检查变量是否已存在
+// let videoElement;
 let floatingVideoElement;
 let canvasElement;
 let currentEmotionText;
@@ -15,7 +16,10 @@ let isInitializing = false; // 是否正在初始化
 async function init() {
     console.log('初始化表情识别UI...');
     // 主视频元素（用于WebRTC）
-    videoElement = document.getElementById('videoStream');
+    // 如果全局变量已存在，使用它；否则重新获取元素
+    if (typeof videoElement === 'undefined') {
+        videoElement = document.getElementById('videoStream');
+    }
     
     // 获取摄像头权限
     try {

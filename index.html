@@ -24,10 +24,23 @@
             }
         });
     }
-    </script>
     
-    <!-- 加载face-api.js -->
-    <script src="./opencv/emotion_model/face-api.js/dist/face-api.min.js"></script>
+    // 定义一个全局错误处理函数，处理平台设置冲突
+    window.handlePlatformConflict = function(e) {
+        if (e && e.message && e.message.includes('Platform browser has already been set')) {
+            console.warn('忽略平台设置冲突:', e.message);
+            return true; // 已处理
+        }
+        return false; // 未处理
+    };
+    
+    // 捕获全局错误
+    window.addEventListener('error', function(e) {
+        if (window.handlePlatformConflict(e.error)) {
+            e.preventDefault();
+        }
+    });
+    </script>
 </head>
 <body>
     <!-- 视频流 -->
@@ -71,13 +84,36 @@
     <div id="debug-info"></div>
     
     <!-- 功能模块脚本 -->
-    <script src="./opencv/emotion-recognition.js"></script>
-    <script src="./opencv/emotion-ui.js"></script>
+    <!-- 先加载主要WebRTC脚本，确保videoElement变量先被声明 -->
     <script src="./webrtc_config/ui.js"></script>
     <script src="./webrtc_config/renderer.js"></script>
     
+    <!-- 加载face-api.js -->
+    <script>
+        try {
+            // 使用异步加载方式
+            const script = document.createElement('script');
+            script.src = "./opencv/emotion_model/face-api.js/dist/face-api.min.js";
+            script.onerror = function(e) {
+                console.error('加载face-api.js失败:', e);
+            };
+            document.body.appendChild(script);
+        } catch (e) {
+            console.error('创建face-api.js脚本标签失败:', e);
+        }
+    </script>
+    
+    <!-- 最后加载情感识别脚本，避免变量冲突 -->
+    <script src="./opencv/emotion-recognition.js"></script>
+    <script src="./opencv/emotion-ui.js"></script>
+    
     <!-- 生物传感器模块 -->
     <script>
+        // 全局定义THREE变量，确保模块能访问
+        // 直接从node_modules中引入Three.js
+        window.THREE = require('three');
+        console.log('THREE.js版本:', THREE.REVISION);
+        
         // 加载Arduino生物传感器模块和情感3D模型
         window.addEventListener('DOMContentLoaded', () => {
             try {
@@ -91,6 +127,12 @@
                 
                 // 初始化生物传感器UI
                 setTimeout(() => {
+                    // 检查THREE对象是否可用
+                    if (typeof window.THREE === 'undefined') {
+                        console.error('THREE.js未正确加载');
+                        window.THREE = require('three');
+                    }
+                    
                     // 初始化生物传感器UI
                     biometricUI.init('#emotion-panel').catch(err => {
                         console.error('初始化生物传感器UI失败:', err);
@@ -100,13 +142,33 @@
                     emotionFusion.init();
                     
                     // 初始化3D情感模型
-                    emotionModel.init('#emotion-model-container');
+                    const modelInitResult = emotionModel.init('#emotion-model-container');
+                    console.log('情感模型初始化结果:', modelInitResult);
                     
                     // 添加情感融合数据监听
                     emotionFusion.addUpdateListener((fusedData) => {
-                        // 可以在这里处理融合后的情感数据，但已经通过事件通知3D模型了
+                        // 测试直接调用模型更新，避免事件监听可能存在的问题
+                        if (emotionModel.updateEmotionModel) {
+                            console.log('直接调用模型更新:', fusedData);
+                            emotionModel.updateEmotionModel(fusedData);
+                        }
                         console.log('融合情感数据更新:', fusedData);
                     });
+                    
+                    // 发送测试数据
+                    setTimeout(() => {
+                        console.log('发送测试情感数据');
+                        // 创建测试事件
+                        const testEvent = new CustomEvent('emotionFusionUpdate', {
+                            detail: {
+                                X: 50,
+                                Y: 70, 
+                                Z: '开心',
+                                confidence: 0.9
+                            }
+                        });
+                        document.dispatchEvent(testEvent);
+                    }, 2000);
                     
                     console.log('所有情感相关模块初始化完成');
                 }, 1000); // 延迟初始化，确保emotion-panel已加载
@@ -114,6 +176,7 @@
                 console.log('模块加载成功');
             } catch (err) {
                 console.error('加载模块失败:', err);
+                console.error(err.stack || err);
             }
         });
     </script>
