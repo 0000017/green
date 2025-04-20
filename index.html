@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- 3D情感模型样式 -->
     <link rel="stylesheet" href="./three/emotion-model.css">
+    <!-- P5绘画工具样式 -->
+    <link rel="stylesheet" href="./P5/styles.css">
     
     <style>
         /* 情感分析系统容器样式 */
@@ -38,6 +40,24 @@
             top: auto;
             right: auto;
             margin: 0;
+        }
+        
+        /* 绘画工具控制按钮 */
+        #p5-toggle-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            cursor: pointer;
+            z-index: 9500;
+        }
+        
+        #p5-toggle-btn:hover {
+            background-color: #45a049;
         }
     </style>
     
@@ -121,6 +141,9 @@
     
     <!-- 调试信息区域 -->
     <div id="debug-info"></div>
+    
+    <!-- P5绘画工具切换按钮 -->
+    <button id="p5-toggle-btn">绘画工具</button>
     
     <!-- 功能模块脚本 -->
     <!-- 先加载主要WebRTC脚本，确保videoElement变量先被声明 -->
@@ -227,6 +250,10 @@
                     }, 2000);
                     
                     console.log('所有情感相关模块初始化完成');
+                    
+                    // 将情感融合模块暴露到全局，方便P5模块调用
+                    window.emotionFusion = emotionFusion;
+                    
                 }, 2500); // 增加延迟时间，确保DOM完全加载
                 
                 console.log('模块加载成功');
@@ -234,6 +261,59 @@
                 console.error('加载模块失败:', err);
                 console.error(err.stack || err);
             }
+        });
+    </script>
+    
+    <!-- 加载P5.js库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    
+    <!-- 加载P5绘画功能模块 -->
+    <script src="./P5/draw.js"></script>
+    <script src="./P5/brush.js"></script>
+    <script src="./P5/camera.js"></script>
+    <script src="./P5/emotion.js"></script>
+    <script src="./P5/td.js"></script>
+    <script src="./P5/sketch.js"></script>
+    
+    <!-- 初始化P5绘画工具 -->
+    <script>
+        // 等待DOM加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绘画工具状态
+            let isP5Active = false;
+            
+            // 获取切换按钮
+            const toggleBtn = document.getElementById('p5-toggle-btn');
+            
+            // 添加切换按钮点击事件
+            toggleBtn.addEventListener('click', function() {
+                if (!isP5Active) {
+                    // 激活P5绘画工具
+                    window.p5Drawing.init();
+                    toggleBtn.textContent = '关闭绘画';
+                    isP5Active = true;
+                } else {
+                    // 隐藏P5绘画工具UI
+                    const controlPanel = document.getElementById('p5-control-panel');
+                    const canvasContainer = document.getElementById('p5-canvas-container');
+                    
+                    if (controlPanel) {
+                        // 移除控制面板
+                        document.body.removeChild(controlPanel);
+                    }
+                    
+                    if (canvasContainer) {
+                        // 移除画布容器
+                        document.body.removeChild(canvasContainer);
+                    }
+                    
+                    toggleBtn.textContent = '绘画工具';
+                    isP5Active = false;
+                    
+                    // 重置p5初始化状态，以便下次可以重新初始化
+                    window.isInitialized = false;
+                }
+            });
         });
     </script>
 </body>
