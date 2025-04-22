@@ -1,0 +1,102 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Microsoft YaHei UI", sans-serif;
+}
+
+.welcome-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #141f14;
+    z-index: -1;
+}
+
+.content {
+    text-align: center;
+    color: #ffffff;
+    z-index: 1;
+    animation: fadeIn 1.5s ease-in-out;
+}
+
+.logo {
+    font-size: 252px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 20px;
+    animation: scaleIn 1.2s ease-out;
+}
+
+.subtitle {
+    font-size: 62px;
+    font-weight: 400;
+    margin-bottom: 80px;
+    animation: slideUp 1s ease-out 0.5s both;
+}
+
+.start-button {
+    background: transparent;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    font-size: 47px;
+    padding: 10px 40px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: fadeIn 1s ease-out 1s both;
+}
+
+.start-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+} 

@@ -1,0 +1,156 @@
+/* 页面导航系统样式 */
+
+/* 页面容器 */
+.page-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #1a1a1a;
+    z-index: 1000;
+}
+
+/* 应用页面 */
+.app-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    overflow-y: auto;
+    z-index: 0;
+}
+
+/* 激活的页面 */
+.app-page.active-page {
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+}
+
+/* 主应用页面特殊样式 - 不应用通用页面样式 */
+#main-app-page {
+    background-color: transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* 主应用页面内容特殊处理 */
+#main-app-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: inherit;
+}
+
+/* 主应用页面激活时的特殊处理 */
+#main-app-page.active-page {
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+    transition: none;
+}
+
+/* 当主应用页面激活时，确保其内容正常显示 */
+#main-app-page.active-page #main-app-content {
+    display: block !important;
+}
+
+/* 错误消息 */
+.error-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    background-color: rgba(255, 0, 0, 0.2);
+    color: #ff6666;
+    border: 1px solid #ff6666;
+    border-radius: 5px;
+    font-size: 16px;
+    text-align: center;
+}
+
+/* 页面过渡动画 - 排除主应用页面 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* 导航按钮 */
+.nav-button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #2A9D8F;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    margin: 10px;
+    text-align: center;
+}
+
+.nav-button:hover {
+    background-color: #38a89d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(42, 157, 143, 0.3);
+}
+
+.nav-button.back-button {
+    background-color: #555;
+}
+
+.nav-button.next-button {
+    background-color: #2A9D8F;
+}
+
+/* 导航栏 - 在主应用页面中隐藏 */
+.nav-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    z-index: 100;
+}
+
+#main-app-page .nav-bar {
+    display: none;
+}
+
+/* 加载指示器 */
+.loading-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(42, 157, 143, 0.3);
+    border-radius: 50%;
+    border-top-color: #2A9D8F;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+} 

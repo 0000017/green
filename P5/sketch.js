@@ -10,6 +10,9 @@ window.isInitialized = false; // 初始化标志，暴露到全局作用域
 function initP5Drawing() {
   if (window.isInitialized) return;
   
+  // 获取主应用内容容器，如果找不到则使用body
+  const appContainer = document.getElementById('main-app-content') || document.body;
+  
   // 添加控制按钮
   const controlPanel = document.createElement('div');
   controlPanel.id = 'p5-control-panel';
@@ -23,7 +26,7 @@ function initP5Drawing() {
     <button id="btn-clear">清除画布</button>
     <button id="btn-save">保存作品</button>
   `;
-  document.body.appendChild(controlPanel);
+  appContainer.appendChild(controlPanel);
   
   // 添加事件监听器
   document.getElementById('btn-draw').addEventListener('click', () => switchFunction('draw'));
@@ -37,7 +40,7 @@ function initP5Drawing() {
   // 创建P5画布容器
   const canvasContainer = document.createElement('div');
   canvasContainer.id = 'p5-canvas-container';
-  document.body.appendChild(canvasContainer);
+  appContainer.appendChild(canvasContainer);
   
   // 初始化默认绘画功能
   switchFunction('draw');

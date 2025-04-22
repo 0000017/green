@@ -8,56 +8,50 @@
     <link rel="stylesheet" href="./three/emotion-model.css">
     <!-- P5绘画工具样式 -->
     <link rel="stylesheet" href="./P5/styles.css">
-    
+    <!-- 页面导航系统样式 -->
+    <link rel="stylesheet" href="./ui/css/navigator.css">
+    <!-- 页面加载器样式 -->
     <style>
-        /* 情感分析系统容器样式 */
-        .emotion-analysis-container {
+        .loading-indicator {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 480px;
-            z-index: 9000;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(42, 157, 143, 0.3);
+            border-top: 5px solid #2A9D8F;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 9999;
         }
         
-        /* 调整悬浮窗口样式，使其自适应容器 */
-        .emotion-floating-window {
-            position: relative;
-            top: auto;
-            right: auto;
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .app-page {
+            display: none;
             width: 100%;
-            margin: 0;
+            height: 100%;
+            position: absolute;
+            transition: opacity 0.3s ease;
+            opacity: 0;
         }
         
-        /* 调整3D模型容器样式，使其自适应容器 */
-        #emotion-model-container {
-            position: relative;
-            width: 100%;
-            max-width: 100%;
-            height: 300px;
-            top: auto;
-            right: auto;
-            margin: 0;
+        .app-page.active-page {
+            display: block;
+            opacity: 1;
         }
         
-        /* 绘画工具控制按钮 */
-        #p5-toggle-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 10px 15px;
-            cursor: pointer;
-            z-index: 9500;
-        }
-        
-        #p5-toggle-btn:hover {
-            background-color: #45a049;
+        .error-message {
+            color: #f44336;
+            background-color: #ffebee;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px;
+            text-align: center;
         }
     </style>
     
@@ -95,55 +89,73 @@
         }
     });
     </script>
+    
+    <!-- 页面导航系统脚本 -->
+    <script src="./ui/js/navigator.js"></script>
 </head>
 <body>
-    <!-- 视频流 -->
-    <video id="videoStream" autoplay playsinline></video>
-    
-    <!--webrtc状态显示切换按钮 -->
-    <div id="status-toggle" class="status-toggle">i</div>
-    
-    <!-- 情感分析系统容器 -->
-    <div id="emotion-analysis-container" class="emotion-analysis-container">
-        <!-- 表情识别窗口 -->
-        <div id="emotion-floating-window" class="emotion-floating-window">
-            <div class="floating-header">
-                <div class="status-indicator">
-                    <span class="status-dot" id="recognition-status-dot" role="button"></span>
+    <!-- 页面导航系统 -->
+    <div id="page-container" class="page-container">
+        <!-- 默认显示欢迎页面 -->
+        <div id="welcome-page" class="app-page active-page"></div>
+        <div id="intro-page" class="app-page"></div>
+        <div id="device-setup-page" class="app-page"></div>
+        <div id="drawing-preset-page" class="app-page"></div>
+        <div id="emotion-preset-page" class="app-page"></div>
+        <div id="main-app-page" class="app-page"></div>
+        <div id="analysis-page" class="app-page"></div>
+    </div>
+
+    <!-- 主应用页面内容，初始隐藏 -->
+    <div id="main-app-content" style="display: none;">
+        <!-- 视频流 -->
+        <video id="videoStream" autoplay playsinline></video>
+        
+        <!--webrtc状态显示切换按钮 -->
+        <div id="status-toggle" class="status-toggle">i</div>
+        
+        <!-- 情感分析系统容器 -->
+        <div id="emotion-analysis-container" class="emotion-analysis-container">
+            <!-- 表情识别窗口 -->
+            <div id="emotion-floating-window" class="emotion-floating-window">
+                <div class="floating-header">
+                    <div class="status-indicator">
+                        <span class="status-dot" id="recognition-status-dot" role="button"></span>
+                    </div>
                 </div>
-            </div>
-            <div class="floating-content">
-                <div class="video-container">
-                    <video id="floating-video" autoplay playsinline></video>
-                    <canvas id="outputCanvas" class="overlay-canvas"></canvas>
-                    <div class="emotion-panel" id="emotion-panel">
-                        <div class="panel-header">
-                            <h3>面部情绪分析</h3>
-                            <div class="status-indicator">
-                                <span class="status-dot" id="panel-status-dot" role="button"></span>
+                <div class="floating-content">
+                    <div class="video-container">
+                        <video id="floating-video" autoplay playsinline></video>
+                        <canvas id="outputCanvas" class="overlay-canvas"></canvas>
+                        <div class="emotion-panel" id="emotion-panel">
+                            <div class="panel-header">
+                                <h3>面部情绪分析</h3>
+                                <div class="status-indicator">
+                                    <span class="status-dot" id="panel-status-dot" role="button"></span>
+                                </div>
                             </div>
+                            <div class="emotion-status">
+                                <span id="current-emotion" class="emotion-未检测">未检测</span>
+                            </div>
+                            <div class="emotion-bar-container">
+                                <div id="emotion-bar" class="emotion-bar"></div>
+                            </div>
+                            <!-- 生物传感器数据区域将由JS动态添加 -->
                         </div>
-                        <div class="emotion-status">
-                            <span id="current-emotion" class="emotion-未检测">未检测</span>
-                        </div>
-                        <div class="emotion-bar-container">
-                            <div id="emotion-bar" class="emotion-bar"></div>
-                        </div>
-                        <!-- 生物传感器数据区域将由JS动态添加 -->
                     </div>
                 </div>
             </div>
+            
+            <!-- 3D情感模型容器 -->
+            <div id="emotion-model-container"></div>
         </div>
         
-        <!-- 3D情感模型容器 -->
-        <div id="emotion-model-container"></div>
+        <!-- 调试信息区域 -->
+        <div id="debug-info"></div>
+        
+        <!-- P5绘画工具切换按钮 -->
+        <button id="p5-toggle-btn">绘画工具</button>
     </div>
-    
-    <!-- 调试信息区域 -->
-    <div id="debug-info"></div>
-    
-    <!-- P5绘画工具切换按钮 -->
-    <button id="p5-toggle-btn">绘画工具</button>
     
     <!-- 功能模块脚本 -->
     <!-- 先加载主要WebRTC脚本，确保videoElement变量先被声明 -->
@@ -284,11 +296,34 @@
             
             // 获取切换按钮
             const toggleBtn = document.getElementById('p5-toggle-btn');
+            if (!toggleBtn) {
+                console.error('找不到P5切换按钮');
+                return;
+            }
             
             // 添加切换按钮点击事件
             toggleBtn.addEventListener('click', function() {
                 if (!isP5Active) {
-                    // 激活P5绘画工具
+                    // 确保在主应用页面内激活P5绘画工具
+                    // 检查页面导航系统的当前状态
+                    const mainAppPage = document.getElementById('main-app-page');
+                    
+                    // 如果主应用页面不是当前激活的页面，先导航到主应用页面
+                    if (mainAppPage && !mainAppPage.classList.contains('active-page')) {
+                        if (window.navigateToPage) {
+                            window.navigateToPage('main-app-page');
+                            // 等待页面切换完成后再初始化P5
+                            setTimeout(() => {
+                                // 激活P5绘画工具
+                                window.p5Drawing.init();
+                                toggleBtn.textContent = '关闭绘画';
+                                isP5Active = true;
+                            }, 300);
+                            return;
+                        }
+                    }
+                    
+                    // 如果已经在主应用页面，直接初始化P5
                     window.p5Drawing.init();
                     toggleBtn.textContent = '关闭绘画';
                     isP5Active = true;
@@ -296,15 +331,22 @@
                     // 隐藏P5绘画工具UI
                     const controlPanel = document.getElementById('p5-control-panel');
                     const canvasContainer = document.getElementById('p5-canvas-container');
+                    const mainAppContent = document.getElementById('main-app-content');
                     
-                    if (controlPanel) {
+                    if (controlPanel && mainAppContent.contains(controlPanel)) {
                         // 移除控制面板
-                        document.body.removeChild(controlPanel);
+                        mainAppContent.removeChild(controlPanel);
+                    } else if (controlPanel) {
+                        // 兼容性处理，如果它被添加到了其他地方
+                        controlPanel.parentNode.removeChild(controlPanel);
                     }
                     
-                    if (canvasContainer) {
+                    if (canvasContainer && mainAppContent.contains(canvasContainer)) {
                         // 移除画布容器
-                        document.body.removeChild(canvasContainer);
+                        mainAppContent.removeChild(canvasContainer);
+                    } else if (canvasContainer) {
+                        // 兼容性处理，如果它被添加到了其他地方
+                        canvasContainer.parentNode.removeChild(canvasContainer);
                     }
                     
                     toggleBtn.textContent = '绘画工具';
@@ -314,6 +356,204 @@
                     window.isInitialized = false;
                 }
             });
+        });
+    </script>
+    
+    <!-- 页面导航系统脚本 -->
+    <script>
+        // 页面加载器
+        class PageLoader {
+            constructor() {
+                this.pages = {
+                    'welcome-page': './ui/pages/welcome.html',
+                    'intro-page': './ui/pages/intro.html',
+                    'device-setup-page': './ui/pages/device-setup.html',
+                    'drawing-preset-page': './ui/pages/drawing-preset.html',
+                    'emotion-preset-page': './ui/pages/emotion-preset.html',
+                    'main-app-page': '#main-app-content',
+                    'analysis-page': './ui/pages/analysis.html'
+                };
+                
+                this.currentPage = 'welcome-page';
+                this.pageHistory = [];
+                
+                // 初始化
+                this.init();
+            }
+            
+            init() {
+                // 将导航函数暴露给全局，以便iframe内部能够调用
+                window.navigateToPage = this.navigateToPage.bind(this);
+                window.goBack = this.goBack.bind(this);
+                
+                // 加载初始页面
+                this.loadPage('welcome-page');
+                
+                console.log('页面导航系统初始化完成');
+            }
+            
+            // 加载指定页面
+            async loadPage(pageId) {
+                console.log('加载页面:', pageId);
+                
+                // 添加加载指示器
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading-indicator';
+                document.body.appendChild(loadingIndicator);
+                
+                // 隐藏所有页面
+                document.querySelectorAll('.app-page').forEach(page => {
+                    page.classList.remove('active-page');
+                });
+                
+                // 获取目标页面容器
+                const pageContainer = document.getElementById(pageId);
+                
+                // 特殊处理主应用页面
+                if (pageId === 'main-app-page') {
+                    // 显示主应用内容
+                    const mainContent = document.getElementById('main-app-content');
+                    
+                    // 清除主应用内容上可能存在的所有导航系统的内联样式
+                    mainContent.setAttribute('style', '');
+                    
+                    // 显示主应用内容
+                    mainContent.style.display = 'block';
+                    
+                    // 激活页面容器但不修改其内容
+                    pageContainer.classList.add('active-page');
+                    
+                    // 如果pageContainer为空或者mainContent不在pageContainer中
+                    if (pageContainer.innerHTML === '' || !pageContainer.contains(mainContent)) {
+                        // 将主应用内容移动到页面容器中
+                        pageContainer.appendChild(mainContent);
+                    }
+                    
+                    // 移除页面容器上的过渡效果，确保立即显示
+                    pageContainer.style.transition = 'none';
+                    
+                    // 更新当前页面
+                    this.currentPage = pageId;
+                    
+                    // 移除加载指示器
+                    document.body.removeChild(loadingIndicator);
+                    
+                    // 触发页面加载完成事件，但不添加导航按钮
+                    const event = new CustomEvent('pageLoaded', {
+                        detail: {
+                            pageId: pageId,
+                            timestamp: new Date(),
+                            isMainApp: true  // 标记这是主应用页面
+                        }
+                    });
+                    window.dispatchEvent(event);
+                    
+                    return;
+                }
+                
+                // 如果页面不存在或需要重新加载
+                if (pageContainer.innerHTML === '' || pageId !== this.currentPage) {
+                    try {
+                        // 获取页面URL
+                        const pageUrl = this.pages[pageId];
+                        
+                        // 加载页面内容
+                        const response = await fetch(pageUrl);
+                        if (!response.ok) {
+                            throw new Error(`无法加载页面: ${pageUrl}`);
+                        }
+                        
+                        const html = await response.text();
+                        
+                        // 修正CSS和JS路径
+                        let fixedHtml = html
+                            // 处理 "../css/" 格式的路径
+                            .replace(/href="\.\.\/css\//g, 'href="./ui/css/')
+                            .replace(/src="\.\.\/js\//g, 'src="./ui/js/')
+                            // 处理 "css/" 格式的路径
+                            .replace(/href="css\//g, 'href="./ui/css/')
+                            .replace(/src="js\//g, 'src="./ui/js/')
+                            // 处理 "img/" 格式的路径
+                            .replace(/src="img\//g, 'src="./ui/img/');
+                        
+                        pageContainer.innerHTML = fixedHtml;
+                        
+                        // 初始化页面内部的脚本
+                        this.executeScripts(pageContainer);
+                    } catch (error) {
+                        console.error('加载页面失败:', error);
+                        pageContainer.innerHTML = `<div class="error-message">页面加载失败: ${error.message}</div>`;
+                    }
+                }
+                
+                // 显示当前页面
+                pageContainer.classList.add('active-page');
+                
+                // 更新当前页面
+                this.currentPage = pageId;
+                
+                // 移除加载指示器
+                document.body.removeChild(loadingIndicator);
+                
+                // 触发页面加载完成事件
+                this.triggerPageLoadedEvent(pageId);
+            }
+            
+            // 触发页面加载完成事件
+            triggerPageLoadedEvent(pageId) {
+                // 创建并触发自定义事件
+                const event = new CustomEvent('pageLoaded', {
+                    detail: {
+                        pageId: pageId,
+                        timestamp: new Date()
+                    }
+                });
+                window.dispatchEvent(event);
+            }
+            
+            // 执行页面内的脚本
+            executeScripts(container) {
+                // 查找所有脚本标签
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    
+                    // 复制属性
+                    Array.from(oldScript.attributes).forEach(attr => {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+                    
+                    // 复制内联脚本内容
+                    newScript.textContent = oldScript.textContent;
+                    
+                    // 替换原脚本
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+            }
+            
+            // 导航到指定页面
+            navigateToPage(pageId) {
+                console.log('导航到页面:', pageId);
+                
+                // 记录历史
+                this.pageHistory.push(this.currentPage);
+                
+                // 加载新页面
+                this.loadPage(pageId);
+            }
+            
+            // 返回上一页
+            goBack() {
+                if (this.pageHistory.length > 0) {
+                    const previousPage = this.pageHistory.pop();
+                    this.loadPage(previousPage);
+                }
+            }
+        }
+        
+        // 等待DOM加载完成后初始化页面加载器
+        document.addEventListener('DOMContentLoaded', function() {
+            window.pageLoader = new PageLoader();
         });
     </script>
 </body>

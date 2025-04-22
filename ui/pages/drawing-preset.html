@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green - 自适应预设（表达性艺术疗愈）</title>
+    <link rel="stylesheet" href="../css/drawing-preset.css">
+</head>
+<body>
+    <div class="preset-container">
+        <div class="bg-layer"></div>
+        
+        <header class="header">
+            <div class="logo">green</div>
+            <div class="header-title">自适应预设（表达性艺术疗愈）</div>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-indicator" style="width: 33%;"></div>
+                </div>
+                <div class="progress-text">步骤 1/3</div>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <!-- 心理状态评估 -->
+            <section id="mental-state" class="assessment-section active">
+                <h2 class="section-title">心理状态评估</h2>
+                <div class="assessment-card">
+                    <div class="question-group">
+                        <h3 class="question-title">在过去两周内，您感到抑郁、沮丧或绝望的频率是多少？</h3>
+                        <div class="options-group">
+                            <label class="option">
+                                <input type="radio" name="depression" value="0">
+                                <span class="option-text">从未</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="depression" value="1">
+                                <span class="option-text">几天</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="depression" value="2">
+                                <span class="option-text">一半时间</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="depression" value="3">
+                                <span class="option-text">几乎每天</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="question-group">
+                        <h3 class="question-title">用1-10分评价最近压力水平</h3>
+                        <div class="slider-container">
+                            <input type="range" min="1" max="10" value="5" class="slider" id="stress-level">
+                            <div class="slider-value" id="stress-value">5</div>
+                        </div>
+                    </div>
+                    
+                    <div class="question-group">
+                        <h3 class="question-title">选择最想尝试的艺术形式：</h3>
+                        <div class="options-group art-options">
+                            <label class="art-option">
+                                <input type="radio" name="art-form" value="drawing">
+                                <span class="art-icon">🎨</span>
+                                <span class="art-text">绘画</span>
+                            </label>
+                            <label class="art-option">
+                                <input type="radio" name="art-form" value="dance">
+                                <span class="art-icon">💃</span>
+                                <span class="art-text">即兴舞蹈</span>
+                            </label>
+                            <label class="art-option">
+                                <input type="radio" name="art-form" value="poetry">
+                                <span class="art-icon">📝</span>
+                                <span class="art-text">诗歌</span>
+                            </label>
+                            <label class="art-option">
+                                <input type="radio" name="art-form" value="music">
+                                <span class="art-icon">🎵</span>
+                                <span class="art-text">音乐</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 艺术偏好调查 -->
+            <section id="art-preference" class="assessment-section">
+                <h2 class="section-title">艺术偏好调查</h2>
+                <div class="assessment-card">
+                    <div class="question-group">
+                        <h3 class="question-title">请选择您对以下艺术形式的熟悉程度和兴趣程度：</h3>
+                        <table class="preference-table">
+                            <thead>
+                                <tr>
+                                    <th>艺术形式</th>
+                                    <th>熟悉程度</th>
+                                    <th>兴趣程度</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>抽象绘画</td>
+                                    <td>
+                                        <select name="familiarity-abstract">
+                                            <option value="1">完全不熟悉</option>
+                                            <option value="2">略微熟悉</option>
+                                            <option value="3" selected>一般熟悉</option>
+                                            <option value="4">比较熟悉</option>
+                                            <option value="5">非常熟悉</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="interest-abstract">
+                                            <option value="1">完全不感兴趣</option>
+                                            <option value="2">略有兴趣</option>
+                                            <option value="3" selected>一般兴趣</option>
+                                            <option value="4">比较感兴趣</option>
+                                            <option value="5">非常感兴趣</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>几何图形艺术</td>
+                                    <td>
+                                        <select name="familiarity-geometric">
+                                            <option value="1">完全不熟悉</option>
+                                            <option value="2">略微熟悉</option>
+                                            <option value="3" selected>一般熟悉</option>
+                                            <option value="4">比较熟悉</option>
+                                            <option value="5">非常熟悉</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="interest-geometric">
+                                            <option value="1">完全不感兴趣</option>
+                                            <option value="2">略有兴趣</option>
+                                            <option value="3" selected>一般兴趣</option>
+                                            <option value="4">比较感兴趣</option>
+                                            <option value="5">非常感兴趣</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>流体艺术</td>
+                                    <td>
+                                        <select name="familiarity-fluid">
+                                            <option value="1">完全不熟悉</option>
+                                            <option value="2">略微熟悉</option>
+                                            <option value="3" selected>一般熟悉</option>
+                                            <option value="4">比较熟悉</option>
+                                            <option value="5">非常熟悉</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="interest-fluid">
+                                            <option value="1">完全不感兴趣</option>
+                                            <option value="2">略有兴趣</option>
+                                            <option value="3" selected>一般兴趣</option>
+                                            <option value="4">比较感兴趣</option>
+                                            <option value="5">非常感兴趣</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="question-group">
+                        <h3 class="question-title">您喜欢的色彩倾向：</h3>
+                        <div class="color-preference-container">
+                            <label class="color-option">
+                                <input type="radio" name="color-preference" value="warm">
+                                <span class="color-sample warm"></span>
+                                <span class="color-text">暖色调</span>
+                            </label>
+                            <label class="color-option">
+                                <input type="radio" name="color-preference" value="cool">
+                                <span class="color-sample cool"></span>
+                                <span class="color-text">冷色调</span>
+                            </label>
+                            <label class="color-option">
+                                <input type="radio" name="color-preference" value="neutral">
+                                <span class="color-sample neutral"></span>
+                                <span class="color-text">中性色调</span>
+                            </label>
+                            <label class="color-option">
+                                <input type="radio" name="color-preference" value="bright">
+                                <span class="color-sample bright"></span>
+                                <span class="color-text">明亮色调</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 疗愈目标设定 -->
+            <section id="healing-goal" class="assessment-section">
+                <h2 class="section-title">疗愈目标设定</h2>
+                <div class="assessment-card">
+                    <div class="question-group">
+                        <h3 class="question-title">请选择您希望通过艺术疗愈达到的目标（可多选）：</h3>
+                        <div class="goal-options">
+                            <label class="goal-option">
+                                <input type="checkbox" name="goal" value="emotion-release">
+                                <span class="goal-text">情绪释放（减轻压力、焦虑或其他负面情绪）</span>
+                            </label>
+                            <label class="goal-option">
+                                <input type="checkbox" name="goal" value="trauma-processing">
+                                <span class="goal-text">创伤处理（通过艺术表达处理过去的创伤经历）</span>
+                            </label>
+                            <label class="goal-option">
+                                <input type="checkbox" name="goal" value="self-exploration">
+                                <span class="goal-text">自我探索（加深对自我的认识和理解）</span>
+                            </label>
+                            <label class="goal-option">
+                                <input type="checkbox" name="goal" value="mindfulness">
+                                <span class="goal-text">正念练习（培养当下觉知和专注能力）</span>
+                            </label>
+                            <label class="goal-option">
+                                <input type="checkbox" name="goal" value="creative-expression">
+                                <span class="goal-text">创造性表达（发展创造力和表达能力）</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="question-group">
+                        <h3 class="question-title">您期望通过艺术疗愈获得什么样的体验或改变？</h3>
+                        <textarea class="text-input" placeholder="请描述您的期望..." rows="4"></textarea>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="footer">
+            <button id="prev-btn" class="nav-btn prev-btn" disabled>上一步</button>
+            <button id="next-btn" class="nav-btn next-btn">下一步</button>
+            <button id="submit-btn" class="nav-btn submit-btn" style="display: none;">生成个人档案</button>
+        </footer>
+    </div>
+    <script src="../js/drawing-preset.js"></script>
+</body>
+</html> 

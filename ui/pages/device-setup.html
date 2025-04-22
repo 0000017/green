@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green - 设备调试</title>
+    <link rel="stylesheet" href="../css/device-setup.css">
+</head>
+<body>
+    <div class="device-setup-container">
+        <div class="bg-layer"></div>
+        
+        <header class="header">
+            <div class="logo">green</div>
+            <div class="header-title">设备调试</div>
+        </header>
+        
+        <main class="main-content">
+            <div class="device-guide-container">
+                <h2 class="section-title">设备连接指南</h2>
+                <ul class="device-guide">
+                    <li>确保所有设备的电源已开启</li>
+                    <li>将传感器正确放置在身体相应位置</li>
+                    <li>保持设备在电脑蓝牙范围内</li>
+                    <li>连接成功后，会显示实时数据</li>
+                </ul>
+            </div>
+            
+            <div class="device-container">
+                <div class="device-info">
+                    <div class="device-icon"></div>
+                    <h3 class="device-name">心率传感器</h3>
+                    <p class="device-desc">请将传感器贴在胸前，确保稳固</p>
+                </div>
+                
+                <div class="connection-area">
+                    <div class="connection-status"></div>
+                    <div class="waiting-text">等待设备连接...</div>
+                    <div class="heart-rate-container" style="display: none;">
+                        <div class="heart-rate-label">心率：<span class="heart-rate-display">--</span> BPM</div>
+                        <svg class="heart-rate-svg" width="100%" height="100px"></svg>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="connect-device" class="action-btn connect-btn">连接设备</button>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <button id="skip-setup" class="footer-btn skip-btn">跳过设置</button>
+            <button id="next-step" class="footer-btn next-btn" style="display: none;">下一步</button>
+        </footer>
+        
+        <!-- 确认跳过的模态框 -->
+        <div class="modal">
+            <div class="modal-content">
+                <h3 class="modal-title">确认跳过</h3>
+                <p class="modal-text">确定要跳过设备设置吗？这可能会影响您的使用体验。</p>
+                <div class="modal-buttons">
+                    <button class="btn-cancel">取消</button>
+                    <button class="btn-confirm">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../js/device-setup.js"></script>
+</body>
+</html> 
