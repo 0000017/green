@@ -8,7 +8,9 @@ body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    font-family: "Microsoft YaHei UI", sans-serif;
+    font-family: "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
+    background-color: #141f14;
+    color: #bdfcc9;
 }
 
 .welcome-container {
@@ -16,58 +18,124 @@ body, html {
     width: 100%;
     height: 100vh;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    padding: 2rem;
 }
 
-.background {
+.background-pattern {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #141f14;
     z-index: -1;
+    opacity: 0.08;
+    background-image: radial-gradient(#6ec600 1px, transparent 1px), 
+                     radial-gradient(#6ec600 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
+    animation: patternFloat 120s infinite linear;
 }
 
-.content {
+@keyframes patternFloat {
+    0% {
+        background-position: 0 0, 20px 20px;
+    }
+    100% {
+        background-position: 1000px 1000px, 1020px 1020px;
+    }
+}
+
+.logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 60px;
+    width: 80%;
+    max-width: 600px;
+    animation: fadeIn 1.2s ease-out, floatUp 1.2s ease-out;
+}
+
+.logo-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 180px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    transform-origin: center center;
+}
+
+.content-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    color: #ffffff;
-    z-index: 1;
-    animation: fadeIn 1.5s ease-in-out;
 }
 
-.logo {
-    font-size: 252px;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 20px;
-    animation: scaleIn 1.2s ease-out;
-}
-
-.subtitle {
-    font-size: 62px;
+.title {
+    font-size: 48px;
     font-weight: 400;
     margin-bottom: 80px;
-    animation: slideUp 1s ease-out 0.5s both;
+    color: #457704;
+    animation: fadeIn 1.4s ease-out 0.2s both, floatUp 1.4s ease-out 0.2s both;
 }
 
-.start-button {
-    background: transparent;
-    border: 2px solid #ffffff;
-    color: #ffffff;
+.btn-container {
+    position: relative;
+    margin-bottom: 40px;
+    animation: fadeIn 1.6s ease-out 0.4s both, floatUp 1.6s ease-out 0.4s both;
+}
+
+#start-btn {
+    padding: 20px 70px;
     font-size: 47px;
-    padding: 10px 40px;
-    border-radius: 30px;
+    font-weight: 700;
+    color: #bdfcc9;
+    background-color: #6ec600;
+    border: none;
+    border-radius: 43px;
     cursor: pointer;
     transition: all 0.3s ease;
-    animation: fadeIn 1s ease-out 1s both;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 2;
 }
 
-.start-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+#start-btn:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    background-color: #7dd700;
+}
+
+#start-btn:active {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.button-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 43px;
+    background-color: rgba(110, 198, 0, 0.3);
+    animation: glow 3s infinite alternate ease-in-out;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes glow {
+    0% { opacity: 0.3; transform: scale(1); }
+    100% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.copyright {
+    font-size: 24px;
+    color: #457704;
+    margin-top: 40px;
+    opacity: 0.8;
+    animation: fadeIn 1.8s ease-out 0.6s both;
 }
 
 @keyframes fadeIn {
@@ -79,24 +147,62 @@ body, html {
     }
 }
 
-@keyframes scaleIn {
-    from {
-        transform: scale(0.8);
-        opacity: 0;
-    }
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
+@keyframes fadeOut {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-30px); }
 }
 
-@keyframes slideUp {
+@keyframes floatUp {
     from {
-        transform: translateY(30px);
-        opacity: 0;
+        transform: translateY(40px);
     }
     to {
         transform: translateY(0);
-        opacity: 1;
+    }
+}
+
+.floating-icon {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.2;
+    z-index: -1;
+    border-radius: 50%;
+    background-color: #6ec600;
+    animation: float infinite ease-in-out alternate;
+}
+
+.icon-brush { background-color: #6ec600; }
+.icon-heart { background-color: #b7fe5d; }
+.icon-brain { background-color: #457704; }
+.icon-wave { background-color: #13f88b; }
+.icon-star { background-color: #fff345; }
+
+@keyframes float {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(20px, 20px) rotate(15deg); }
+}
+
+@media (max-width: 768px) {
+    .logo-container {
+        width: 90%;
+        max-width: 400px;
+    }
+    
+    .logo-svg {
+        max-height: 120px;
+    }
+    
+    .title {
+        font-size: 36px;
+        margin-bottom: 60px;
+    }
+    
+    #start-btn {
+        padding: 16px 50px;
+        font-size: 36px;
+    }
+    
+    .copyright {
+        font-size: 18px;
     }
 } 

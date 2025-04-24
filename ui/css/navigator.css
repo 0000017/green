@@ -8,8 +8,9 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #1a1a1a;
+    background-color: #141f14;
     z-index: 1000;
+    font-family: "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
 }
 
 /* 应用页面 */
@@ -24,6 +25,7 @@
     transition: opacity 0.5s ease, visibility 0.5s ease;
     overflow-y: auto;
     z-index: 0;
+    color: #bdfcc9;
 }
 
 /* 激活的页面 */
@@ -72,58 +74,84 @@
     left: 50%;
     transform: translate(-50%, -50%);
     padding: 20px;
-    background-color: rgba(255, 0, 0, 0.2);
+    background-color: rgba(255, 0, 0, 0.1);
     color: #ff6666;
     border: 1px solid #ff6666;
-    border-radius: 5px;
+    border-radius: 12px;
     font-size: 16px;
     text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* 页面过渡动画 - 排除主应用页面 */
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { 
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to { 
+        opacity: 0;
+        transform: translateY(-20px);
+    }
 }
 
 /* 导航按钮 */
 .nav-button {
     display: inline-block;
-    padding: 10px 20px;
-    background-color: #2A9D8F;
-    color: white;
+    padding: 12px 28px;
+    background-color: #6ec600;
+    color: #bdfcc9;
     border: none;
-    border-radius: 50px;
+    border-radius: 43px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 16px;
+    font-weight: 600;
     margin: 10px;
     text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .nav-button:hover {
-    background-color: #38a89d;
+    background-color: #7dd700;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.nav-button:active {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(42, 157, 143, 0.3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .nav-button.back-button {
-    background-color: #555;
+    background-color: transparent;
+    border: 2px solid #457704;
+    color: #457704;
+}
+
+.nav-button.back-button:hover {
+    background-color: rgba(69, 119, 4, 0.1);
 }
 
 .nav-button.next-button {
-    background-color: #2A9D8F;
+    background-color: #6ec600;
 }
 
 /* 导航栏 - 在主应用页面中隐藏 */
 .nav-bar {
     position: fixed;
-    bottom: 20px;
+    bottom: 40px;
     left: 0;
     width: 100%;
     display: flex;
@@ -145,12 +173,61 @@
     transform: translate(-50%, -50%);
     width: 50px;
     height: 50px;
-    border: 5px solid rgba(42, 157, 143, 0.3);
+    border: 5px solid rgba(110, 198, 0, 0.1);
     border-radius: 50%;
-    border-top-color: #2A9D8F;
+    border-top-color: #6ec600;
     animation: spin 1s linear infinite;
+    box-shadow: 0 0 20px rgba(110, 198, 0, 0.1);
 }
 
 @keyframes spin {
     to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 进度指示器 */
+.progress-indicator {
+    display: flex;
+    justify-content: center;
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    padding: 10px;
+    z-index: 90;
+}
+
+.progress-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: rgba(110, 198, 0, 0.3);
+    margin: 0 6px;
+    transition: all 0.3s ease;
+}
+
+.progress-dot.active {
+    background-color: #6ec600;
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(110, 198, 0, 0.5);
+}
+
+/* 响应式设计调整 */
+@media (max-width: 768px) {
+    .nav-button {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+    
+    .nav-bar {
+        bottom: 20px;
+    }
+    
+    .progress-indicator {
+        bottom: 10px;
+    }
+    
+    .progress-dot {
+        width: 10px;
+        height: 10px;
+        margin: 0 4px;
+    }
 } 
