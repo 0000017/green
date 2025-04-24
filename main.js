@@ -29,8 +29,7 @@ function createWindow() {
 
     win.loadFile('index.html');
     
-    // 开发时可以打开开发者工具
-    win.webContents.openDevTools();
+
     
     // 创建窗口后立即设置为全屏
     win.setFullScreen(true);

@@ -109,10 +109,10 @@
     <!-- 主应用页面内容，初始隐藏 -->
     <div id="main-app-content" style="display: none;">
         <!-- 视频流 -->
-        <video id="videoStream" autoplay playsinline></video>
+        <!--<video id="videoStream" autoplay playsinline></video>-->
         
         <!--webrtc状态显示切换按钮 -->
-        <div id="status-toggle" class="status-toggle">i</div>
+        <!--<div id="status-toggle" class="status-toggle">i</div>-->
         
         <!-- 情感分析系统容器 -->
         <div id="emotion-analysis-container" class="emotion-analysis-container">
@@ -152,9 +152,6 @@
         
         <!-- 调试信息区域 -->
         <div id="debug-info"></div>
-        
-        <!-- P5绘画工具切换按钮 -->
-        <button id="p5-toggle-btn">绘画工具</button>
     </div>
     
     <!-- 功能模块脚本 -->
@@ -276,35 +273,25 @@
         });
     </script>
     
+    <!-- 加载dat.GUI库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    
     <!-- 加载P5.js库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
     
     <!-- 加载P5绘画功能模块 -->
     <script src="./P5/draw.js"></script>
-    <script src="./P5/brush.js"></script>
     <script src="./P5/camera.js"></script>
     <script src="./P5/emotion.js"></script>
-    <script src="./P5/td.js"></script>
+    <script src="./P5/ai.js"></script>
     <script src="./P5/sketch.js"></script>
     
     <!-- 初始化P5绘画工具 -->
     <script>
         // 等待DOM加载完成
         document.addEventListener('DOMContentLoaded', function() {
-            // 绘画工具状态
-            let isP5Active = false;
-            
-            // 获取切换按钮
-            const toggleBtn = document.getElementById('p5-toggle-btn');
-            if (!toggleBtn) {
-                console.error('找不到P5切换按钮');
-                return;
-            }
-            
-            // 添加切换按钮点击事件
-            toggleBtn.addEventListener('click', function() {
-                if (!isP5Active) {
-                    // 确保在主应用页面内激活P5绘画工具
+            // 初始化P5绘画工具的函数
+            function initializeP5Drawing() {
                     // 检查页面导航系统的当前状态
                     const mainAppPage = document.getElementById('main-app-page');
                     
@@ -316,46 +303,27 @@
                             setTimeout(() => {
                                 // 激活P5绘画工具
                                 window.p5Drawing.init();
-                                toggleBtn.textContent = '关闭绘画';
-                                isP5Active = true;
                             }, 300);
-                            return;
-                        }
                     }
-                    
+                } else {
                     // 如果已经在主应用页面，直接初始化P5
                     window.p5Drawing.init();
-                    toggleBtn.textContent = '关闭绘画';
-                    isP5Active = true;
-                } else {
-                    // 隐藏P5绘画工具UI
-                    const controlPanel = document.getElementById('p5-control-panel');
-                    const canvasContainer = document.getElementById('p5-canvas-container');
-                    const mainAppContent = document.getElementById('main-app-content');
-                    
-                    if (controlPanel && mainAppContent.contains(controlPanel)) {
-                        // 移除控制面板
-                        mainAppContent.removeChild(controlPanel);
-                    } else if (controlPanel) {
-                        // 兼容性处理，如果它被添加到了其他地方
-                        controlPanel.parentNode.removeChild(controlPanel);
-                    }
-                    
-                    if (canvasContainer && mainAppContent.contains(canvasContainer)) {
-                        // 移除画布容器
-                        mainAppContent.removeChild(canvasContainer);
-                    } else if (canvasContainer) {
-                        // 兼容性处理，如果它被添加到了其他地方
-                        canvasContainer.parentNode.removeChild(canvasContainer);
-                    }
-                    
-                    toggleBtn.textContent = '绘画工具';
-                    isP5Active = false;
-                    
-                    // 重置p5初始化状态，以便下次可以重新初始化
-                    window.isInitialized = false;
+                }
+            }
+            
+            // 监听页面加载完成事件，在主应用页面加载时初始化P5绘画工具
+            window.addEventListener('pageLoaded', function(event) {
+                if (event.detail.pageId === 'main-app-page') {
+                    // 当主应用页面加载完成时，初始化P5绘画工具
+                    initializeP5Drawing();
                 }
             });
+            
+            // 如果当前已经是主应用页面，立即初始化P5绘画工具
+            const mainAppPage = document.getElementById('main-app-page');
+            if (mainAppPage && mainAppPage.classList.contains('active-page')) {
+                initializeP5Drawing();
+                }
         });
     </script>
     
