@@ -29,7 +29,10 @@ function createWindow() {
 
     win.loadFile('index.html');
     
-
+    win.webContents.on('did-finish-load', () => {
+        win.webContents.setZoomFactor(1.0);
+        console.log('内容已放大两倍');
+    });
     
     // 创建窗口后立即设置为全屏
     win.setFullScreen(true);

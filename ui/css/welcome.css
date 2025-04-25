@@ -1,208 +1,253 @@
+/* 全局样式重置 */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body, html {
+body {
+    font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    background-color: #141F14;
+    color: #FFFFFF;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 新的背景动画 */
+.background-animation {
+    position: absolute;
     width: 100%;
     height: 100%;
     overflow: hidden;
-    font-family: "Microsoft YaHei UI", "Segoe UI", Arial, sans-serif;
-    background-color: #141f14;
-    color: #bdfcc9;
+    background: #141F14;
 }
 
-.welcome-container {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
-}
-
-.background-pattern {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    opacity: 0.08;
-    background-image: radial-gradient(#6ec600 1px, transparent 1px), 
-                     radial-gradient(#6ec600 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-position: 0 0, 20px 20px;
-    animation: patternFloat 120s infinite linear;
-}
-
-@keyframes patternFloat {
-    0% {
-        background-position: 0 0, 20px 20px;
-    }
-    100% {
-        background-position: 1000px 1000px, 1020px 1020px;
-    }
-}
-
-.logo-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 60px;
-    width: 80%;
-    max-width: 600px;
-    animation: fadeIn 1.2s ease-out, floatUp 1.2s ease-out;
-}
-
-.logo-svg {
-    width: 100%;
-    height: auto;
-    display: block;
-    max-height: 180px;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
-    transform-origin: center center;
-}
-
-.content-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.title {
-    font-size: 48px;
-    font-weight: 400;
-    margin-bottom: 80px;
-    color: #457704;
-    animation: fadeIn 1.4s ease-out 0.2s both, floatUp 1.4s ease-out 0.2s both;
-}
-
-.btn-container {
-    position: relative;
-    margin-bottom: 40px;
-    animation: fadeIn 1.6s ease-out 0.4s both, floatUp 1.6s ease-out 0.4s both;
-}
-
-#start-btn {
-    padding: 20px 70px;
-    font-size: 47px;
-    font-weight: 700;
-    color: #bdfcc9;
-    background-color: #6ec600;
-    border: none;
-    border-radius: 43px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-    position: relative;
-    z-index: 2;
-}
-
-#start-btn:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-    background-color: #7dd700;
-}
-
-#start-btn:active {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.button-glow {
+/* 涟漪效果容器 */
+.ripple-container {
     position: absolute;
     width: 100%;
     height: 100%;
-    border-radius: 43px;
-    background-color: rgba(110, 198, 0, 0.3);
-    animation: glow 3s infinite alternate ease-in-out;
-    pointer-events: none;
     z-index: 1;
 }
 
-@keyframes glow {
-    0% { opacity: 0.3; transform: scale(1); }
-    100% { opacity: 0.6; transform: scale(1.05); }
+/* 流型坠落效果容器 */
+.flowing-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
 }
 
-.copyright {
-    font-size: 24px;
-    color: #457704;
-    margin-top: 40px;
-    opacity: 0.8;
-    animation: fadeIn 1.8s ease-out 0.6s both;
+/* 表情容器 */
+.emoji-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* 表情样式 */
+.emoji {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    opacity: 0.4;
+    animation: floatEmoji 15s linear infinite;
+    transform-origin: center center;
+    z-index: 5;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+}
+
+@keyframes floatEmoji {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    25% {
+        transform: translate(10px, 10px) rotate(5deg);
+    }
+    50% {
+        transform: translate(0, 20px) rotate(0deg);
+    }
+    75% {
+        transform: translate(-10px, 10px) rotate(-5deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+
+/* 潮汐效果 */
+.tide-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tide {
+    position: absolute;
+    width: 200%;
+    height: 40%;
+    border-radius: 45%;
+    bottom: -30%;
+    left: -50%;
+    animation: tideMove 15s infinite ease-in-out;
+    opacity: 0.2;
+}
+
+.tide1 {
+    background-color: #457704;
+    transform-origin: 50% 50%;
+    animation-duration: 15s;
+    animation-delay: 0s;
+    height: 42%;
+    bottom: -32%;
+}
+
+.tide2 {
+    background-color: #6EC600;
+    transform-origin: 50% 48%;
+    animation-duration: 18s;
+    animation-delay: 1s;
+    height: 44%;
+    bottom: -34%;
+}
+
+.tide3 {
+    background-color: #B7FE5D;
+    transform-origin: 50% 52%;
+    animation-duration: 21s;
+    animation-delay: 2s;
+    height: 45%;
+    bottom: -35%;
+    opacity: 0.1;
+}
+
+@keyframes tideMove {
+    0% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(4deg);
+    }
+    50% {
+        transform: rotate(0deg);
+    }
+    75% {
+        transform: rotate(-4deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+/* 流型坠落效果 */
+.flowing-particle {
+    position: absolute;
+    background: linear-gradient(to bottom, rgba(183, 254, 93, 0.8), rgba(110, 198, 0, 0));
+    border-radius: 50% 50% 0 50%;
+    transform: rotate(45deg);
+    animation: flowingFall linear forwards;
+}
+
+@keyframes flowingFall {
+    0% {
+        transform: rotate(45deg) translateY(-10px);
+        opacity: 0.8;
+    }
+    100% {
+        transform: rotate(45deg) translateY(100vh);
+        opacity: 0;
+    }
+}
+
+/* 内容样式 */
+.content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 20px;
+    text-align: center;
+    animation: fadeIn 2s ease-in-out;
 }
 
 @keyframes fadeIn {
-    from {
+    0% {
         opacity: 0;
+        transform: translateY(20px);
     }
-    to {
+    100% {
         opacity: 1;
-    }
-}
-
-@keyframes fadeOut {
-    0% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-30px); }
-}
-
-@keyframes floatUp {
-    from {
-        transform: translateY(40px);
-    }
-    to {
         transform: translateY(0);
     }
 }
 
-.floating-icon {
+.logo-container {
+    margin-bottom: 50px;
+    animation: floatLogo 6s ease-in-out infinite;
+}
+
+@keyframes floatLogo {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-15px);
+    }
+}
+
+.logo {
+    width: 600px;
+    height: auto;
+    filter: brightness(0) invert(1);
+}
+
+.title {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 24px;
+    color: #B7FE5D;
+    text-shadow: 0 0 10px rgba(183, 254, 93, 0.4);
+}
+
+.subtitle {
+    font-size: 18px;
+    margin-bottom: 60px;
+    color: #BDFCC9;
+    max-width: 600px;
+    text-shadow: 0 0 8px rgba(189, 252, 201, 0.3);
+}
+
+.copy {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
     position: absolute;
-    pointer-events: none;
-    opacity: 0.2;
-    z-index: -1;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+}
+
+/* 涟漪样式 */
+.ripple {
+    position: absolute;
+    border: 2px solid rgba(110, 198, 0, 0.4);
     border-radius: 50%;
-    background-color: #6ec600;
-    animation: float infinite ease-in-out alternate;
+    transform: scale(0);
+    animation: rippleEffect 4s linear infinite;
 }
 
-.icon-brush { background-color: #6ec600; }
-.icon-heart { background-color: #b7fe5d; }
-.icon-brain { background-color: #457704; }
-.icon-wave { background-color: #13f88b; }
-.icon-star { background-color: #fff345; }
-
-@keyframes float {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    100% { transform: translate(20px, 20px) rotate(15deg); }
+@keyframes rippleEffect {
+    to {
+        transform: scale(6);
+        opacity: 0;
+    }
 }
-
-@media (max-width: 768px) {
-    .logo-container {
-        width: 90%;
-        max-width: 400px;
-    }
-    
-    .logo-svg {
-        max-height: 120px;
-    }
-    
-    .title {
-        font-size: 36px;
-        margin-bottom: 60px;
-    }
-    
-    #start-btn {
-        padding: 16px 50px;
-        font-size: 36px;
-    }
-    
-    .copyright {
-        font-size: 18px;
-    }
-} 

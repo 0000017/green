@@ -106,49 +106,107 @@
     }
 }
 
-/* 导航按钮 */
+/* 脉冲动画效果 */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(110, 198, 0, 0.7);
+    }
+    
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(110, 198, 0, 0);
+    }
+    
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(110, 198, 0, 0);
+    }
+}
+
+/* 导航按钮基础样式 */
 .nav-button {
     display: inline-block;
-    padding: 12px 28px;
-    background-color: #6ec600;
-    color: #bdfcc9;
+    padding: 15px 35px;
+    margin: 10px;
+    background: linear-gradient(145deg, #6ec600, #457704);
+    color: #ffffff;
     border: none;
     border-radius: 43px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
-    margin: 10px;
     text-align: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(69, 119, 4, 0.4);
+    position: relative;
+    overflow: hidden;
 }
 
 .nav-button:hover {
-    background-color: #7dd700;
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(69, 119, 4, 0.5);
 }
 
 .nav-button:active {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(1px);
+    box-shadow: 0 4px 8px rgba(69, 119, 4, 0.3);
 }
 
+/* 后退按钮样式 */
 .nav-button.back-button {
-    background-color: transparent;
+    background: transparent;
     border: 2px solid #457704;
-    color: #457704;
+    color: #6ec600;
+    box-shadow: none;
 }
 
 .nav-button.back-button:hover {
     background-color: rgba(69, 119, 4, 0.1);
+    box-shadow: 0 4px 8px rgba(69, 119, 4, 0.1);
 }
 
+/* 下一步按钮样式（与CTA按钮一致） */
 .nav-button.next-button {
-    background-color: #6ec600;
+    background: linear-gradient(145deg, #6ec600, #457704);
+    color: #ffffff;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 0 0 rgba(110, 198, 0, 0.7);
+    position: relative;
+    text-transform: uppercase;
 }
 
-/* 导航栏 - 在主应用页面中隐藏 */
+/* 添加内发光效果 */
+.nav-button.next-button:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 43px;
+    padding: 4px;
+    background: linear-gradient(225deg, #9aff00, #457704);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.nav-button.next-button:hover:before {
+    opacity: 1;
+}
+
+/* 鼠标悬停时暂停动画 */
+.nav-button.next-button:hover {
+    animation-play-state: paused;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 10px 25px rgba(69, 119, 4, 0.6);
+}
+
+/* 导航栏样式 */
 .nav-bar {
     position: fixed;
     bottom: 40px;
@@ -158,11 +216,27 @@
     justify-content: center;
     align-items: center;
     padding: 10px;
-    z-index: 100;
+    z-index: 1500; /* 提高z-index确保在所有元素之上 */
 }
 
-#main-app-page .nav-bar {
-    display: none;
+/* 主应用页面的导航按钮特殊样式 */
+#main-app-page .nav-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2000; /* 确保按钮显示在最顶层 */
+    padding: 16px 36px;
+    font-size: 18px;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+#main-app-page .nav-button:hover {
+    transform: translateY(-4px) scale(1.05);
+    animation-play-state: paused;
+    box-shadow: 0 15px 30px rgba(69, 119, 4, 0.7);
 }
 
 /* 加载指示器 */
@@ -213,8 +287,8 @@
 /* 响应式设计调整 */
 @media (max-width: 768px) {
     .nav-button {
-        padding: 10px 20px;
-        font-size: 14px;
+        padding: 12px 25px;
+        font-size: 16px;
     }
     
     .nav-bar {
@@ -230,4 +304,4 @@
         height: 10px;
         margin: 0 4px;
     }
-} 
+}
