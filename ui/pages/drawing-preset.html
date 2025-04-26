@@ -6,7 +6,7 @@
     <title>Green - 表达性艺术疗愈预设</title>
     <link rel="stylesheet" href="../css/drawing-preset.css">
 </head>
-<body>
+<body class="drawing-preset-page">
     <div class="preset-container">
         <!-- 背景层 -->
         <div class="bg-layer"></div>
@@ -36,6 +36,75 @@
         </footer>
     </div>
     
+    <!-- 导入脚本 -->
     <script src="../js/drawing-preset.js"></script>
+    
+    <!-- 确保页面与导航系统正确集成 -->
+    <script>
+        // 检测是否在iframe或作为子页面加载
+        function isEmbedded() {
+            try {
+                return window !== window.parent || 
+                       window.frameElement !== null || 
+                       window.parent.navigateToPage !== undefined;
+            } catch (e) {
+                // 如果跨域访问父窗口出错，则认为是在iframe中
+                return true;
+            }
+        }
+        
+        // 触发初始化
+        function triggerPageInit() {
+            // 如果是作为子页面加载的，且未初始化
+            if (isEmbedded() && !window.drawingPresetInitialized) {
+                console.log('页面直接触发初始化');
+                // 创建自定义事件
+                const initEvent = new CustomEvent('pageLoaded', {
+                    detail: {
+                        pageId: 'drawing-preset-page',
+                        timestamp: new Date()
+                    }
+                });
+                // 触发事件
+                window.dispatchEvent(initEvent);
+                
+                // 备用方法：直接调用初始化函数
+                if (typeof initDrawingPreset === 'function' && !window.drawingPresetInitialized) {
+                    setTimeout(initDrawingPreset, 100);
+                }
+            }
+        }
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 连接导航系统
+            if (window.parent && window.parent.navigateToPage) {
+                console.log('连接到父窗口导航系统');
+                window.navigateToPage = window.parent.navigateToPage;
+            }
+            
+            // 修复顶部导航链接
+            const logo = document.querySelector('.logo');
+            if (logo) {
+                logo.addEventListener('click', function() {
+                    if (window.navigateToPage) {
+                        window.navigateToPage('welcome-page');
+                    } else {
+                        window.location.href = 'welcome.html';
+                    }
+                });
+            }
+            
+            // 触发页面初始化
+            setTimeout(triggerPageInit, 300);
+        });
+        
+        // 备用：页面可见性变化时也检查初始化
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && !window.drawingPresetInitialized) {
+                triggerPageInit();
+            }
+        });
+    </script>
 </body>
 </html> 

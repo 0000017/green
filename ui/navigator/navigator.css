@@ -304,4 +304,24 @@
         height: 10px;
         margin: 0 4px;
     }
+    
+    #analysis-page .back-button {
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 20px;
+    }
+}
+
+/* 分析页面的导航按钮样式 */
+#analysis-page .back-button {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    z-index: 1500;
+    padding: 12px 25px;
+}
+
+#analysis-page .back-button:hover {
+    transform: translateY(-2px);
+    background-color: rgba(69, 119, 4, 0.2);
 }

@@ -1,7 +1,14 @@
 // 设备调试界面的脚本
-document.addEventListener('DOMContentLoaded', function() {
+
+// 初始化标志，防止重复初始化
+window.deviceSetupInitialized = false;
+
+// 将所有初始化逻辑封装到一个函数中
+function initDeviceSetup() {
+    console.log('初始化设备调试页面...');
+    
     // 调试开关
-    const DEBUG = true;
+    const DEBUG = false;
     
     // 获取DOM元素
     const devicePages = document.querySelectorAll('.device-page');
@@ -13,7 +20,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnCancel = document.querySelector('.btn-cancel');
     const btnConfirm = document.querySelector('.btn-confirm');
     const connectButtons = document.querySelectorAll('.connect-btn');
-    const debugInfo = document.getElementById('debug-info');
+    
+    // 检查关键元素是否存在
+    if (!devicePages.length || !stepDots.length || !prevButton || !nextButton || !skipButton) {
+        console.log('页面元素未找到，等待100ms后重试');
+        setTimeout(initDeviceSetup, 100);
+        return;
+    }
     
     // 全局变量
     const totalSteps = devicePages.length;
@@ -25,15 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 调试输出函数
     function debug(message) {
         if (!DEBUG) return;
-        
         console.log(`[设备页面] ${message}`);
-        
-        // 在页面上显示调试信息
-        if (debugInfo) {
-            debugInfo.style.display = 'block';
-            debugInfo.innerHTML += `<div>${message}</div>`;
-            debugInfo.scrollTop = debugInfo.scrollHeight;
-        }
     }
     
     // 初始化函数
@@ -151,8 +156,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置完成处理
     function completeSetup() {
         debug('设置完成');
-        alert('设备设置已完成');
-        // 这里可以添加完成后的逻辑
+        
+        // 导航到下一个页面
+        if (window.parent && window.parent.navigateToPage) {
+            // 如果作为子页面，使用父窗口的导航系统
+            window.parent.navigateToPage('drawing-preset-page');
+        } else {
+            // 作为独立页面
+            window.location.href = 'drawing-preset.html';
+        }
     }
     
     // 连接设备
@@ -480,4 +492,60 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 启动初始化
     init();
-}); 
+    
+    // 标记初始化完成
+    window.deviceSetupInitialized = true;
+    console.log('设备调试页面初始化完成');
+}
+
+// 检查当前是否为device-setup页面
+function checkAndInitDeviceSetup() {
+    // 检查页面标识或URL
+    const isDeviceSetupPage = (window.location.href.includes('device-setup.html') || 
+                            document.body.classList.contains('device-setup-page') ||
+                            document.getElementById('device-setup-page') && 
+                            document.getElementById('device-setup-page').classList.contains('active-page'));
+    
+    if (isDeviceSetupPage && !window.deviceSetupInitialized) {
+        console.log('检测到设备调试页面激活，主动初始化');
+        initDeviceSetup();
+    }
+}
+
+// 监听DOMContentLoaded事件（当作为独立页面加载时）
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查是否已初始化过
+    if (!window.deviceSetupInitialized) {
+        console.log('DOMContentLoaded: 初始化设备调试页面');
+        initDeviceSetup();
+    }
+    
+    // 添加MutationObserver监听DOM变化
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' || mutation.type === 'childList') {
+                checkAndInitDeviceSetup();
+            }
+        });
+    });
+    
+    // 开始观察document.body的变化，包括子节点和属性
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class']
+    });
+});
+
+// 监听pageLoaded事件（当作为子页面加载时）
+window.addEventListener('pageLoaded', function(event) {
+    if (event.detail && event.detail.pageId === 'device-setup-page' && !window.deviceSetupInitialized) {
+        console.log('pageLoaded: 初始化设备调试页面');
+        // 设置短延迟确保DOM元素已加载
+        setTimeout(initDeviceSetup, 50);
+    }
+});
+
+// 初始检查，用于处理可能错过的pageLoaded事件
+setTimeout(checkAndInitDeviceSetup, 500); 

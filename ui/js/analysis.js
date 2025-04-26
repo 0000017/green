@@ -3,7 +3,13 @@
  * 基于设计指南中的规范与风格
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+// 初始化标志，防止重复初始化
+window.analysisInitialized = false;
+
+// 将所有初始化逻辑封装到一个函数中
+function initAnalysisPage() {
+    console.log('初始化评估页面...');
+    
     // 页面导航
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
@@ -11,6 +17,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressFill = document.querySelector('.progress-fill');
     const progressSteps = document.querySelectorAll('.progress-step');
     const sections = document.querySelectorAll('.evaluation-section');
+    
+    // 如果DOM元素不存在，可能页面还未完全加载，等待一下再尝试
+    if (!prevBtn || !nextBtn || !submitBtn) {
+        console.log('页面元素未找到，等待100ms后重试');
+        setTimeout(initAnalysisPage, 100);
+        return;
+    }
     
     let currentSectionIndex = 0;
     const totalSections = sections.length;
@@ -194,7 +207,11 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('评估数据已成功提交！');
         
         // 跳转到主页或其他相关页面
-        // window.location.href = 'main-app-page.html';
+        if (window.parent && window.parent.navigateToPage) {
+            window.parent.navigateToPage('welcome-page');
+        } else {
+            window.location.href = 'welcome.html';
+        }
     }
     
     // 事件监听器
@@ -285,4 +302,60 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-}); 
+    
+    // 标记已初始化
+    window.analysisInitialized = true;
+    console.log('评估页面初始化完成');
+}
+
+// 检查当前是否为analysis页面
+function checkAndInitAnalysisPage() {
+    // 检查页面标识或URL
+    const isAnalysisPage = (window.location.href.includes('analysis.html') || 
+                           document.body.classList.contains('analysis-page') ||
+                           document.getElementById('analysis-page') && 
+                           document.getElementById('analysis-page').classList.contains('active-page'));
+    
+    if (isAnalysisPage && !window.analysisInitialized) {
+        console.log('检测到分析页面激活，主动初始化');
+        initAnalysisPage();
+    }
+}
+
+// 监听DOMContentLoaded事件（当作为独立页面加载时）
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查是否已初始化过
+    if (!window.analysisInitialized) {
+        console.log('DOMContentLoaded: 初始化评估页面');
+        initAnalysisPage();
+    }
+    
+    // 添加MutationObserver监听DOM变化
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' || mutation.type === 'childList') {
+                checkAndInitAnalysisPage();
+            }
+        });
+    });
+    
+    // 开始观察document.body的变化，包括子节点和属性
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class']
+    });
+});
+
+// 监听pageLoaded事件（当作为子页面加载时）
+window.addEventListener('pageLoaded', function(event) {
+    if (event.detail && event.detail.pageId === 'analysis-page' && !window.analysisInitialized) {
+        console.log('pageLoaded: 初始化评估页面');
+        // 设置短延迟确保DOM元素已加载
+        setTimeout(initAnalysisPage, 50);
+    }
+});
+
+// 初始检查，用于处理可能错过的pageLoaded事件
+setTimeout(checkAndInitAnalysisPage, 500); 

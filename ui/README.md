@@ -103,6 +103,152 @@ ui/
 - 在导航流程中可以正常访问，但不显示导航按钮
 - 避免CSS样式冲突，使主应用页面的复杂组件能正常工作
 
+### 子页面导航逻辑
+
+某些页面（如分析页面）包含自己的子导航系统，实现内部内容的分步导航。以下是实现子页面导航的关键要点：
+
+#### 1. 子页面初始化问题
+
+子页面可能遇到的主要问题是初始化时机：当作为独立页面加载时，通过`DOMContentLoaded`事件初始化；当作为主应用的子页面动态加载时，需要通过`pageLoaded`事件初始化。
+
+解决方案：
+```javascript
+// 将初始化逻辑封装为函数
+function initSubPageContent() {
+    // 初始化子页面的UI和功能
+}
+
+// 双重事件监听，确保在任何场景下都能正确初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 作为独立页面加载时初始化
+    if (!window.subPageInitialized) {
+        initSubPageContent();
+        window.subPageInitialized = true;
+    }
+});
+
+// 监听主应用的页面加载事件
+window.addEventListener('pageLoaded', function(event) {
+    // 确认是目标子页面被加载
+    if (event.detail.pageId === 'your-page-id' && !window.subPageInitialized) {
+        // 延迟短暂时间确保DOM已完全加载
+        setTimeout(initSubPageContent, 50);
+        window.subPageInitialized = true;
+    }
+});
+```
+
+#### 2. 多级导航实现方案
+
+对于像分析页面(analysis.html)这样的多步骤页面，可以实现内部的子导航系统：
+
+```javascript
+// 在子页面中定义步骤导航
+function setupStepNavigation() {
+    const prevBtn = document.getElementById('prev-step-btn');
+    const nextBtn = document.getElementById('next-step-btn');
+    const steps = document.querySelectorAll('.step-content');
+    
+    let currentStep = 0;
+    
+    // 更新显示哪个步骤内容
+    function updateStepVisibility() {
+        steps.forEach((step, index) => {
+            step.classList.toggle('active', index === currentStep);
+        });
+        
+        // 更新按钮状态
+        prevBtn.disabled = currentStep === 0;
+        nextBtn.disabled = currentStep === steps.length - 1;
+    }
+    
+    // 事件监听
+    prevBtn.addEventListener('click', () => {
+        if (currentStep > 0) {
+            currentStep--;
+            updateStepVisibility();
+        }
+    });
+    
+    nextBtn.addEventListener('click', () => {
+        if (currentStep < steps.length - 1) {
+            currentStep++;
+            updateStepVisibility();
+        }
+    });
+    
+    // 初始化显示
+    updateStepVisibility();
+}
+```
+
+#### 3. 子页面与主导航系统集成
+
+要使子页面能够访问主导航系统的功能，并实现页面间的正确导航：
+
+```html
+<!-- 在子页面HTML中添加 -->
+<script>
+    // 连接到父窗口的导航系统
+    document.addEventListener('DOMContentLoaded', function() {
+        // 如果是在主应用中加载的
+        if (window.parent && window.parent.navigateToPage) {
+            // 复用父窗口的导航函数
+            window.navigateToPage = window.parent.navigateToPage;
+            
+            // 修复页面内部的导航链接
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetPage = this.getAttribute('data-target');
+                    window.navigateToPage(targetPage);
+                });
+            });
+        }
+    });
+</script>
+```
+
+#### 4. 页面状态保存与恢复
+
+为了确保在子页面之间导航时不丢失用户输入：
+
+```javascript
+// 保存子页面状态到localStorage
+function saveSubPageState() {
+    const state = {
+        step: currentStep,
+        // 其他需要保存的数据
+        formData: collectFormData()
+    };
+    localStorage.setItem('subPageState', JSON.stringify(state));
+}
+
+// 恢复子页面状态
+function restoreSubPageState() {
+    const savedState = localStorage.getItem('subPageState');
+    if (savedState) {
+        const state = JSON.parse(savedState);
+        currentStep = state.step;
+        // 恢复其他数据
+        restoreFormData(state.formData);
+        updateStepVisibility();
+    }
+}
+```
+
+#### 5. 避免事件冲突
+
+确保子页面的导航事件不会冒泡到父页面导航系统：
+
+```javascript
+// 阻止事件冒泡
+subPageNavButton.addEventListener('click', function(e) {
+    e.stopPropagation();  // 阻止事件冒泡
+    handleSubNavigation();
+});
+```
+
 ## 使用方法
 
 ### 开发者指南

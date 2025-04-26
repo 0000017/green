@@ -6,7 +6,7 @@
     <title>Green - 效果评估</title>
     <link rel="stylesheet" href="../css/analysis.css">
 </head>
-<body>
+<body class="analysis-page">
     <div class="evaluation-container">
         <!-- 背景元素 -->
         <div class="background-elements">
@@ -380,6 +380,75 @@
         </div>
     </div>
     
+    <!-- 导入脚本 -->
     <script src="../js/analysis.js"></script>
+    
+    <!-- 确保页面与导航系统正确集成 -->
+    <script>
+        // 检测是否在iframe或作为子页面加载
+        function isEmbedded() {
+            try {
+                return window !== window.parent || 
+                       window.frameElement !== null || 
+                       window.parent.navigateToPage !== undefined;
+            } catch (e) {
+                // 如果跨域访问父窗口出错，则认为是在iframe中
+                return true;
+            }
+        }
+        
+        // 触发初始化
+        function triggerPageInit() {
+            // 如果是作为子页面加载的，且未初始化
+            if (isEmbedded() && !window.analysisInitialized) {
+                console.log('页面直接触发初始化');
+                // 创建自定义事件
+                const initEvent = new CustomEvent('pageLoaded', {
+                    detail: {
+                        pageId: 'analysis-page',
+                        timestamp: new Date()
+                    }
+                });
+                // 触发事件
+                window.dispatchEvent(initEvent);
+                
+                // 备用方法：直接调用初始化函数
+                if (typeof initAnalysisPage === 'function' && !window.analysisInitialized) {
+                    setTimeout(initAnalysisPage, 100);
+                }
+            }
+        }
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 连接导航系统
+            if (window.parent && window.parent.navigateToPage) {
+                console.log('连接到父窗口导航系统');
+                window.navigateToPage = window.parent.navigateToPage;
+            }
+            
+            // 修复导航链接
+            document.querySelectorAll('.nav-list a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (window.navigateToPage) {
+                        e.preventDefault();
+                        const href = this.getAttribute('href');
+                        const pageId = href.replace('.html', '-page');
+                        window.navigateToPage(pageId);
+                    }
+                });
+            });
+            
+            // 触发页面初始化
+            setTimeout(triggerPageInit, 300);
+        });
+        
+        // 备用：页面可见性变化时也检查初始化
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && !window.analysisInitialized) {
+                triggerPageInit();
+            }
+        });
+    </script>
 </body>
 </html> 

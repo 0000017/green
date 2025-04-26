@@ -3,7 +3,13 @@
  * 基于表达性艺术疗愈理论设计的情况调查问卷
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+// 初始化标志，防止重复初始化
+window.drawingPresetInitialized = false;
+
+// 将所有初始化逻辑封装到一个函数中
+function initDrawingPreset() {
+    console.log('初始化绘画预设页面...');
+    
     // 问题数据 - 根据表达性艺术疗愈理论设计的情况调查问卷
     const questions = [
         // 选择题部分 (10个小页面，每页3个问题)
@@ -230,6 +236,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentStepEl = document.querySelector('.current-step');
     const totalStepsEl = document.querySelector('.total-steps');
     
+    // 如果DOM元素不存在，可能页面还未完全加载，等待一下再尝试
+    if (!pagesContainer || !pageIndicator || !prevBtn || !nextBtn || !skipBtn) {
+        console.log('页面元素未找到，等待100ms后重试');
+        setTimeout(initDrawingPreset, 100);
+        return;
+    }
+    
     let currentPageIndex = 0;
     const totalPages = questions.length;
     
@@ -237,6 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
     totalStepsEl.textContent = totalPages;
     
     // 创建页面指示器
+    pageIndicator.innerHTML = ''; // 清空现有内容，避免重复创建
     questions.forEach((_, index) => {
         const dot = document.createElement('div');
         dot.className = 'page-dot';
@@ -245,6 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // 创建问题页面
+    pagesContainer.innerHTML = ''; // 清空现有内容，避免重复创建
     questions.forEach((pageData, pageIndex) => {
         const page = document.createElement('div');
         page.className = 'question-page';
@@ -406,7 +421,70 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('表单数据:', formData);
         
         // 转到下一个流程页面
-        // window.location.href = '../pages/main-app-page.html'; // 实际应用中取消注释
+        if (window.parent && window.parent.navigateToPage) {
+            // 如果作为子页面，使用父窗口的导航系统
+            window.parent.navigateToPage('emotion-preset-page');
+        } else {
+            // 作为独立页面
+            window.location.href = 'emotion-preset.html';
+        }
+        
         alert('预设完成！数据已保存'); // 测试用
     }
-}); 
+    
+    // 标记初始化完成
+    window.drawingPresetInitialized = true;
+    console.log('绘画预设页面初始化完成');
+}
+
+// 检查当前是否为drawing-preset页面
+function checkAndInitDrawingPreset() {
+    // 检查页面标识或URL
+    const isDrawingPresetPage = (window.location.href.includes('drawing-preset.html') || 
+                             document.body.classList.contains('drawing-preset-page') ||
+                             document.getElementById('drawing-preset-page') && 
+                             document.getElementById('drawing-preset-page').classList.contains('active-page'));
+    
+    if (isDrawingPresetPage && !window.drawingPresetInitialized) {
+        console.log('检测到绘画预设页面激活，主动初始化');
+        initDrawingPreset();
+    }
+}
+
+// 监听DOMContentLoaded事件（当作为独立页面加载时）
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查是否已初始化过
+    if (!window.drawingPresetInitialized) {
+        console.log('DOMContentLoaded: 初始化绘画预设页面');
+        initDrawingPreset();
+    }
+    
+    // 添加MutationObserver监听DOM变化
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' || mutation.type === 'childList') {
+                checkAndInitDrawingPreset();
+            }
+        });
+    });
+    
+    // 开始观察document.body的变化，包括子节点和属性
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class']
+    });
+});
+
+// 监听pageLoaded事件（当作为子页面加载时）
+window.addEventListener('pageLoaded', function(event) {
+    if (event.detail && event.detail.pageId === 'drawing-preset-page' && !window.drawingPresetInitialized) {
+        console.log('pageLoaded: 初始化绘画预设页面');
+        // 设置短延迟确保DOM元素已加载
+        setTimeout(initDrawingPreset, 50);
+    }
+});
+
+// 初始检查，用于处理可能错过的pageLoaded事件
+setTimeout(checkAndInitDrawingPreset, 500); 

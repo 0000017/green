@@ -6,7 +6,7 @@
     <title>Green - 设备调试</title>
     <link rel="stylesheet" href="../css/device-setup.css">
 </head>
-<body>
+<body class="device-setup-page">
     <div class="device-setup-container">
         <div class="bg-layer"></div>
         
@@ -157,9 +157,75 @@
         </div>
     </div>
     
-    <!-- 添加调试信息 -->
-    <div id="debug-info" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px; display: none;"></div>
-    
+    <!-- 导入脚本 -->
     <script src="../js/device-setup.js"></script>
+    
+    <!-- 确保页面与导航系统正确集成 -->
+    <script>
+        // 检测是否在iframe或作为子页面加载
+        function isEmbedded() {
+            try {
+                return window !== window.parent || 
+                       window.frameElement !== null || 
+                       window.parent.navigateToPage !== undefined;
+            } catch (e) {
+                // 如果跨域访问父窗口出错，则认为是在iframe中
+                return true;
+            }
+        }
+        
+        // 触发初始化
+        function triggerPageInit() {
+            // 如果是作为子页面加载的，且未初始化
+            if (isEmbedded() && !window.deviceSetupInitialized) {
+                console.log('页面直接触发初始化');
+                // 创建自定义事件
+                const initEvent = new CustomEvent('pageLoaded', {
+                    detail: {
+                        pageId: 'device-setup-page',
+                        timestamp: new Date()
+                    }
+                });
+                // 触发事件
+                window.dispatchEvent(initEvent);
+                
+                // 备用方法：直接调用初始化函数
+                if (typeof initDeviceSetup === 'function' && !window.deviceSetupInitialized) {
+                    setTimeout(initDeviceSetup, 100);
+                }
+            }
+        }
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 连接导航系统
+            if (window.parent && window.parent.navigateToPage) {
+                console.log('连接到父窗口导航系统');
+                window.navigateToPage = window.parent.navigateToPage;
+            }
+            
+            // 修复顶部导航链接
+            const logo = document.querySelector('.logo');
+            if (logo) {
+                logo.addEventListener('click', function() {
+                    if (window.navigateToPage) {
+                        window.navigateToPage('welcome-page');
+                    } else {
+                        window.location.href = 'welcome.html';
+                    }
+                });
+            }
+            
+            // 触发页面初始化
+            setTimeout(triggerPageInit, 300);
+        });
+        
+        // 备用：页面可见性变化时也检查初始化
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && !window.deviceSetupInitialized) {
+                triggerPageInit();
+            }
+        });
+    </script>
 </body>
 </html> 
