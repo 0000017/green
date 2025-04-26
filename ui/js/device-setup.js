@@ -1,244 +1,483 @@
+// 设备调试界面的脚本
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化页面功能
-    initBackgroundEffect();
-    initButtonEvents();
-    animateGuideSteps();
-});
-
-/**
- * 初始化背景效果
- */
-function initBackgroundEffect() {
-    const bgLayer = document.querySelector('.bg-layer');
-    if (!bgLayer) return;
+    // 调试开关
+    const DEBUG = true;
     
-    // 创建背景点阵
-    for (let i = 0; i < 50; i++) {
-        const dot = document.createElement('div');
-        dot.classList.add('bg-dot');
-        dot.style.width = Math.random() * 10 + 5 + 'px';
-        dot.style.height = dot.style.width;
-        dot.style.left = Math.random() * 100 + '%';
-        dot.style.top = Math.random() * 100 + '%';
-        dot.style.opacity = Math.random() * 0.5;
-        dot.style.backgroundColor = '#4CAF50';
-        dot.style.borderRadius = '50%';
-        dot.style.position = 'absolute';
-        dot.style.transform = 'translate(-50%, -50%)';
-        dot.style.transition = 'transform 0.3s ease-out';
-        
-        bgLayer.appendChild(dot);
-    }
-    
-    // 添加视差效果
-    document.addEventListener('mousemove', function(e) {
-        const dots = document.querySelectorAll('.bg-dot');
-        const moveX = (e.clientX - window.innerWidth / 2) / 50;
-        const moveY = (e.clientY - window.innerHeight / 2) / 50;
-        
-        dots.forEach((dot, index) => {
-            const factor = (index % 3 + 1) * 0.8;
-            dot.style.transform = `translate(calc(-50% + ${moveX * factor}px), calc(-50% + ${moveY * factor}px))`;
-        });
-    });
-}
-
-/**
- * 初始化按钮事件
- */
-function initButtonEvents() {
-    const connectButton = document.getElementById('connect-device');
+    // 获取DOM元素
+    const devicePages = document.querySelectorAll('.device-page');
+    const stepDots = document.querySelectorAll('.step-dot');
+    const prevButton = document.getElementById('prev-step');
+    const nextButton = document.getElementById('next-step');
     const skipButton = document.getElementById('skip-setup');
-    const nextButton = document.getElementById('next-step');
-    const confirmSkipButton = document.querySelector('.btn-confirm');
-    const cancelSkipButton = document.querySelector('.btn-cancel');
-    const skipModal = document.querySelector('.modal');
+    const modal = document.querySelector('.modal');
+    const btnCancel = document.querySelector('.btn-cancel');
+    const btnConfirm = document.querySelector('.btn-confirm');
+    const connectButtons = document.querySelectorAll('.connect-btn');
+    const debugInfo = document.getElementById('debug-info');
     
-    // 连接设备按钮
-    if (connectButton) {
-        connectButton.addEventListener('click', function() {
-            simulateDeviceConnection();
-        });
+    // 全局变量
+    const totalSteps = devicePages.length;
+    let currentStep = 0;
+    
+    // 设备连接状态
+    const deviceStatus = [false, false, false, false];
+    
+    // 调试输出函数
+    function debug(message) {
+        if (!DEBUG) return;
+        
+        console.log(`[设备页面] ${message}`);
+        
+        // 在页面上显示调试信息
+        if (debugInfo) {
+            debugInfo.style.display = 'block';
+            debugInfo.innerHTML += `<div>${message}</div>`;
+            debugInfo.scrollTop = debugInfo.scrollHeight;
+        }
     }
     
-    // 跳过设置按钮
-    if (skipButton) {
-        skipButton.addEventListener('click', function() {
-            if (skipModal) skipModal.classList.add('show');
-        });
+    // 初始化函数
+    function init() {
+        debug('设备调试页面初始化');
+        
+        // 确保首个设备页面显示
+        showPage(0);
+        
+        // 添加事件监听
+        addEventListeners();
+        
+        debug('设备调试页面初始化完成');
     }
     
-    // 下一步按钮
-    if (nextButton) {
+    // 添加所有事件监听器
+    function addEventListeners() {
+        // 下一步按钮
         nextButton.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-        });
-    }
-    
-    // 确认跳过
-    if (confirmSkipButton) {
-        confirmSkipButton.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-        });
-    }
-    
-    // 取消跳过
-    if (cancelSkipButton) {
-        cancelSkipButton.addEventListener('click', function() {
-            if (skipModal) skipModal.classList.remove('show');
-        });
-    }
-}
-
-/**
- * 模拟设备连接过程
- */
-function simulateDeviceConnection() {
-    const connectButton = document.getElementById('connect-device');
-    const nextButton = document.getElementById('next-step');
-    const connectionStatus = document.querySelector('.connection-status');
-    const waitingText = document.querySelector('.waiting-text');
-    const heartRateContainer = document.querySelector('.heart-rate-container');
-    
-    if (!connectButton || !connectionStatus) return;
-    
-    // 禁用连接按钮
-    connectButton.disabled = true;
-    connectButton.style.opacity = '0.5';
-    connectButton.style.cursor = 'not-allowed';
-    
-    // 显示连接状态
-    connectionStatus.classList.add('visible');
-    connectionStatus.innerHTML = '<div class="spinner"></div><span>正在连接设备...</span>';
-    
-    // 模拟连接过程
-    setTimeout(function() {
-        const isSuccess = Math.random() > 0.3; // 70%的成功率
-        
-        if (isSuccess) {
-            connectionStatus.classList.add('success');
-            connectionStatus.innerHTML = '<i class="success-icon">✓</i> 设备连接成功';
-            
-            // 显示心率图
-            if (waitingText && heartRateContainer) {
-                waitingText.style.display = 'none';
-                heartRateContainer.style.display = 'block';
-                drawHeartRateGraph();
-            }
-            
-            // 显示下一步按钮
-            if (nextButton) {
-                nextButton.style.display = 'block';
-            }
-        } else {
-            connectionStatus.classList.add('error');
-            connectionStatus.innerHTML = '<i class="error-icon">✗</i> 连接失败，请检查设备并重试';
-            
-            // 重新启用连接按钮
-            connectButton.disabled = false;
-            connectButton.style.opacity = '1';
-            connectButton.style.cursor = 'pointer';
-        }
-    }, 3000);
-}
-
-/**
- * 绘制心率图
- */
-function drawHeartRateGraph() {
-    const svg = document.querySelector('.heart-rate-svg');
-    if (!svg) return;
-    
-    // 设置SVG视口
-    svg.setAttribute('viewBox', '0 0 1000 200');
-    
-    // 创建初始路径
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'M0,100 L0,100');
-    path.setAttribute('stroke', '#4CAF50');
-    path.setAttribute('stroke-width', '3');
-    path.setAttribute('fill', 'none');
-    svg.appendChild(path);
-    
-    // 创建心率数据点
-    let data = [];
-    for (let i = 0; i < 100; i++) {
-        data.push(100); // 初始基线值
-    }
-    
-    // 动态更新心率图
-    let lastX = 0;
-    const updateInterval = setInterval(() => {
-        // 模拟心率数据
-        const newValue = simulateHeartBeat(data[data.length - 1]);
-        data.push(newValue);
-        
-        // 保持固定长度
-        if (data.length > 100) {
-            data.shift();
-        }
-        
-        // 更新路径
-        let pathData = '';
-        const step = 1000 / (data.length - 1);
-        
-        data.forEach((value, index) => {
-            const x = index * step;
-            const y = 200 - value;
-            
-            if (index === 0) {
-                pathData = `M${x},${y}`;
+            debug('点击下一步按钮');
+            if (currentStep < totalSteps - 1) {
+                showPage(currentStep + 1);
             } else {
-                pathData += ` L${x},${y}`;
+                completeSetup();
             }
         });
         
-        path.setAttribute('d', pathData);
+        // 上一步按钮
+        prevButton.addEventListener('click', function() {
+            debug('点击上一步按钮');
+            if (currentStep > 0) {
+                showPage(currentStep - 1);
+            }
+        });
         
-        // 更新心率显示
-        const heartRateDisplay = document.querySelector('.heart-rate-display');
-        if (heartRateDisplay) {
-            const heartRate = Math.round(60 + Math.random() * 40);
-            heartRateDisplay.textContent = heartRate;
-        }
-    }, 100);
-}
-
-/**
- * 模拟心跳波形数据
- */
-function simulateHeartBeat(lastValue) {
-    // 基础值：模拟平稳的心跳线
-    let value = lastValue;
-    
-    // 随机波动
-    const randomFactor = Math.random() * 4 - 2;
-    value += randomFactor;
-    
-    // 模拟心跳
-    if (Math.random() > 0.95) { // 随机产生心跳波形
-        value = 60; // 基线
-        setTimeout(() => value = 140, 50); // 峰值
-        setTimeout(() => value = 80, 100); // 回落
-        setTimeout(() => value = 100, 150); // 恢复
+        // 跳过按钮
+        skipButton.addEventListener('click', function() {
+            debug('点击跳过按钮');
+            modal.classList.add('show');
+        });
+        
+        // 模态框取消按钮
+        btnCancel.addEventListener('click', function() {
+            debug('点击取消按钮');
+            modal.classList.remove('show');
+        });
+        
+        // 模态框确认按钮
+        btnConfirm.addEventListener('click', function() {
+            debug('点击确认按钮');
+            modal.classList.remove('show');
+            completeSetup();
+        });
+        
+        // 步骤指示器点击
+        stepDots.forEach(function(dot, index) {
+            dot.addEventListener('click', function() {
+                debug(`点击步骤指示点: ${index}`);
+                showPage(index);
+            });
+        });
+        
+        // 连接设备按钮
+        connectButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                const deviceIndex = parseInt(this.getAttribute('data-device'));
+                debug(`连接设备按钮点击: 设备${deviceIndex}`);
+                connectDevice(deviceIndex);
+            });
+        });
     }
     
-    // 限制范围
-    value = Math.max(60, Math.min(140, value));
+    // 显示指定页面
+    function showPage(index) {
+        debug(`显示页面: ${index}`);
+        
+        // 更新当前步骤
+        currentStep = index;
+        
+        // 隐藏所有页面
+        devicePages.forEach(function(page) {
+            page.classList.remove('active-device-page');
+        });
+        
+        // 显示当前页面
+        if (devicePages[index]) {
+            devicePages[index].classList.add('active-device-page');
+        } else {
+            debug(`错误: 页面索引${index}不存在`);
+            return;
+        }
+        
+        // 更新步骤指示器
+        stepDots.forEach(function(dot) {
+            dot.classList.remove('active');
+        });
+        
+        if (stepDots[index]) {
+            stepDots[index].classList.add('active');
+        }
+        
+        // 更新按钮状态
+        updateButtonState();
+    }
     
-    return value;
-}
-
-/**
- * 动画显示指南步骤
- */
-function animateGuideSteps() {
-    const steps = document.querySelectorAll('.device-guide li');
+    // 更新按钮状态
+    function updateButtonState() {
+        // 第一步隐藏上一步按钮
+        prevButton.style.display = currentStep === 0 ? 'none' : 'block';
+        
+        // 最后一步显示完成按钮
+        nextButton.textContent = currentStep === totalSteps - 1 ? '完成' : '下一步';
+    }
     
-    steps.forEach((step, index) => {
-        setTimeout(() => {
-            step.style.opacity = '1';
-            step.style.transform = 'translateX(0)';
-        }, index * 200);
-    });
-} 
+    // 设置完成处理
+    function completeSetup() {
+        debug('设置完成');
+        alert('设备设置已完成');
+        // 这里可以添加完成后的逻辑
+    }
+    
+    // 连接设备
+    function connectDevice(deviceIndex) {
+        // 获取相应的设备容器
+        const container = devicePages[deviceIndex].querySelector('.device-container');
+        const statusIndicator = container.querySelector('.connection-status');
+        const waitingText = container.querySelector('.waiting-text');
+        
+        // 更新连接状态文本
+        waitingText.textContent = '正在连接...';
+        
+        // 模拟连接过程
+        setTimeout(function() {
+            // 更新状态
+            deviceStatus[deviceIndex] = true;
+            statusIndicator.classList.add('connected');
+            waitingText.textContent = '设备已连接';
+            
+            // 根据设备类型显示不同界面
+            switch(deviceIndex) {
+                case 0:
+                    showHeartRateData(container);
+                    break;
+                case 1:
+                    showSkinData(container);
+                    break;
+                case 2:
+                    showCameraFeed(container);
+                    break;
+                case 3:
+                    showTabletCanvas(container);
+                    break;
+            }
+            
+            debug(`设备${deviceIndex}已连接`);
+        }, 1500);
+    }
+    
+    // 显示心率数据
+    function showHeartRateData(container) {
+        const dataContainer = container.querySelector('.heart-rate-container');
+        const display = container.querySelector('.heart-rate-display');
+        const svg = container.querySelector('.heart-rate-svg');
+        
+        // 显示数据容器
+        dataContainer.style.display = 'block';
+        
+        // 模拟心率数据
+        let heartRate = 72;
+        
+        // 定时更新心率数据
+        const interval = setInterval(function() {
+            // 检查元素是否仍在DOM中
+            if (!document.contains(display)) {
+                clearInterval(interval);
+                return;
+            }
+            
+            // 生成随机波动
+            const variation = Math.floor(Math.random() * 5) - 2;
+            heartRate = Math.max(60, Math.min(100, heartRate + variation));
+            
+            // 更新显示
+            display.textContent = heartRate;
+            
+            // 更新心率图
+            updateHeartRateGraph(svg, heartRate);
+        }, 1000);
+    }
+    
+    // 更新心率图
+    function updateHeartRateGraph(svg, heartRate) {
+        // 检查SVG是否存在
+        if (!svg || !document.contains(svg)) return;
+        
+        // 简单实现，实际项目中可能需要更复杂的图表库
+        svg.innerHTML = '';
+        
+        // 创建一个简单的心率线
+        const svgNS = "http://www.w3.org/2000/svg";
+        const path = document.createElementNS(svgNS, "path");
+        
+        // 生成一个简单的心率波形
+        let d = "M0,50";
+        for (let i = 0; i < 10; i++) {
+            const x1 = i * 30;
+            const x2 = x1 + 10;
+            const x3 = x1 + 15;
+            const x4 = x1 + 20;
+            const x5 = x1 + 30;
+            
+            const intensity = (heartRate - 60) / 40; // 0-1范围
+            const height = 30 + intensity * 20;
+            
+            d += ` L${x1},50 L${x2},${50-height} L${x3},${50+height/2} L${x4},${50-height/3} L${x5},50`;
+        }
+        
+        path.setAttribute("d", d);
+        path.setAttribute("stroke", "#B7FE5D");
+        path.setAttribute("stroke-width", "2");
+        path.setAttribute("fill", "none");
+        
+        svg.appendChild(path);
+    }
+    
+    // 显示皮电数据
+    function showSkinData(container) {
+        const dataContainer = container.querySelector('.skin-data-container');
+        const display = container.querySelector('.skin-data-display');
+        const svg = container.querySelector('.skin-data-svg');
+        
+        // 显示数据容器
+        dataContainer.style.display = 'block';
+        
+        // 模拟皮电数据
+        let skinData = 3.5;
+        
+        // 定时更新皮电数据
+        const interval = setInterval(function() {
+            // 检查元素是否仍在DOM中
+            if (!document.contains(display)) {
+                clearInterval(interval);
+                return;
+            }
+            
+            // 生成随机波动
+            const variation = (Math.random() * 0.4) - 0.2;
+            skinData = Math.max(1, Math.min(10, skinData + variation));
+            
+            // 更新显示
+            display.textContent = skinData.toFixed(1);
+            
+            // 更新皮电图
+            updateSkinDataGraph(svg, skinData);
+        }, 1000);
+    }
+    
+    // 更新皮电图
+    function updateSkinDataGraph(svg, skinData) {
+        // 检查SVG是否存在
+        if (!svg || !document.contains(svg)) return;
+        
+        // 简单实现，类似心率图但波形不同
+        svg.innerHTML = '';
+        
+        const svgNS = "http://www.w3.org/2000/svg";
+        const path = document.createElementNS(svgNS, "path");
+        
+        // 生成一个简单的皮电波形
+        let d = "M0,50";
+        
+        for (let i = 0; i < 100; i++) {
+            const x = i * 3;
+            // 平滑的波形
+            const intensity = (skinData - 1) / 9; // 0-1范围
+            const variation = Math.sin(i * 0.1) * 5 * intensity;
+            const y = 50 - (intensity * 30) - variation;
+            
+            // 平滑过渡
+            d += ` L${x},${y}`;
+        }
+        
+        path.setAttribute("d", d);
+        path.setAttribute("stroke", "#13F88B");
+        path.setAttribute("stroke-width", "2");
+        path.setAttribute("fill", "none");
+        
+        svg.appendChild(path);
+    }
+    
+    // 显示摄像头预览
+    function showCameraFeed(container) {
+        const dataContainer = container.querySelector('.camera-container');
+        const video = document.getElementById('camera-preview');
+        const emotionDisplay = container.querySelector('.emotion-display');
+        
+        // 显示数据容器
+        dataContainer.style.display = 'block';
+        
+        // 请求摄像头权限并显示预览
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    if (video && document.contains(video)) {
+                        video.srcObject = stream;
+                        
+                        // 模拟情绪识别
+                        setTimeout(function() {
+                            simulateEmotionDetection(emotionDisplay);
+                        }, 2000);
+                    } else {
+                        // 安全地关闭流
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                })
+                .catch(function(error) {
+                    console.error("摄像头访问失败:", error);
+                    if (dataContainer && document.contains(dataContainer)) {
+                        dataContainer.innerHTML = "<p>无法访问摄像头。请检查权限设置。</p>";
+                    }
+                });
+        } else {
+            if (dataContainer && document.contains(dataContainer)) {
+                dataContainer.innerHTML = "<p>您的浏览器不支持摄像头功能。</p>";
+            }
+        }
+    }
+    
+    // 模拟情绪识别
+    function simulateEmotionDetection(display) {
+        if (!display || !document.contains(display)) return;
+        
+        const emotions = ['平静', '开心', '专注', '思考'];
+        
+        // 定时改变情绪显示
+        const interval = setInterval(function() {
+            if (!document.contains(display)) {
+                clearInterval(interval);
+                return;
+            }
+            
+            const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+            display.textContent = randomEmotion;
+        }, 3000);
+    }
+    
+    // 显示数位板画布
+    function showTabletCanvas(container) {
+        const dataContainer = container.querySelector('.tablet-container');
+        const canvas = document.getElementById('tablet-canvas');
+        const pressureDisplay = container.querySelector('.pressure-value');
+        const clearBtn = container.querySelector('.clear-btn');
+        
+        if (!canvas || !dataContainer) {
+            debug('错误: 无法找到数位板相关元素');
+            return;
+        }
+        
+        // 显示数据容器
+        dataContainer.style.display = 'block';
+        
+        try {
+            const ctx = canvas.getContext('2d');
+            
+            // 设置画布尺寸
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // 清除画布
+            clearBtn.addEventListener('click', function() {
+                if (ctx) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            });
+            
+            // 绘画变量
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+            
+            // 开始绘画
+            canvas.addEventListener('mousedown', function(e) {
+                isDrawing = true;
+                [lastX, lastY] = [e.offsetX, e.offsetY];
+            });
+            
+            // 移动时绘画
+            canvas.addEventListener('mousemove', function(e) {
+                if (!isDrawing) return;
+                
+                // 模拟压力值
+                const pressure = Math.random() * 0.5 + 0.5; // 0.5到1.0之间
+                if (pressureDisplay && document.contains(pressureDisplay)) {
+                    pressureDisplay.textContent = pressure.toFixed(2);
+                }
+                
+                // 设置线条宽度基于压力
+                ctx.lineWidth = pressure * 5;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#141F14';
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
+                
+                [lastX, lastY] = [e.offsetX, e.offsetY];
+            });
+            
+            // 停止绘画
+            canvas.addEventListener('mouseup', () => isDrawing = false);
+            canvas.addEventListener('mouseout', () => isDrawing = false);
+            
+            // 触摸设备支持
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                const mouseEvent = new MouseEvent('mouseup', {});
+                canvas.dispatchEvent(mouseEvent);
+            });
+        } catch (err) {
+            debug(`数位板初始化错误: ${err.message}`);
+        }
+    }
+    
+    // 启动初始化
+    init();
+}); 

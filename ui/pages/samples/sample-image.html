@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情感反馈效果示例</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #141F14;
+            color: #fff;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #B7FE5D;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        .feedback-item {
+            border: 1px solid rgba(110, 198, 0, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .feedback-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .feedback-label {
+            padding: 10px;
+            text-align: center;
+            background-color: rgba(110, 198, 0, 0.2);
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: rgba(110, 198, 0, 0.3);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .close-btn:hover {
+            background-color: rgba(110, 198, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <button class="close-btn" onclick="window.close()">关闭</button>
+    
+    <div class="container">
+        <h1>情感反馈效果示例</h1>
+        
+        <div class="gallery">
+            <div class="feedback-item">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImpveUdyYWQiIGN4PSI1MCUiIGN5PSI1MCUiIHI9IjUwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZjM0NSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmYzEwNyIvPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjMTQxRjE0Ii8+PGNpcmNsZSBjeD0iMjAwIiBjeT0iMTUwIiByPSIxMDAiIGZpbGw9InVybCgjalveUdyYWQpIiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJNMTAwLDE1MCBRMjAwLDUwIDMwMCwxNTAiIHN0cm9rZT0iI2ZmYzEwNyIgc3Ryb2tlLXdpZHRoPSI1IiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxMjAiIHI9IjEwIiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iMjUwIiBjeT0iMTIwIiByPSIxMCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==" alt="喜悦情绪反馈">
+                <div class="feedback-label">喜悦情绪反馈</div>
+            </div>
+            
+            <div class="feedback-item">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9InNhZEdyYWQiIGN4PSI1MCUiIGN5PSI1MCUiIHI9IjUwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzVkOGFmZiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwNjRhNiIvPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjMTQxRjE0Ii8+PGNpcmNsZSBjeD0iMjAwIiBjeT0iMTUwIiByPSIxMDAiIGZpbGw9InVybCgjc2FkR3JhZCkiIG9wYWNpdHk9IjAuOCIvPjxwYXRoIGQ9Ik0xMDAsMTgwIFEyMDAsMjUwIDMwMCwxODAiIHN0cm9rZT0iIzAwNjRhNiIgc3Ryb2tlLXdpZHRoPSI1IiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxNTAiIGN5PSIxMjAiIHI9IjEwIiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iMjUwIiBjeT0iMTIwIiByPSIxMCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==" alt="悲伤情绪反馈">
+                <div class="feedback-label">悲伤情绪反馈</div>
+            </div>
+            
+            <div class="feedback-item">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImFuZ2VyR3JhZCIgY3g9IjUwJSIgY3k9IjUwJSIgcj0iNTAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmY1NTU1Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjYjMwMDAwIi8+PC9yYWRpYWxHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiMxNDFGMTQiLz48Y2lyY2xlIGN4PSIyMDAiIGN5PSIxNTAiIHI9IjEwMCIgZmlsbD0idXJsKCNhbmdlckdyYWQpIiBvcGFjaXR5PSIwLjgiLz48cGF0aCBkPSJNMTAwLDE4MCBRMjAwLDEzMCAzMDAsMTgwIiBzdHJva2U9IiNiMzAwMDAiIHN0cm9rZS13aWR0aD0iNSIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGNpcmNsZSBjeD0iMTUwIiBjeT0iMTIwIiByPSIxMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjI1MCIgY3k9IjEyMCIgcj0iMTAiIGZpbGw9IiNmZmYiLz48L3N2Zz4=" alt="愤怒情绪反馈">
+                <div class="feedback-label">愤怒情绪反馈</div>
+            </div>
+            
+            <div class="feedback-item">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImFueGlldHlHcmFkIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNhM2ViZmYiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM0ZGQxZmYiLz48L3JhZGlhbEdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzE0MUYxNCIvPjxjaXJjbGUgY3g9IjIwMCIgY3k9IjE1MCIgcj0iMTAwIiBmaWxsPSJ1cmwoI2FueGlldHlHcmFkKSIgb3BhY2l0eT0iMC44Ii8+PHBhdGggZD0iTTEwMCwxNTAgUTIwMCwxODAgMzAwLDE1MCIgc3Ryb2tlPSIjNGRkMWZmIiBzdHJva2Utd2lkdGg9IjUiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjE1MCIgY3k9IjEyMCIgcj0iMTAiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIyNTAiIGN5PSIxMjAiIHI9IjEwIiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="焦虑情绪反馈">
+                <div class="feedback-label">焦虑情绪反馈</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 添加简单的关闭功能
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html> 

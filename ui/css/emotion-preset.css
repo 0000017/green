@@ -1,6 +1,6 @@
-/* Green表达性艺术疗愈预设页面样式 */
+/* Green情感计算系统预设页面样式 */
 :root {
-    /* 主色调 */
+    /* 主色调 - 调整为与drawing-preset一致的绿色调 */
     --dark-green: #141F14;
     --forest-green: #457704;
     --bright-green: #6EC600;
@@ -123,8 +123,8 @@ body {
     overflow-y: auto;
 }
 
-/* 问题页面 */
-.question-page {
+/* 预设页面 */
+.preset-page {
     display: none;
     opacity: 0;
     transform: translateY(10px);
@@ -136,14 +136,14 @@ body {
     border: 1px solid rgba(110, 198, 0, 0.2);
 }
 
-.question-page.active {
+.preset-page.active {
     display: block;
     opacity: 1;
     transform: translateY(0);
 }
 
-/* 问题标题 */
-.question-title {
+/* 标题 */
+.preset-title {
     font-size: 20px;
     font-weight: 600;
     color: var(--light-green);
@@ -151,85 +151,189 @@ body {
     text-align: center;
 }
 
-/* 问题描述 */
-.question-description {
+/* 描述 */
+.preset-description {
     font-size: 16px;
     color: var(--light-gray);
     margin-bottom: var(--spacing-md);
     text-align: center;
 }
 
-/* 问题项目 */
-.question-item {
+/* 控制项 */
+.control-section {
     margin-bottom: var(--spacing-md);
     border-bottom: 1px solid rgba(110, 198, 0, 0.1);
     padding-bottom: var(--spacing-md);
 }
 
-.question-item:last-child {
+.control-section:last-child {
     border-bottom: none;
 }
 
-/* 选择题选项 */
-.options-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+.control-label {
+    font-size: 16px;
+    color: var(--bright-green);
+    margin-bottom: var(--spacing-xs);
 }
 
-.option-item {
-    display: flex;
-    align-items: center;
-    padding: var(--spacing-sm);
-    background-color: rgba(255, 255, 255, 0.08);
-    border-radius: var(--border-radius);
+.control-description {
+    font-size: 14px;
+    color: var(--light-gray);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* 滑块样式 */
+.slider-container {
+    margin-bottom: var(--spacing-sm);
+}
+
+.range-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+    margin-bottom: var(--spacing-xs);
+}
+
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bright-green);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.option-item:hover {
-    background-color: rgba(110, 198, 0, 0.2);
+.range-slider::-webkit-slider-thumb:hover {
+    background: var(--teal-green);
+    transform: scale(1.1);
 }
 
-.option-item.selected {
-    background-color: rgba(110, 198, 0, 0.3);
-    border: 1px solid var(--bright-green);
+.range-value {
+    text-align: right;
+    font-size: 14px;
+    color: var(--light-green);
 }
 
-.option-radio {
-    width: 20px;
-    height: 20px;
-    margin-right: var(--spacing-sm);
-    accent-color: var(--bright-green);
+/* 选择器样式 */
+.selector-container {
+    margin-bottom: var(--spacing-sm);
 }
 
-.option-text {
-    flex: 1;
-    color: var(--white);
-}
-
-/* 开放题文本框 */
-.text-input-container {
-    margin-bottom: var(--spacing-md);
-}
-
-.text-input {
+.selector {
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.1);
+    padding: var(--spacing-sm);
+    background-color: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(110, 198, 0, 0.3);
     border-radius: var(--border-radius);
-    padding: var(--spacing-sm);
-    min-height: 150px;
     color: var(--white);
     font-size: 16px;
-    resize: vertical;
+    outline: none;
 }
 
-.text-input:focus {
-    outline: none;
+.selector:focus {
     border-color: var(--bright-green);
     box-shadow: 0 0 5px rgba(110, 198, 0, 0.5);
+}
+
+.selector option {
+    background-color: var(--dark-green);
+    color: var(--white);
+}
+
+/* 开关样式 */
+.toggle-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    margin-right: var(--spacing-sm);
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .4s;
+    border-radius: 26px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--white);
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--bright-green);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.toggle-label {
+    font-size: 16px;
+    color: var(--white);
+}
+
+/* 按钮样式 */
+.button {
+    padding: var(--spacing-sm);
+    background-color: rgba(110, 198, 0, 0.2);
+    border: 1px solid var(--bright-green);
+    border-radius: var(--border-radius);
+    color: var(--white);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: var(--spacing-sm);
+    text-align: center;
+}
+
+.button:hover {
+    background-color: rgba(110, 198, 0, 0.4);
+}
+
+/* 数据显示区域 */
+.data-display {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid rgba(110, 198, 0, 0.2);
+    color: var(--pale-green);
+    font-family: monospace;
+    font-size: 14px;
+    overflow-x: auto;
+    max-height: 150px;
+    overflow-y: auto;
 }
 
 /* 页脚 */
@@ -292,15 +396,11 @@ body {
         padding: var(--spacing-sm);
     }
     
-    .question-page {
+    .preset-page {
         padding: var(--spacing-sm);
     }
     
-    .question-title {
+    .preset-title {
         font-size: 18px;
-    }
-    
-    .option-item {
-        padding: var(--spacing-xs);
     }
 } 

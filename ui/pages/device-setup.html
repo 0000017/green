@@ -15,7 +15,8 @@
             <div class="header-title">设备调试</div>
         </header>
         
-        <main class="main-content">
+        <!-- 公共说明部分，所有设备页面共用 -->
+        <div class="device-common-area">
             <div class="device-guide-container">
                 <h2 class="section-title">设备连接指南</h2>
                 <ul class="device-guide">
@@ -26,31 +27,121 @@
                 </ul>
             </div>
             
-            <div class="device-container">
-                <div class="device-info">
-                    <div class="device-icon"></div>
-                    <h3 class="device-name">心率传感器</h3>
-                    <p class="device-desc">请将传感器贴在胸前，确保稳固</p>
-                </div>
-                
-                <div class="connection-area">
-                    <div class="connection-status"></div>
-                    <div class="waiting-text">等待设备连接...</div>
-                    <div class="heart-rate-container" style="display: none;">
-                        <div class="heart-rate-label">心率：<span class="heart-rate-display">--</span> BPM</div>
-                        <svg class="heart-rate-svg" width="100%" height="100px"></svg>
+            <!-- 步骤指示器 -->
+            <div class="step-indicator">
+                <div class="step-dot" data-step="0"></div>
+                <div class="step-dot" data-step="1"></div>
+                <div class="step-dot" data-step="2"></div>
+                <div class="step-dot" data-step="3"></div>
+            </div>
+        </div>
+        
+        <!-- 设备页面容器 -->
+        <div id="device-pages-container">
+            <!-- 心率传感器页面 -->
+            <div id="device-page-0" class="device-page active-device-page">
+                <div class="device-container">
+                    <div class="device-info">
+                        <div class="device-icon heart-icon"></div>
+                        <h3 class="device-name">心率传感器</h3>
+                        <p class="device-desc">请将传感器贴在胸前，确保稳固</p>
+                    </div>
+                    
+                    <div class="connection-area">
+                        <div class="connection-status"></div>
+                        <div class="waiting-text">等待设备连接...</div>
+                        <div class="heart-rate-container" style="display: none;">
+                            <div class="heart-rate-label">心率：<span class="heart-rate-display">--</span> BPM</div>
+                            <svg class="heart-rate-svg" width="100%" height="100px"></svg>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn connect-btn" data-device="0">连接设备</button>
                     </div>
                 </div>
-                
-                <div class="action-buttons">
-                    <button id="connect-device" class="action-btn connect-btn">连接设备</button>
+            </div>
+            
+            <!-- 皮电传感器页面 -->
+            <div id="device-page-1" class="device-page">
+                <div class="device-container">
+                    <div class="device-info">
+                        <div class="device-icon skin-icon"></div>
+                        <h3 class="device-name">皮电传感器</h3>
+                        <p class="device-desc">请将传感器贴在非惯用手的食指和中指指腹</p>
+                    </div>
+                    
+                    <div class="connection-area">
+                        <div class="connection-status"></div>
+                        <div class="waiting-text">等待设备连接...</div>
+                        <div class="skin-data-container" style="display: none;">
+                            <div class="skin-data-label">皮电值：<span class="skin-data-display">--</span> μS</div>
+                            <svg class="skin-data-svg" width="100%" height="100px"></svg>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn connect-btn" data-device="1">连接设备</button>
+                    </div>
                 </div>
             </div>
-        </main>
+            
+            <!-- 摄像头页面 -->
+            <div id="device-page-2" class="device-page">
+                <div class="device-container">
+                    <div class="device-info">
+                        <div class="device-icon camera-icon"></div>
+                        <h3 class="device-name">摄像头</h3>
+                        <p class="device-desc">请确保光线充足，面部完全进入画面</p>
+                    </div>
+                    
+                    <div class="connection-area">
+                        <div class="connection-status"></div>
+                        <div class="waiting-text">等待摄像头启动...</div>
+                        <div class="camera-container" style="display: none;">
+                            <video id="camera-preview" width="100%" height="240px" autoplay muted></video>
+                            <div class="emotion-status">表情识别：<span class="emotion-display">未检测</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn connect-btn" data-device="2">启动摄像头</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 数位板页面 -->
+            <div id="device-page-3" class="device-page">
+                <div class="device-container">
+                    <div class="device-info">
+                        <div class="device-icon tablet-icon"></div>
+                        <h3 class="device-name">数位板</h3>
+                        <p class="device-desc">请在下方区域进行测试绘制，确认压感正常</p>
+                    </div>
+                    
+                    <div class="connection-area">
+                        <div class="connection-status"></div>
+                        <div class="waiting-text">等待设备连接...</div>
+                        <div class="tablet-container" style="display: none;">
+                            <canvas id="tablet-canvas" width="100%" height="240px"></canvas>
+                            <div class="tablet-controls">
+                                <button class="tablet-btn clear-btn">清除画布</button>
+                                <div class="pressure-display">压感：<span class="pressure-value">--</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn connect-btn" data-device="3">连接数位板</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <footer class="footer">
+            <button id="prev-step" class="footer-btn prev-btn">上一步</button>
             <button id="skip-setup" class="footer-btn skip-btn">跳过设置</button>
-            <button id="next-step" class="footer-btn next-btn" style="display: none;">下一步</button>
+            <button id="next-step" class="footer-btn next-btn">下一步</button>
         </footer>
         
         <!-- 确认跳过的模态框 -->
@@ -65,6 +156,10 @@
             </div>
         </div>
     </div>
+    
+    <!-- 添加调试信息 -->
+    <div id="debug-info" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px; display: none;"></div>
+    
     <script src="../js/device-setup.js"></script>
 </body>
 </html> 

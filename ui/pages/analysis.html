@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green - 效果评估</title>
+    <link rel="stylesheet" href="../css/analysis.css">
+</head>
+<body>
+    <div class="evaluation-container">
+        <!-- 背景元素 -->
+        <div class="background-elements">
+            <div class="blur-circle circle-1"></div>
+            <div class="blur-circle circle-2"></div>
+            <div class="blur-circle circle-3"></div>
+        </div>
+
+        <!-- 页头 -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-text">Green</span>
+                <div class="logo-leaf"></div>
+            </div>
+            <nav>
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="welcome.html">首页</a></li>
+                    <li class="nav-item"><a href="intro.html">介绍</a></li>
+                    <li class="nav-item"><a href="device-setup.html">设备</a></li>
+                    <li class="nav-item active"><a href="analysis.html">评估</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <div class="main-content">
+            <!-- 页面标题 -->
+            <h1 class="page-title">表达性艺术疗愈<span>效果评估</span></h1>
+            
+            <!-- 步骤指示器 -->
+            <div class="progress-container">
+                <div class="progress-tracker">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-steps">
+                        <div class="progress-step active" data-step="1">
+                            <div class="step-marker">1</div>
+                            <div class="step-name">情感变化</div>
+                        </div>
+                        <div class="progress-step" data-step="2">
+                            <div class="step-marker">2</div>
+                            <div class="step-name">体验反馈</div>
+                        </div>
+                        <div class="progress-step" data-step="3">
+                            <div class="step-marker">3</div>
+                            <div class="step-name">成长感知</div>
+                        </div>
+                        <div class="progress-step" data-step="4">
+                            <div class="step-marker">4</div>
+                            <div class="step-name">综合评估</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 评估内容 -->
+            <div class="evaluation-content">
+                <!-- 第一部分：情感变化评估 -->
+                <div class="evaluation-section active" id="section-1">
+                    <div class="section-title">情感变化评估</div>
+                    
+                    <div class="card emotional-change-card">
+                        <h3>情绪状态变化</h3>
+                        <p class="card-description">请评估创作前后您的情绪状态变化</p>
+                        
+                        <div class="emotion-comparison">
+                            <div class="emotion-before">
+                                <h4>创作前</h4>
+                                <div class="emotion-chart"></div>
+                                <div class="emotion-labels">
+                                    <span class="emotion-label">愉悦</span>
+                                    <span class="emotion-label">焦虑</span>
+                                    <span class="emotion-label">平静</span>
+                                    <span class="emotion-label">抑郁</span>
+                                </div>
+                            </div>
+                            
+                            <div class="emotion-after">
+                                <h4>创作后</h4>
+                                <div class="emotion-chart"></div>
+                                <div class="emotion-sliders">
+                                    <div class="slider-group">
+                                        <label>愉悦感</label>
+                                        <input type="range" min="0" max="10" value="5" class="emotion-slider" data-emotion="joy">
+                                        <span class="slider-value">5</span>
+                                    </div>
+                                    <div class="slider-group">
+                                        <label>焦虑感</label>
+                                        <input type="range" min="0" max="10" value="5" class="emotion-slider" data-emotion="anxiety">
+                                        <span class="slider-value">5</span>
+                                    </div>
+                                    <div class="slider-group">
+                                        <label>平静感</label>
+                                        <input type="range" min="0" max="10" value="5" class="emotion-slider" data-emotion="calm">
+                                        <span class="slider-value">5</span>
+                                    </div>
+                                    <div class="slider-group">
+                                        <label>抑郁感</label>
+                                        <input type="range" min="0" max="10" value="5" class="emotion-slider" data-emotion="depression">
+                                        <span class="slider-value">5</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card physical-change-card">
+                        <h3>生理变化感知</h3>
+                        <p class="card-description">请评估创作过程中的生理变化</p>
+                        
+                        <div class="physical-options">
+                            <div class="option-item">
+                                <input type="checkbox" id="relax-muscles" class="physical-option">
+                                <label for="relax-muscles">肌肉放松</label>
+                            </div>
+                            <div class="option-item">
+                                <input type="checkbox" id="breathing-slow" class="physical-option">
+                                <label for="breathing-slow">呼吸变缓</label>
+                            </div>
+                            <div class="option-item">
+                                <input type="checkbox" id="heartrate-decrease" class="physical-option">
+                                <label for="heartrate-decrease">心率下降</label>
+                            </div>
+                            <div class="option-item">
+                                <input type="checkbox" id="body-warm" class="physical-option">
+                                <label for="body-warm">身体变暖</label>
+                            </div>
+                            <div class="option-item">
+                                <input type="checkbox" id="energy-increase" class="physical-option">
+                                <label for="energy-increase">能量提升</label>
+                            </div>
+                            <div class="option-item">
+                                <input type="checkbox" id="focus-improve" class="physical-option">
+                                <label for="focus-improve">注意力提高</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第二部分：体验反馈 -->
+                <div class="evaluation-section" id="section-2">
+                    <div class="section-title">体验反馈</div>
+                    
+                    <div class="card experience-card">
+                        <h3>创作体验评价</h3>
+                        <p class="card-description">请评价您的创作过程体验</p>
+                        
+                        <div class="experience-ratings">
+                            <div class="rating-item">
+                                <span class="rating-label">流畅度</span>
+                                <div class="star-rating" data-rating="0" data-aspect="fluency">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                </div>
+                            </div>
+                            <div class="rating-item">
+                                <span class="rating-label">沉浸感</span>
+                                <div class="star-rating" data-rating="0" data-aspect="immersion">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                </div>
+                            </div>
+                            <div class="rating-item">
+                                <span class="rating-label">情感表达</span>
+                                <div class="star-rating" data-rating="0" data-aspect="expression">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                </div>
+                            </div>
+                            <div class="rating-item">
+                                <span class="rating-label">满意度</span>
+                                <div class="star-rating" data-rating="0" data-aspect="satisfaction">
+                                    <span class="star" data-value="1">★</span>
+                                    <span class="star" data-value="2">★</span>
+                                    <span class="star" data-value="3">★</span>
+                                    <span class="star" data-value="4">★</span>
+                                    <span class="star" data-value="5">★</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card feedback-card">
+                        <h3>创作辅助工具反馈</h3>
+                        <p class="card-description">对每项工具功能的使用体验进行评价</p>
+                        
+                        <div class="tools-feedback">
+                            <div class="tool-item">
+                                <div class="tool-header">
+                                    <span class="tool-name">绘画预设</span>
+                                    <div class="tool-rating">
+                                        <span class="tool-rating-value">0</span>/10
+                                    </div>
+                                </div>
+                                <input type="range" min="0" max="10" value="0" class="tool-slider" data-tool="drawing-preset">
+                            </div>
+                            
+                            <div class="tool-item">
+                                <div class="tool-header">
+                                    <span class="tool-name">情感响应</span>
+                                    <div class="tool-rating">
+                                        <span class="tool-rating-value">0</span>/10
+                                    </div>
+                                </div>
+                                <input type="range" min="0" max="10" value="0" class="tool-slider" data-tool="emotion-response">
+                            </div>
+                            
+                            <div class="tool-item">
+                                <div class="tool-header">
+                                    <span class="tool-name">视觉效果</span>
+                                    <div class="tool-rating">
+                                        <span class="tool-rating-value">0</span>/10
+                                    </div>
+                                </div>
+                                <input type="range" min="0" max="10" value="0" class="tool-slider" data-tool="visual-effects">
+                            </div>
+                            
+                            <div class="tool-item">
+                                <div class="tool-header">
+                                    <span class="tool-name">音效回馈</span>
+                                    <div class="tool-rating">
+                                        <span class="tool-rating-value">0</span>/10
+                                    </div>
+                                </div>
+                                <input type="range" min="0" max="10" value="0" class="tool-slider" data-tool="audio-feedback">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第三部分：成长感知 -->
+                <div class="evaluation-section" id="section-3">
+                    <div class="section-title">成长感知</div>
+                    
+                    <div class="card growth-card">
+                        <h3>自我成长感知</h3>
+                        <p class="card-description">请评估此次体验对您的影响</p>
+                        
+                        <div class="growth-aspects">
+                            <div class="aspect-item" data-aspect="awareness">
+                                <div class="aspect-icon awareness-icon"></div>
+                                <div class="aspect-content">
+                                    <h4>情感意识</h4>
+                                    <p>对自身情绪状态的认知与理解是否提高</p>
+                                    <div class="aspect-rating">
+                                        <button class="rating-btn" data-value="1">1</button>
+                                        <button class="rating-btn" data-value="2">2</button>
+                                        <button class="rating-btn" data-value="3">3</button>
+                                        <button class="rating-btn" data-value="4">4</button>
+                                        <button class="rating-btn" data-value="5">5</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="aspect-item" data-aspect="expression">
+                                <div class="aspect-icon expression-icon"></div>
+                                <div class="aspect-content">
+                                    <h4>表达能力</h4>
+                                    <p>通过艺术表达情感的能力是否提升</p>
+                                    <div class="aspect-rating">
+                                        <button class="rating-btn" data-value="1">1</button>
+                                        <button class="rating-btn" data-value="2">2</button>
+                                        <button class="rating-btn" data-value="3">3</button>
+                                        <button class="rating-btn" data-value="4">4</button>
+                                        <button class="rating-btn" data-value="5">5</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="aspect-item" data-aspect="regulation">
+                                <div class="aspect-icon regulation-icon"></div>
+                                <div class="aspect-content">
+                                    <h4>情绪调节</h4>
+                                    <p>调节和管理情绪状态的能力是否增强</p>
+                                    <div class="aspect-rating">
+                                        <button class="rating-btn" data-value="1">1</button>
+                                        <button class="rating-btn" data-value="2">2</button>
+                                        <button class="rating-btn" data-value="3">3</button>
+                                        <button class="rating-btn" data-value="4">4</button>
+                                        <button class="rating-btn" data-value="5">5</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="aspect-item" data-aspect="insight">
+                                <div class="aspect-icon insight-icon"></div>
+                                <div class="aspect-content">
+                                    <h4>自我洞察</h4>
+                                    <p>对内心世界的探索与理解是否深入</p>
+                                    <div class="aspect-rating">
+                                        <button class="rating-btn" data-value="1">1</button>
+                                        <button class="rating-btn" data-value="2">2</button>
+                                        <button class="rating-btn" data-value="3">3</button>
+                                        <button class="rating-btn" data-value="4">4</button>
+                                        <button class="rating-btn" data-value="5">5</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card insight-card">
+                        <h3>创作洞察</h3>
+                        <p class="card-description">请分享此次创作过程中的洞察或发现</p>
+                        
+                        <div class="insight-input">
+                            <textarea id="insight-text" placeholder="请分享您在创作过程中的感受、发现或洞察..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第四部分：综合评估 -->
+                <div class="evaluation-section" id="section-4">
+                    <div class="section-title">综合评估</div>
+                    
+                    <div class="card summary-card">
+                        <h3>整体效果评估</h3>
+                        <p class="card-description">对整体疗愈体验进行综合评估</p>
+                        
+                        <div class="summary-rating">
+                            <div class="rating-scale">
+                                <div class="scale-marker" data-value="1">1</div>
+                                <div class="scale-marker" data-value="2">2</div>
+                                <div class="scale-marker" data-value="3">3</div>
+                                <div class="scale-marker" data-value="4">4</div>
+                                <div class="scale-marker" data-value="5">5</div>
+                                <div class="scale-marker" data-value="6">6</div>
+                                <div class="scale-marker" data-value="7">7</div>
+                                <div class="scale-marker" data-value="8">8</div>
+                                <div class="scale-marker" data-value="9">9</div>
+                                <div class="scale-marker" data-value="10">10</div>
+                            </div>
+                            <div class="scale-slider-container">
+                                <input type="range" min="1" max="10" value="5" class="scale-slider" id="overall-rating">
+                            </div>
+                            <div class="scale-labels">
+                                <span class="scale-start">无效果</span>
+                                <span class="scale-current" id="rating-label">一般</span>
+                                <span class="scale-end">非常有效</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card suggestion-card">
+                        <h3>改进建议</h3>
+                        <p class="card-description">请提供您对系统的改进建议</p>
+                        
+                        <div class="suggestion-input">
+                            <textarea id="suggestion-text" placeholder="请提供您对Green艺术疗愈系统的改进建议..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导航按钮 -->
+            <div class="navigation-buttons">
+                <button id="prev-btn" class="nav-btn prev-btn" disabled>上一步</button>
+                <button id="next-btn" class="nav-btn next-btn">下一步</button>
+                <button id="submit-btn" class="nav-btn submit-btn" style="display: none;">提交评估</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/analysis.js"></script>
+</body>
+</html> 
