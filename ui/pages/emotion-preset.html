@@ -1,41 +1,652 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green - 情感计算系统预设</title>
+    <title>Green - 情感计算自适应预设</title>
     <link rel="stylesheet" href="../css/emotion-preset.css">
 </head>
 <body>
-    <div class="preset-container">
-        <!-- 背景层 -->
-        <div class="bg-layer"></div>
-        
-        <!-- 顶部导航 -->
-        <header class="header">
-            <div class="logo">Green</div>
-            <div class="header-title">情感计算系统预设</div>
-            <div class="progress-indicator">
-                <span class="current-step">1</span>/<span class="total-steps">5</span>
-            </div>
-        </header>
-        
-        <!-- 页面指示器 -->
-        <div class="page-indicator" id="pageIndicator"></div>
-        
-        <!-- 页面容器 -->
-        <div class="pages-container" id="pagesContainer">
-            <!-- 这里将通过JS动态插入预设页面 -->
+    <div class="emotion-preset-container">
+        <!-- 背景元素 -->
+        <div class="ep-background-elements">
+            <div class="ep-blur-circle ep-circle-1"></div>
+            <div class="ep-blur-circle ep-circle-2"></div>
+            <div class="ep-blur-circle ep-circle-3"></div>
         </div>
         
-        <!-- 页脚导航 -->
-        <footer class="footer">
-            <button class="footer-btn prev-btn" id="prevBtn">上一步</button>
-            <button class="footer-btn skip-btn" id="skipBtn">跳过</button>
-            <button class="footer-btn next-btn" id="nextBtn">下一步</button>
-        </footer>
+        <!-- 页头 -->
+        <header class="ep-header">
+            <div class="ep-logo">
+                <span class="ep-logo-text">Green</span>
+                <div class="ep-logo-leaf"></div>
+            </div>
+            <h1 class="ep-page-title">情感计算自适应预设</h1>
+        </header>
+        
+        <!-- 内容容器 -->
+        <div class="ep-content-wrapper">
+            <!-- 子页面导航 -->
+            <div class="ep-step-indicator">
+                <ul>
+                    <li class="ep-step active" data-step="1">基线测量</li>
+                    <li class="ep-step" data-step="2">画像与偏好</li>
+                    <li class="ep-step" data-step="3">自适应策略</li>
+                    <li class="ep-step" data-step="4">模态融合</li>
+                    <li class="ep-step" data-step="5">反馈映射</li>
+                </ul>
+                <div class="ep-progress-bar">
+                    <div class="ep-progress-fill"></div>
+                </div>
+            </div>
+            
+            <!-- 子页面内容 -->
+            <div class="ep-steps-container">
+                <!-- 子页面1：基线测量 -->
+                <div class="ep-step-content active" id="step-1">
+                    <h2 class="ep-section-title">基线测量 (Baseline)</h2>
+                    <div class="ep-card ep-baseline-card">
+                        <div class="ep-card-content">
+                            <div class="ep-card-left">
+                                <p class="ep-card-description">
+                                    基线测量会记录您在平静状态下的生理和行为数据，作为情绪波动的参考点。
+                                    测量期间请保持放松，避免急促呼吸或剧烈运动。
+                                </p>
+                                <div class="ep-status-block">
+                                    <div class="ep-status-icon"></div>
+                                    <div class="ep-status-text">准备就绪</div>
+                                </div>
+                                <div class="ep-controls">
+                                    <button class="ep-button" id="start-baseline">开始测量</button>
+                                    <button class="ep-button ep-button-secondary" id="skip-baseline">使用默认值</button>
+                                </div>
+                            </div>
+                            <div class="ep-card-right">
+                                <div class="ep-baseline-visual">
+                                    <div class="ep-datastreams-container">
+                                        <div class="ep-datastream">
+                                            <div class="ep-datastream-label">心率</div>
+                                            <div class="ep-datastream-vis" id="heart-rate-vis"></div>
+                                            <div class="ep-datastream-value">-- BPM</div>
+                                        </div>
+                                        <div class="ep-datastream">
+                                            <div class="ep-datastream-label">皮电</div>
+                                            <div class="ep-datastream-vis" id="gsr-vis"></div>
+                                            <div class="ep-datastream-value">-- μS</div>
+                                        </div>
+                                        <div class="ep-datastream">
+                                            <div class="ep-datastream-label">呼吸</div>
+                                            <div class="ep-datastream-vis" id="breath-vis"></div>
+                                            <div class="ep-datastream-value">-- /min</div>
+                                        </div>
+                                    </div>
+                                    <div class="ep-timer-container">
+                                        <div class="ep-timer-circle">
+                                            <svg viewBox="0 0 100 100">
+                                                <circle class="ep-timer-bg" cx="50" cy="50" r="45"/>
+                                                <circle class="ep-timer-progress" cx="50" cy="50" r="45"/>
+                                            </svg>
+                                            <div class="ep-timer-text">60</div>
+                                        </div>
+                                        <div class="ep-timer-label">剩余时间(秒)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 子页面2：画像与偏好 -->
+                <div class="ep-step-content" id="step-2">
+                    <h2 class="ep-section-title">画像与偏好 (User Profile)</h2>
+                    <div class="ep-card ep-profile-card">
+                        <div class="ep-card-content">
+                            <p class="ep-card-description">
+                                个人画像和偏好设置帮助系统更好地理解您的特点和需求，提供个性化的体验。
+                            </p>
+                            <form class="ep-profile-form">
+                                <div class="ep-form-section">
+                                    <h3 class="ep-form-section-title">个人特征</h3>
+                                    <div class="ep-form-row">
+                                        <div class="ep-form-group">
+                                            <label for="personality-type">性格倾向</label>
+                                            <select id="personality-type" class="ep-select">
+                                                <option value="introvert">内向型</option>
+                                                <option value="ambivert" selected>中间型</option>
+                                                <option value="extrovert">外向型</option>
+                                            </select>
+                                        </div>
+                                        <div class="ep-form-group">
+                                            <label for="stress-sensitivity">压力敏感度</label>
+                                            <div class="ep-range-slider">
+                                                <input type="range" id="stress-sensitivity" min="1" max="10" value="5">
+                                                <div class="ep-range-labels">
+                                                    <span>低</span>
+                                                    <span>中</span>
+                                                    <span>高</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ep-form-section">
+                                    <h3 class="ep-form-section-title">反馈偏好</h3>
+                                    <div class="ep-form-row">
+                                        <div class="ep-checkbox-group">
+                                            <div class="ep-checkbox">
+                                                <input type="checkbox" id="pref-visual" checked>
+                                                <label for="pref-visual">视觉反馈</label>
+                                            </div>
+                                            <div class="ep-checkbox">
+                                                <input type="checkbox" id="pref-sound" checked>
+                                                <label for="pref-sound">声音反馈</label>
+                                            </div>
+                                            <div class="ep-checkbox">
+                                                <input type="checkbox" id="pref-text" checked>
+                                                <label for="pref-text">文字提示</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ep-form-section">
+                                    <h3 class="ep-form-section-title">干预强度</h3>
+                                    <div class="ep-form-row">
+                                        <div class="ep-radio-group">
+                                            <div class="ep-radio">
+                                                <input type="radio" name="intervention" id="intervention-light" value="light">
+                                                <label for="intervention-light">轻度（微妙的提示）</label>
+                                            </div>
+                                            <div class="ep-radio">
+                                                <input type="radio" name="intervention" id="intervention-moderate" value="moderate" checked>
+                                                <label for="intervention-moderate">适中（明显但不打扰）</label>
+                                            </div>
+                                            <div class="ep-radio">
+                                                <input type="radio" name="intervention" id="intervention-strong" value="strong">
+                                                <label for="intervention-strong">强烈（直接干预）</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ep-form-actions">
+                                    <button type="button" class="ep-button" id="save-profile">保存画像</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 子页面3：自适应策略库 -->
+                <div class="ep-step-content" id="step-3">
+                    <h2 class="ep-section-title">自适应策略库 (Adaptation Strategies)</h2>
+                    <div class="ep-card ep-strategies-card">
+                        <div class="ep-card-content">
+                            <p class="ep-card-description">
+                                选择系统在检测到不同情绪状态时采取的策略。您可以根据个人需求启用或禁用各种策略。
+                            </p>
+                            
+                            <div class="ep-strategies-container">
+                                <div class="ep-strategy-group">
+                                    <h3 class="ep-group-title">积极情绪增强</h3>
+                                    <div class="ep-strategy-items">
+                                        <div class="ep-strategy-item">
+                                            <div class="ep-strategy-header">
+                                                <div class="ep-strategy-toggle">
+                                                    <input type="checkbox" id="strategy-1" checked>
+                                                    <label for="strategy-1"></label>
+                                                </div>
+                                                <h4 class="ep-strategy-title">色彩增强</h4>
+                                            </div>
+                                            <p class="ep-strategy-desc">检测到积极情绪时，增强绘画工具的色彩饱和度，促进创造力表达</p>
+                                            <div class="ep-strategy-priority">
+                                                <span>优先级</span>
+                                                <select class="ep-select-small">
+                                                    <option value="1">低</option>
+                                                    <option value="2" selected>中</option>
+                                                    <option value="3">高</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="ep-strategy-item">
+                                            <div class="ep-strategy-header">
+                                                <div class="ep-strategy-toggle">
+                                                    <input type="checkbox" id="strategy-2" checked>
+                                                    <label for="strategy-2"></label>
+                                                </div>
+                                                <h4 class="ep-strategy-title">动态粒子增加</h4>
+                                            </div>
+                                            <p class="ep-strategy-desc">根据积极情绪程度，增加画布背景的动态粒子数量和活跃度</p>
+                                            <div class="ep-strategy-priority">
+                                                <span>优先级</span>
+                                                <select class="ep-select-small">
+                                                    <option value="1">低</option>
+                                                    <option value="2" selected>中</option>
+                                                    <option value="3">高</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ep-strategy-group">
+                                    <h3 class="ep-group-title">压力缓解</h3>
+                                    <div class="ep-strategy-items">
+                                        <div class="ep-strategy-item">
+                                            <div class="ep-strategy-header">
+                                                <div class="ep-strategy-toggle">
+                                                    <input type="checkbox" id="strategy-3" checked>
+                                                    <label for="strategy-3"></label>
+                                                </div>
+                                                <h4 class="ep-strategy-title">呼吸引导</h4>
+                                            </div>
+                                            <p class="ep-strategy-desc">检测到压力升高时，提供视觉呼吸引导，帮助调节呼吸节奏</p>
+                                            <div class="ep-strategy-priority">
+                                                <span>优先级</span>
+                                                <select class="ep-select-small">
+                                                    <option value="1">低</option>
+                                                    <option value="2">中</option>
+                                                    <option value="3" selected>高</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="ep-strategy-item">
+                                            <div class="ep-strategy-header">
+                                                <div class="ep-strategy-toggle">
+                                                    <input type="checkbox" id="strategy-4" checked>
+                                                    <label for="strategy-4"></label>
+                                                </div>
+                                                <h4 class="ep-strategy-title">背景音效调整</h4>
+                                            </div>
+                                            <p class="ep-strategy-desc">根据压力水平自动调整背景音乐和环境音效，创造放松氛围</p>
+                                            <div class="ep-strategy-priority">
+                                                <span>优先级</span>
+                                                <select class="ep-select-small">
+                                                    <option value="1">低</option>
+                                                    <option value="2" selected>中</option>
+                                                    <option value="3">高</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ep-add-strategy">
+                                    <button class="ep-button ep-button-outline">
+                                        <span class="ep-plus-icon">+</span>
+                                        添加新策略
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 子页面4：多模态融合权重 -->
+                <div class="ep-step-content" id="step-4">
+                    <h2 class="ep-section-title">多模态融合权重 (Fusion Weights)</h2>
+                    <div class="ep-card ep-fusion-card">
+                        <div class="ep-card-content">
+                            <p class="ep-card-description">
+                                调整不同情感数据来源的权重，以优化情感识别的准确性。拖动滑块设置各模态的影响程度。
+                            </p>
+                            
+                            <div class="ep-fusion-container">
+                                <div class="ep-fusion-visual">
+                                    <canvas id="fusion-radar-chart" width="300" height="300"></canvas>
+                                </div>
+                                
+                                <div class="ep-fusion-settings">
+                                    <div class="ep-weight-item">
+                                        <div class="ep-weight-header">
+                                            <div class="ep-weight-color" style="background-color: rgba(183, 254, 93, 0.7)"></div>
+                                            <div class="ep-weight-name">面部表情</div>
+                                            <div class="ep-weight-value">35%</div>
+                                        </div>
+                                        <div class="ep-weight-slider">
+                                            <input type="range" id="facial-weight" min="0" max="100" value="35">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="ep-weight-item">
+                                        <div class="ep-weight-header">
+                                            <div class="ep-weight-color" style="background-color: rgba(110, 198, 0, 0.7)"></div>
+                                            <div class="ep-weight-name">心率数据</div>
+                                            <div class="ep-weight-value">25%</div>
+                                        </div>
+                                        <div class="ep-weight-slider">
+                                            <input type="range" id="heart-weight" min="0" max="100" value="25">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="ep-weight-item">
+                                        <div class="ep-weight-header">
+                                            <div class="ep-weight-color" style="background-color: rgba(69, 119, 4, 0.7)"></div>
+                                            <div class="ep-weight-name">皮电反应</div>
+                                            <div class="ep-weight-value">20%</div>
+                                        </div>
+                                        <div class="ep-weight-slider">
+                                            <input type="range" id="gsr-weight" min="0" max="100" value="20">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="ep-weight-item">
+                                        <div class="ep-weight-header">
+                                            <div class="ep-weight-color" style="background-color: rgba(40, 70, 0, 0.7)"></div>
+                                            <div class="ep-weight-name">绘画行为</div>
+                                            <div class="ep-weight-value">15%</div>
+                                        </div>
+                                        <div class="ep-weight-slider">
+                                            <input type="range" id="drawing-weight" min="0" max="100" value="15">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="ep-weight-item">
+                                        <div class="ep-weight-header">
+                                            <div class="ep-weight-color" style="background-color: rgba(200, 255, 150, 0.7)"></div>
+                                            <div class="ep-weight-name">环境数据</div>
+                                            <div class="ep-weight-value">5%</div>
+                                        </div>
+                                        <div class="ep-weight-slider">
+                                            <input type="range" id="env-weight" min="0" max="100" value="5">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ep-fusion-actions">
+                                <button class="ep-button" id="test-fusion">测试融合效果</button>
+                                <button class="ep-button ep-button-secondary" id="reset-fusion">重置默认值</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 子页面5：反馈映射规则 -->
+                <div class="ep-step-content" id="step-5">
+                    <h2 class="ep-section-title">反馈映射规则 (Feedback Mapping)</h2>
+                    <div class="ep-card ep-feedback-card">
+                        <div class="ep-card-content">
+                            <p class="ep-card-description">
+                                设置情感状态如何映射到交互反馈。这些规则决定了系统如何通过视觉、声音和交互元素响应您的情绪变化。
+                            </p>
+                            
+                            <div class="ep-feedback-container">
+                                <div class="ep-tabs">
+                                    <div class="ep-tab active" data-tab="visual">视觉反馈</div>
+                                    <div class="ep-tab" data-tab="audio">音频反馈</div>
+                                    <div class="ep-tab" data-tab="interface">界面反馈</div>
+                                </div>
+                                
+                                <div class="ep-tab-content active" id="visual-tab">
+                                    <div class="ep-mapping-rules">
+                                        <div class="ep-mapping-rule">
+                                            <div class="ep-rule-header">
+                                                <h3 class="ep-rule-name">色彩映射</h3>
+                                                <div class="ep-rule-toggle">
+                                                    <input type="checkbox" id="color-mapping" checked>
+                                                    <label for="color-mapping"></label>
+                                                </div>
+                                            </div>
+                                            <div class="ep-rule-body">
+                                                <div class="ep-rule-preview">
+                                                    <div class="ep-color-gradient"></div>
+                                                </div>
+                                                <div class="ep-rule-setup">
+                                                    <div class="ep-rule-row">
+                                                        <span>积极 → </span>
+                                                        <div class="ep-color-picker">
+                                                            <input type="color" value="#B7FE5D">
+                                                        </div>
+                                                        <span>明亮绿色</span>
+                                                    </div>
+                                                    <div class="ep-rule-row">
+                                                        <span>平静 → </span>
+                                                        <div class="ep-color-picker">
+                                                            <input type="color" value="#6EC600">
+                                                        </div>
+                                                        <span>中性绿色</span>
+                                                    </div>
+                                                    <div class="ep-rule-row">
+                                                        <span>压力 → </span>
+                                                        <div class="ep-color-picker">
+                                                            <input type="color" value="#457704">
+                                                        </div>
+                                                        <span>深沉绿色</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="ep-mapping-rule">
+                                            <div class="ep-rule-header">
+                                                <h3 class="ep-rule-name">粒子反应</h3>
+                                                <div class="ep-rule-toggle">
+                                                    <input type="checkbox" id="particle-reaction" checked>
+                                                    <label for="particle-reaction"></label>
+                                                </div>
+                                            </div>
+                                            <div class="ep-rule-body">
+                                                <div class="ep-rule-preview">
+                                                    <div class="ep-particle-preview"></div>
+                                                </div>
+                                                <div class="ep-rule-setup">
+                                                    <div class="ep-rule-row ep-slider-row">
+                                                        <span>粒子数量</span>
+                                                        <input type="range" min="10" max="500" value="150">
+                                                        <span>150</span>
+                                                    </div>
+                                                    <div class="ep-rule-row ep-slider-row">
+                                                        <span>运动速度</span>
+                                                        <input type="range" min="1" max="10" value="5">
+                                                        <span>5</span>
+                                                    </div>
+                                                    <div class="ep-rule-row ep-slider-row">
+                                                        <span>大小变化</span>
+                                                        <input type="range" min="1" max="10" value="3">
+                                                        <span>3</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ep-tab-content" id="audio-tab">
+                                    <div class="ep-mapping-rules">
+                                        <div class="ep-mapping-rule">
+                                            <div class="ep-rule-header">
+                                                <h3 class="ep-rule-name">背景音效</h3>
+                                                <div class="ep-rule-toggle">
+                                                    <input type="checkbox" id="audio-background" checked>
+                                                    <label for="audio-background"></label>
+                                                </div>
+                                            </div>
+                                            <div class="ep-rule-body">
+                                                <div class="ep-rule-preview">
+                                                    <div class="ep-audio-visualizer"></div>
+                                                </div>
+                                                <div class="ep-rule-setup">
+                                                    <div class="ep-rule-row ep-dropdown-row">
+                                                        <span>积极情绪</span>
+                                                        <select class="ep-select-small">
+                                                            <option value="forest">森林晨光</option>
+                                                            <option value="stream" selected>小溪流水</option>
+                                                            <option value="birds">鸟鸣晴空</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="ep-rule-row ep-dropdown-row">
+                                                        <span>平静情绪</span>
+                                                        <select class="ep-select-small">
+                                                            <option value="waves">海浪轻抚</option>
+                                                            <option value="rain" selected>雨滴落叶</option>
+                                                            <option value="wind">微风吹拂</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="ep-rule-row ep-slider-row">
+                                                        <span>音量</span>
+                                                        <input type="range" min="0" max="100" value="60">
+                                                        <span>60%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="ep-tab-content" id="interface-tab">
+                                    <div class="ep-mapping-rules">
+                                        <div class="ep-mapping-rule">
+                                            <div class="ep-rule-header">
+                                                <h3 class="ep-rule-name">界面响应</h3>
+                                                <div class="ep-rule-toggle">
+                                                    <input type="checkbox" id="interface-response" checked>
+                                                    <label for="interface-response"></label>
+                                                </div>
+                                            </div>
+                                            <div class="ep-rule-body">
+                                                <div class="ep-rule-preview">
+                                                    <div class="ep-interface-preview"></div>
+                                                </div>
+                                                <div class="ep-rule-setup">
+                                                    <div class="ep-rule-row ep-checkbox-row">
+                                                        <div class="ep-checkbox">
+                                                            <input type="checkbox" id="breathing-ui" checked>
+                                                            <label for="breathing-ui">UI元素呼吸效果</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="ep-rule-row ep-checkbox-row">
+                                                        <div class="ep-checkbox">
+                                                            <input type="checkbox" id="blur-intensity" checked>
+                                                            <label for="blur-intensity">背景模糊响应情绪</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="ep-rule-row ep-checkbox-row">
+                                                        <div class="ep-checkbox">
+                                                            <input type="checkbox" id="tool-recommendation" checked>
+                                                            <label for="tool-recommendation">情绪触发工具推荐</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导航按钮 -->
+            <div class="ep-navigation-controls">
+                <button class="ep-nav-button ep-prev" id="prev-step" onclick="if(typeof navigateToStep === 'function' && window.epState && window.epState.currentStep > 1) { navigateToStep(window.epState.currentStep - 1); console.log('内联前一步点击'); }">上一步</button>
+                <button class="ep-nav-button ep-next" id="next-step" onclick="if(typeof navigateToStep === 'function' && window.epState && window.epState.currentStep < window.epState.totalSteps) { navigateToStep(window.epState.currentStep + 1); console.log('内联下一步点击'); }">下一步</button>
+                <button class="ep-nav-button ep-finish" id="finish-setup">完成设置</button>
+            </div>
+        </div>
     </div>
     
     <script src="../js/emotion-preset.js"></script>
+    
+    <!-- 确保页面与导航系统正确集成 -->
+    <script>
+        // 检测是否在iframe或作为子页面加载
+        function isEmbedded() {
+            try {
+                return window !== window.parent || 
+                       window.frameElement !== null || 
+                       window.parent.navigateToPage !== undefined;
+            } catch (e) {
+                // 如果跨域访问父窗口出错，则认为是在iframe中
+                return true;
+            }
+        }
+        
+        // 触发初始化
+        function triggerPageInit() {
+            // 如果是作为子页面加载的，且未初始化
+            if (isEmbedded() && !window.emotionPresetInitialized) {
+                console.log('页面直接触发初始化');
+                // 创建自定义事件
+                const initEvent = new CustomEvent('pageLoaded', {
+                    detail: {
+                        pageId: 'emotion-preset-page',
+                        timestamp: new Date()
+                    }
+                });
+                // 触发事件
+                window.dispatchEvent(initEvent);
+                
+                // 备用方法：直接调用初始化函数
+                if (typeof initEmotionPreset === 'function' && !window.emotionPresetInitialized) {
+                    setTimeout(initEmotionPreset, 100);
+                }
+            }
+        }
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 连接导航系统
+            if (window.parent && window.parent.navigateToPage) {
+                console.log('连接到父窗口导航系统');
+                window.navigateToPage = window.parent.navigateToPage;
+            }
+            
+            // 为保证完成设置按钮可以正常工作
+            const finishButton = document.getElementById('finish-setup');
+            if (finishButton && !finishButton.hasAttribute('data-init')) {
+                finishButton.setAttribute('data-init', 'true');
+                finishButton.addEventListener('click', function() {
+                    console.log('点击完成设置按钮');
+                    // 如果脚本未初始化，通过这个备份处理程序处理跳转
+                    if (!window.emotionPresetInitialized && window.navigateToPage) {
+                        window.navigateToPage('main-app-page');
+                    }
+                });
+            }
+            
+            // 添加额外的导航按钮事件确保
+            const prevButton = document.getElementById('prev-step');
+            const nextButton = document.getElementById('next-step');
+            
+            if (prevButton && !prevButton.hasAttribute('data-init')) {
+                prevButton.setAttribute('data-init', 'true');
+                prevButton.addEventListener('click', function() {
+                    console.log('直接绑定的前一步按钮点击事件');
+                    if (window.epState && window.epState.currentStep > 1) {
+                        if (typeof navigateToStep === 'function') {
+                            navigateToStep(window.epState.currentStep - 1);
+                        }
+                    }
+                });
+            }
+            
+            if (nextButton && !nextButton.hasAttribute('data-init')) {
+                nextButton.setAttribute('data-init', 'true');
+                nextButton.addEventListener('click', function() {
+                    console.log('直接绑定的下一步按钮点击事件');
+                    if (window.epState && window.epState.currentStep < window.epState.totalSteps) {
+                        if (typeof navigateToStep === 'function') {
+                            navigateToStep(window.epState.currentStep + 1);
+                        }
+                    }
+                });
+            }
+            
+            // 触发页面初始化
+            setTimeout(triggerPageInit, 300);
+        });
+        
+        // 备用：页面可见性变化时也检查初始化
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && !window.emotionPresetInitialized) {
+                triggerPageInit();
+            }
+        });
+    </script>
 </body>
 </html> 

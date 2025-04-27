@@ -2,109 +2,273 @@
  * Green应用介绍页面交互脚本
  */
 
-// 当DOM加载完成后执行
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化页面动画
-    initAnimations();
+// 封装初始化函数
+function initIntroPage() {
+    // 初始化全屏滚动
+    initFullPageScroll();
     
-    // 设置导航栏滚动效果
-    setupNavigation();
+    // 初始化卡片轮播
+    initCarousels();
     
     // 初始化背景特效
     initBackgroundEffects();
     
     // 设置入口按钮事件
-    document.getElementById('startButton').addEventListener('click', function() {
-        window.location.href = 'canvas.html';
+    const startButton = document.getElementById('startButton');
+    if (startButton) {
+        startButton.addEventListener('click', function() {
+            // 导航到下一个页面
+            if (window.parent && window.parent.navigateToPage) {
+                // 如果作为子页面，使用父窗口的导航系统
+                window.parent.navigateToPage('device-setup-page');
+            } else {
+                // 作为独立页面
+                window.location.href = 'device-setup.html';
+            }
     });
+    }
+}
+
+// 监听DOMContentLoaded事件（直接打开页面时触发）
+document.addEventListener('DOMContentLoaded', function() {
+    initIntroPage();
 });
 
-/**
- * 初始化页面动画
- */
-function initAnimations() {
-    // 页面滚动动画
-    const animatedElements = document.querySelectorAll('[data-aos]');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animated');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    });
-    
-    animatedElements.forEach(element => {
-        observer.observe(element);
-        
-        // 设置初始状态并立即显示元素，确保在JavaScript禁用时也能显示内容
-        element.classList.add('aos-init');
-        element.style.opacity = '1';
-        
-        // 设置延迟
-        const delay = element.getAttribute('data-aos-delay');
-        if (delay) {
-            element.style.transitionDelay = `${delay}ms`;
-        }
-    });
-    
-    // 立即显示所有部分
-    document.querySelectorAll('.section').forEach(section => {
-        section.style.opacity = '1';
-        section.style.transform = 'translateY(0)';
-    });
+// 监听自定义的pageLoaded事件（作为子页面加载时可以通过触发此事件进行初始化）
+document.addEventListener('pageLoaded', function() {
+    initIntroPage();
+});
+
+// 如果DOM已经加载完成（可能出现在加载为子页面后再添加代码的情况）
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initIntroPage();
 }
 
 /**
- * 设置导航栏滚动效果
+ * 初始化全屏滚动
  */
-function setupNavigation() {
-    const sections = document.querySelectorAll('.section');
+function initFullPageScroll() {
+    // 获取相关元素
+    const sections = document.querySelectorAll('.fullpage-section');
     const navItems = document.querySelectorAll('.nav-item');
+    const paginationItems = document.querySelectorAll('.fullpage-pagination li');
+    const fullpageWrapper = document.querySelector('.fullpage-wrapper');
     
-    // 平滑滚动到锚点
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const targetId = this.getAttribute('href');
-            const targetElement = document.querySelector(targetId);
-            
-            if (targetElement) {
-                window.scrollTo({
-                    top: targetElement.offsetTop - 80,
-                    behavior: 'smooth'
-                });
-                
-                // 更新活动导航项
-                navItems.forEach(item => item.classList.remove('active'));
-                this.parentElement.classList.add('active');
+    let currentIndex = 0;
+    let isScrolling = false;
+    let touchStartY = 0;
+    let touchEndY = 0;
+    
+    // 更新当前页面
+    function goToSection(index) {
+        if (isScrolling || index === currentIndex) return;
+        
+        if (index < 0) index = 0;
+        if (index >= sections.length) index = sections.length - 1;
+        
+        isScrolling = true;
+        currentIndex = index;
+        
+        // 更新页面位置
+        fullpageWrapper.style.transform = `translateY(-${index * 100}vh)`;
+        
+        // 更新导航状态
+        navItems.forEach(item => item.classList.remove('active'));
+        paginationItems.forEach(item => item.classList.remove('active'));
+        
+        navItems[index].classList.add('active');
+        paginationItems[index].classList.add('active');
+        
+        // 动画完成后允许再次滚动
+        setTimeout(() => {
+            isScrolling = false;
+        }, 800);
+    }
+    
+    // 添加页面滚轮事件
+    document.addEventListener('wheel', function(e) {
+        if (isScrolling) return;
+        
+        if (e.deltaY > 0) {
+            // 向下滚动
+            goToSection(currentIndex + 1);
+        } else {
+            // 向上滚动
+            goToSection(currentIndex - 1);
+        }
+    });
+    
+    // 添加触摸事件（移动端支持）
+    document.addEventListener('touchstart', function(e) {
+        touchStartY = e.touches[0].clientY;
+    });
+    
+    document.addEventListener('touchend', function(e) {
+        touchEndY = e.changedTouches[0].clientY;
+        
+        const deltaY = touchEndY - touchStartY;
+        
+        if (Math.abs(deltaY) > 100) { // 确保足够的滑动距离
+            if (deltaY < 0) {
+                // 向上滑动，显示下一部分
+                goToSection(currentIndex + 1);
+            } else {
+                // 向下滑动，显示上一部分
+                goToSection(currentIndex - 1);
             }
+        }
+    });
+    
+    // 添加键盘事件
+    document.addEventListener('keydown', function(e) {
+        if (isScrolling) return;
+        
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+            goToSection(currentIndex + 1);
+            e.preventDefault();
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+            goToSection(currentIndex - 1);
+            e.preventDefault();
+        }
+    });
+    
+    // 导航点击事件
+    navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const index = parseInt(this.getAttribute('data-index'));
+            goToSection(index);
         });
     });
     
-    // 滚动时更新活动导航项
-    window.addEventListener('scroll', function() {
-        let current = '';
-        const scrollPos = window.pageYOffset;
+    // 页面指示器点击事件
+    paginationItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            goToSection(index);
+        });
+    });
+    
+    // 初始化章节哈希检查
+    checkInitialHash();
+    
+    // 检查初始URL哈希值
+    function checkInitialHash() {
+        const hash = window.location.hash;
+        if (hash) {
+            const targetSection = document.querySelector(hash);
+            if (targetSection) {
+                const sectionArray = Array.from(sections);
+                const targetIndex = sectionArray.indexOf(targetSection);
+                if (targetIndex !== -1) {
+                    // 使用setTimeout以确保DOM完全加载
+                    setTimeout(() => goToSection(targetIndex), 100);
+                }
+            }
+        }
+    }
+    
+    // 监听哈希变化
+    window.addEventListener('hashchange', checkInitialHash);
+}
+
+/**
+ * 初始化卡片轮播
+ */
+function initCarousels() {
+    const carousels = document.querySelectorAll('.card-carousel');
+    
+    carousels.forEach(carousel => {
+        // 获取当前轮播的相关元素
+        const items = carousel.querySelectorAll('.carousel-item');
+        const prevBtn = carousel.querySelector('.carousel-control.prev');
+        const nextBtn = carousel.querySelector('.carousel-control.next');
+        const indicators = carousel.querySelectorAll('.carousel-indicators .indicator');
+        const target = carousel.querySelector('.carousel-controls').getAttribute('data-target');
         
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop - 100;
-            const sectionHeight = section.offsetHeight;
+        let currentIndex = 0;
+        
+        // 初始化显示第一个卡片
+        items[0].classList.add('active');
+        
+        // 显示指定索引的卡片
+        function showItem(index) {
+            if (index < 0) index = items.length - 1;
+            if (index >= items.length) index = 0;
             
-            if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
-                current = section.getAttribute('id');
+            // 更新当前索引
+            currentIndex = index;
+            
+            // 隐藏所有卡片，显示当前卡片
+            items.forEach(item => item.classList.remove('active'));
+            items[currentIndex].classList.add('active');
+            
+            // 更新指示器状态
+            indicators.forEach((indicator, i) => {
+                if (i === currentIndex) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            });
+        }
+        
+        // 添加按钮点击事件
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                showItem(currentIndex - 1);
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                showItem(currentIndex + 1);
+            });
+        }
+        
+        // 添加指示器点击事件
+        indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => {
+                showItem(index);
+            });
+        });
+        
+        // 添加键盘事件（左右箭头）
+        document.addEventListener('keydown', (e) => {
+            // 确保只有当前在显示相应的部分时才处理键盘事件
+            const currentSection = document.querySelector('.fullpage-section:nth-child(' + (document.querySelector('.nav-item.active').getAttribute('data-index') * 1 + 1) + ')');
+            if (currentSection && currentSection.id === target) {
+                if (e.key === 'ArrowLeft') {
+                    showItem(currentIndex - 1);
+                } else if (e.key === 'ArrowRight') {
+                    showItem(currentIndex + 1);
+                }
             }
         });
         
-        navItems.forEach(item => {
-            item.classList.remove('active');
-            if (item.querySelector(`a[href="#${current}"]`)) {
-                item.classList.add('active');
+        // 添加触摸滑动事件
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        carousel.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+        
+        carousel.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].clientX;
+            
+            // 计算滑动距离
+            const deltaX = touchEndX - touchStartX;
+            
+            // 确保足够的滑动距离
+            if (Math.abs(deltaX) > 50) {
+                if (deltaX > 0) {
+                    // 向右滑动，显示上一张
+                    showItem(currentIndex - 1);
+                } else {
+                    // 向左滑动，显示下一张
+                    showItem(currentIndex + 1);
+                }
             }
         });
     });

@@ -5,20 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Green - 情感表达与疗愈</title>
     <link rel="stylesheet" href="../css/intro.css">
-    <style>
-        /* 确保初始状态下元素也可见 */
-        .section {
-            opacity: 1 !important;
-            transform: none !important;
-        }
-        [data-aos] {
-            opacity: 1 !important;
-            transform: none !important;
-        }
-    </style>
 </head>
 <body>
-    <div class="intro-container">
+    <div class="fullpage-container">
         <!-- 背景元素 -->
         <div class="background-elements">
             <div class="blur-circle circle-1"></div>
@@ -43,183 +32,216 @@
             </div>
             <nav class="navigation">
                 <ul class="nav-list">
-                    <li class="nav-item active"><a href="#about">关于</a></li>
-                    <li class="nav-item"><a href="#features">功能</a></li>
-                    <li class="nav-item"><a href="#process">流程</a></li>
-                    <li class="nav-item"><a href="#start">开始体验</a></li>
+                    <li class="nav-item active" data-index="0"><a href="#about">关于</a></li>
+                    <li class="nav-item" data-index="1"><a href="#features">功能</a></li>
+                    <li class="nav-item" data-index="2"><a href="#process">流程</a></li>
+                    <li class="nav-item" data-index="3"><a href="#start">开始体验</a></li>
                 </ul>
             </nav>
         </header>
         
-        <!-- 主要内容区域 -->
-        <main class="main-content">
+        <!-- 全屏滚动容器 -->
+        <div class="fullpage-wrapper">
             <!-- 关于Green -->
-            <section id="about" class="section">
-                <h2 class="section-title">情感表达的新方式</h2>
-                <div class="card about-card">
-                    <div class="card-content">
-                        <div class="card-image"></div>
-                        <div class="card-text-container">
-                            <p class="card-text">
-                                Green是基于表达性艺术疗愈和情感计算系统的情感疗愈应用。通过绘画创作、情感数据分析和交互式体验，
-                                帮助你探索、表达和疏导情绪，实现心灵平衡与成长。
-                            </p>
-                            <p class="card-text">
-                                无论你是寻求压力释放的方式，还是希望更好地了解自己的情感世界，Green都能为你提供一个安全、舒适的数字空间。
-                            </p>
+            <section id="about" class="fullpage-section">
+                <div class="section-content">
+                    <h2 class="section-title">情感表达的新方式</h2>
+                    <div class="about-content">
+                        <div class="card about-card">
+                            <div class="card-content">
+                                <div class="card-image"></div>
+                                <div class="card-text-container">
+                                    <p class="card-text">
+                                        Green是基于表达性艺术疗愈和情感计算系统的情感疗愈应用。通过绘画创作、情感数据分析和交互式体验，
+                                        帮助你探索、表达和疏导情绪，实现心灵平衡与成长。
+                                    </p>
+                                    <p class="card-text">
+                                        无论你是寻求压力释放的方式，还是希望更好地了解自己的情感世界，Green都能为你提供一个安全、舒适的数字空间。
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
             
             <!-- 功能介绍 -->
-            <section id="features" class="section">
-                <h2 class="section-title">核心功能</h2>
-                <div class="features-grid">
-                    <!-- 艺术疗愈 -->
-                    <div class="feature-card" data-aos="fade-up">
-                        <div class="feature-icon art-icon"></div>
-                        <h3 class="feature-title">表达性艺术疗愈</h3>
-                        <p class="feature-desc">
-                            通过直观的绘画工具，释放内心情感。Green提供多种笔刷和调色板，让你无需专业技能也能表达情绪。
-                            每一笔都可能是对内心世界的探索，每种颜色都可能映射你的情感状态。
-                        </p>
-                        <div class="feature-image art-image"></div>
-                    </div>
-                    
-                    <!-- 情感计算 -->
-                    <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
-                        <div class="feature-icon data-icon"></div>
-                        <h3 class="feature-title">情感计算系统</h3>
-                        <p class="feature-desc">
-                            结合先进的生物数据传感和算法，Green能够客观分析你的情绪状态变化。
-                            系统会记录你的情感波动，提供实时反馈和个性化建议，帮助你更好地理解自己。
-                        </p>
-                        <div class="feature-image data-image"></div>
-                    </div>
-                    
-                    <!-- 交互体验 -->
-                    <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
-                        <div class="feature-icon interact-icon"></div>
-                        <h3 class="feature-title">沉浸式交互体验</h3>
-                        <p class="feature-desc">
-                            精心设计的用户界面创造出平静而富有表现力的创作环境。
-                            根据你的情感状态，Green会自动调整界面元素和推荐工具，
-                            使每次使用都成为一次个性化的情感之旅。
-                        </p>
-                        <div class="feature-image interact-image"></div>
+            <section id="features" class="fullpage-section">
+                <div class="section-content">
+                    <h2 class="section-title">核心功能</h2>
+                    <!-- 卡片轮播容器 -->
+                    <div class="card-carousel">
+                        <div class="carousel-container">
+                            <div class="carousel-track">
+                                <!-- 艺术疗愈 -->
+                                <div class="carousel-item">
+                                    <div class="feature-card">
+                                        <div class="feature-icon art-icon"></div>
+                                        <h3 class="feature-title">表达性艺术疗愈</h3>
+                                        <p class="feature-desc">
+                                            通过直观的绘画工具，释放内心情感。Green提供多种笔刷和调色板，让你无需专业技能也能表达情绪。
+                                            每一笔都可能是对内心世界的探索，每种颜色都可能映射你的情感状态。
+                                        </p>
+                                        <div class="feature-image art-image"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 情感计算 -->
+                                <div class="carousel-item">
+                                    <div class="feature-card">
+                                        <div class="feature-icon data-icon"></div>
+                                        <h3 class="feature-title">情感计算系统</h3>
+                                        <p class="feature-desc">
+                                            结合先进的生物数据传感和算法，Green能够客观分析你的情绪状态变化。
+                                            系统会记录你的情感波动，提供实时反馈和个性化建议，帮助你更好地理解自己。
+                                        </p>
+                                        <div class="feature-image data-image"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 交互体验 -->
+                                <div class="carousel-item">
+                                    <div class="feature-card">
+                                        <div class="feature-icon interact-icon"></div>
+                                        <h3 class="feature-title">沉浸式交互体验</h3>
+                                        <p class="feature-desc">
+                                            精心设计的用户界面创造出平静而富有表现力的创作环境。
+                                            根据你的情感状态，Green会自动调整界面元素和推荐工具，
+                                            使每次使用都成为一次个性化的情感之旅。
+                                        </p>
+                                        <div class="feature-image interact-image"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 轮播控制 -->
+                        <div class="carousel-controls">
+                            <button class="carousel-control prev" data-target="features">上一个</button>
+                            <div class="carousel-indicators" data-target="features">
+                                <span class="indicator active"></span>
+                                <span class="indicator"></span>
+                                <span class="indicator"></span>
+                            </div>
+                            <button class="carousel-control next" data-target="features">下一个</button>
+                        </div>
                     </div>
                 </div>
             </section>
             
             <!-- 使用流程 -->
-            <section id="process" class="section">
-                <h2 class="section-title">使用流程</h2>
-                <div class="process-timeline">
-                    <!-- 步骤1 -->
-                    <div class="process-step" data-aos="fade-right">
-                        <div class="step-number">1</div>
-                        <div class="step-content">
-                            <h3 class="step-title">连接与记录</h3>
-                            <p class="step-desc">
-                                佩戴生物传感器或使用设备摄像头，让Green开始收集你的情感数据。
-                                这些数据将被安全地记录和分析，用于理解你的情绪状态。
-                            </p>
-                            <div class="step-image connect-image"></div>
+            <section id="process" class="fullpage-section">
+                <div class="section-content">
+                    <h2 class="section-title">使用流程</h2>
+                    <!-- 流程卡片轮播容器 -->
+                    <div class="card-carousel">
+                        <div class="carousel-container">
+                            <div class="carousel-track">
+                                <!-- 步骤1 -->
+                                <div class="carousel-item">
+                                    <div class="process-card">
+                                        <div class="step-number">1</div>
+                                        <div class="step-content">
+                                            <h3 class="step-title">连接与记录</h3>
+                                            <p class="step-desc">
+                                                佩戴生物传感器或使用设备摄像头，让Green开始收集你的情感数据。
+                                                这些数据将被安全地记录和分析，用于理解你的情绪状态。
+                                            </p>
+                                            <div class="step-image connect-image"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 步骤2 -->
+                                <div class="carousel-item">
+                                    <div class="process-card">
+                                        <div class="step-number">2</div>
+                                        <div class="step-content">
+                                            <h3 class="step-title">艺术创作</h3>
+                                            <p class="step-desc">
+                                                在数字画布上自由表达。Green提供多种创作工具，
+                                                根据你的情感状态推荐适合的颜色和笔刷，辅助你将内心情感转化为视觉艺术。
+                                            </p>
+                                            <div class="step-image create-image"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 步骤3 -->
+                                <div class="carousel-item">
+                                    <div class="process-card">
+                                        <div class="step-number">3</div>
+                                        <div class="step-content">
+                                            <h3 class="step-title">情感分析</h3>
+                                            <p class="step-desc">
+                                                创作过程中和创作后，Green会呈现你的情感变化图表。
+                                                这些直观的数据可视化帮助你了解自己的情绪变化和创作过程中的情感起伏。
+                                            </p>
+                                            <div class="step-image analyze-image"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 步骤4 -->
+                                <div class="carousel-item">
+                                    <div class="process-card">
+                                        <div class="step-number">4</div>
+                                        <div class="step-content">
+                                            <h3 class="step-title">反思与成长</h3>
+                                            <p class="step-desc">
+                                                查看历史记录，反思情感变化模式。Green会提供个性化的建议和见解，
+                                                帮助你更好地理解和管理情绪，促进心理健康和个人成长。
+                                            </p>
+                                            <div class="step-image growth-image"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- 步骤2 -->
-                    <div class="process-step" data-aos="fade-right" data-aos-delay="100">
-                        <div class="step-number">2</div>
-                        <div class="step-content">
-                            <h3 class="step-title">艺术创作</h3>
-                            <p class="step-desc">
-                                在数字画布上自由表达。Green提供多种创作工具，
-                                根据你的情感状态推荐适合的颜色和笔刷，辅助你将内心情感转化为视觉艺术。
-                            </p>
-                            <div class="step-image create-image"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- 步骤3 -->
-                    <div class="process-step" data-aos="fade-right" data-aos-delay="200">
-                        <div class="step-number">3</div>
-                        <div class="step-content">
-                            <h3 class="step-title">情感分析</h3>
-                            <p class="step-desc">
-                                创作过程中和创作后，Green会呈现你的情感变化图表。
-                                这些直观的数据可视化帮助你了解自己的情绪变化和创作过程中的情感起伏。
-                            </p>
-                            <div class="step-image analyze-image"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- 步骤4 -->
-                    <div class="process-step" data-aos="fade-right" data-aos-delay="300">
-                        <div class="step-number">4</div>
-                        <div class="step-content">
-                            <h3 class="step-title">反思与成长</h3>
-                            <p class="step-desc">
-                                查看历史记录，反思情感变化模式。Green会提供个性化的建议和见解，
-                                帮助你更好地理解和管理情绪，促进心理健康和个人成长。
-                            </p>
-                            <div class="step-image growth-image"></div>
+                        
+                        <!-- 轮播控制 -->
+                        <div class="carousel-controls">
+                            <button class="carousel-control prev" data-target="process">上一个</button>
+                            <div class="carousel-indicators" data-target="process">
+                                <span class="indicator active"></span>
+                                <span class="indicator"></span>
+                                <span class="indicator"></span>
+                                <span class="indicator"></span>
+                            </div>
+                            <button class="carousel-control next" data-target="process">下一个</button>
                         </div>
                     </div>
                 </div>
             </section>
             
             <!-- 开始使用 -->
-            <section id="start" class="section">
-                <h2 class="section-title">开始你的情感之旅</h2>
-                <div class="card cta-card" data-aos="zoom-in">
-                    <p class="card-text">
-                        无论你是希望释放压力、探索内心，还是寻求创意表达的新方式，
-                        Green都能为你提供一个安全而富有创意的空间。现在就开始你的情感探索之旅吧！
-                    </p>
-                    <div class="cta-container">
-                        <button class="cta-button pulse" id="startButton">进入Green</button>
+            <section id="start" class="fullpage-section">
+                <div class="section-content">
+                    <h2 class="section-title">开始你的情感之旅</h2>
+                    <div class="card cta-card">
+                        <p class="card-text">
+                            无论你是希望释放压力、探索内心，还是寻求创意表达的新方式，
+                            Green都能为你提供一个安全而富有创意的空间。现在就开始你的情感探索之旅吧！
+                        </p>
+                        <div class="cta-container">
+                            <button class="cta-button pulse" id="startButton">进入Green</button>
+                        </div>
                     </div>
                 </div>
             </section>
-        </main>
+        </div>
+        
+        <!-- 全屏导航指示器 -->
+        <div class="fullpage-pagination">
+            <ul>
+                <li class="active" data-index="0"></li>
+                <li data-index="1"></li>
+                <li data-index="2"></li>
+                <li data-index="3"></li>
+            </ul>
+        </div>
     </div>
     
     <script src="../js/intro.js"></script>
-    <!-- 初始预加载脚本 -->
-    <script>
-        // 确保页面内容在JS加载前可见
-        document.addEventListener('DOMContentLoaded', function() {
-            // 创建初始表情背景
-            createSimpleEmojis();
-            
-            // 暂时显示所有元素
-            document.querySelectorAll('.section, [data-aos]').forEach(el => {
-                el.style.opacity = '1';
-                el.style.transform = 'none';
-            });
-        });
-        
-        // 简单的表情背景创建
-        function createSimpleEmojis() {
-            const container = document.getElementById('emojiContainer');
-            if (!container) return;
-            
-            const emojis = ['😊', '🌿', '💚'];
-            for (let i = 0; i < 5; i++) {
-                const emoji = document.createElement('div');
-                emoji.textContent = emojis[i % emojis.length];
-                emoji.style.cssText = `
-                    position: absolute;
-                    left: ${Math.random() * 100}%;
-                    top: ${Math.random() * 100}%;
-                    font-size: 24px;
-                    opacity: 0.1;
-                `;
-                container.appendChild(emoji);
-            }
-        }
-    </script>
 </body>
 </html>
