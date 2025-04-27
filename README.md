@@ -1,7 +1,7 @@
 # Green - 情感疗愈交互应用
 
 <p align="center">
-  <img src="./assets/logo.png" alt="Green Logo" width="200" height="200">
+  <img src="./ui/logo.png" alt="Green Logo" width="200" height="200">
 </p>
 
 ## 项目概述
