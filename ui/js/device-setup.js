@@ -173,9 +173,15 @@ function initDeviceSetup() {
         const container = devicePages[deviceIndex].querySelector('.device-container');
         const statusIndicator = container.querySelector('.connection-status');
         const waitingText = container.querySelector('.waiting-text');
+        const connectButton = devicePages[deviceIndex].querySelector('.connect-btn');
         
         // 更新连接状态文本
         waitingText.textContent = '正在连接...';
+        
+        // 禁用连接按钮并改变样式
+        connectButton.disabled = true;
+        connectButton.textContent = '连接中...';
+        connectButton.style.backgroundColor = '#5CB100';
         
         // 模拟连接过程
         setTimeout(function() {
@@ -184,13 +190,17 @@ function initDeviceSetup() {
             statusIndicator.classList.add('connected');
             waitingText.textContent = '设备已连接';
             
+            // 更新按钮文本和样式
+            connectButton.textContent = '已连接';
+            connectButton.style.backgroundColor = 'rgba(110, 198, 0, 0.6)';
+            
             // 根据设备类型显示不同界面
             switch(deviceIndex) {
                 case 0:
-                    showHeartRateData(container);
+                    showSkinData(container);
                     break;
                 case 1:
-                    showSkinData(container);
+                    showHeartRateData(container);
                     break;
                 case 2:
                     showCameraFeed(container);
@@ -248,17 +258,18 @@ function initDeviceSetup() {
         const svgNS = "http://www.w3.org/2000/svg";
         const path = document.createElementNS(svgNS, "path");
         
-        // 生成一个简单的心率波形
+        // 生成一个不规则的心率波形
         let d = "M0,50";
-        for (let i = 0; i < 10; i++) {
-            const x1 = i * 30;
-            const x2 = x1 + 10;
-            const x3 = x1 + 15;
-            const x4 = x1 + 20;
-            const x5 = x1 + 30;
+        for (let i = 0; i < 20; i++) {
+            const x1 = i * 20; // 缩小间距使波形更密集
+            const x2 = x1 + (Math.random() * 5 + 5); // 随机波峰位置
+            const x3 = x1 + (Math.random() * 5 + 10); // 随机波谷位置
+            const x4 = x1 + (Math.random() * 5 + 15); // 随机恢复位置
+            const x5 = x1 + 20; // 周期结束
             
             const intensity = (heartRate - 60) / 40; // 0-1范围
-            const height = 30 + intensity * 20;
+            const randomFactor = Math.random() * 0.5 + 0.75; // 引入随机性
+            const height = (30 + intensity * 20) * randomFactor;
             
             d += ` L${x1},50 L${x2},${50-height} L${x3},${50+height/2} L${x4},${50-height/3} L${x5},50`;
         }
@@ -314,15 +325,17 @@ function initDeviceSetup() {
         const svgNS = "http://www.w3.org/2000/svg";
         const path = document.createElementNS(svgNS, "path");
         
-        // 生成一个简单的皮电波形
+        // 生成一个更不规则的皮电波形
         let d = "M0,50";
         
-        for (let i = 0; i < 100; i++) {
-            const x = i * 3;
-            // 平滑的波形
+        for (let i = 0; i < 200; i++) { // 增加点数以延长波形
+            const x = i * 2; // 缩小间距使波形更长
+            // 添加多种频率的正弦波以增加不规则性
             const intensity = (skinData - 1) / 9; // 0-1范围
-            const variation = Math.sin(i * 0.1) * 5 * intensity;
-            const y = 50 - (intensity * 30) - variation;
+            const baseVariation = Math.sin(i * 0.1) * 5 * intensity;
+            const noise1 = Math.sin(i * 0.25) * 3 * Math.random() * intensity;
+            const noise2 = Math.sin(i * 0.05) * 7 * Math.random() * intensity;
+            const y = 50 - (intensity * 30) - baseVariation - noise1 - noise2;
             
             // 平滑过渡
             d += ` L${x},${y}`;
@@ -340,7 +353,6 @@ function initDeviceSetup() {
     function showCameraFeed(container) {
         const dataContainer = container.querySelector('.camera-container');
         const video = document.getElementById('camera-preview');
-        const emotionDisplay = container.querySelector('.emotion-display');
         
         // 显示数据容器
         dataContainer.style.display = 'block';
@@ -351,11 +363,6 @@ function initDeviceSetup() {
                 .then(function(stream) {
                     if (video && document.contains(video)) {
                         video.srcObject = stream;
-                        
-                        // 模拟情绪识别
-                        setTimeout(function() {
-                            simulateEmotionDetection(emotionDisplay);
-                        }, 2000);
                     } else {
                         // 安全地关闭流
                         stream.getTracks().forEach(track => track.stop());
@@ -372,24 +379,6 @@ function initDeviceSetup() {
                 dataContainer.innerHTML = "<p>您的浏览器不支持摄像头功能。</p>";
             }
         }
-    }
-    
-    // 模拟情绪识别
-    function simulateEmotionDetection(display) {
-        if (!display || !document.contains(display)) return;
-        
-        const emotions = ['平静', '开心', '专注', '思考'];
-        
-        // 定时改变情绪显示
-        const interval = setInterval(function() {
-            if (!document.contains(display)) {
-                clearInterval(interval);
-                return;
-            }
-            
-            const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
-            display.textContent = randomEmotion;
-        }, 3000);
     }
     
     // 显示数位板画布
@@ -412,7 +401,7 @@ function initDeviceSetup() {
             
             // 设置画布尺寸
             canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+            canvas.height = 120; // 将高度从60px改为120px
             
             // 清除画布
             clearBtn.addEventListener('click', function() {

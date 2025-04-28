@@ -6,7 +6,24 @@
   "scripts": {
     "start": "electron .",
     "signaling": "node webrtc_config/signaling-server.js",
-    "dev": "concurrently \"npm run signaling\" \"npm run start\""
+    "dev": "concurrently \"npm run signaling\" \"npm run start\"",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.green.app",
+    "productName": "Green",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "ui/asset/App_icon.png"
+    },
+    "mac": {
+      "icon": "ui/asset/App_icon.png"
+    },
+    "linux": {
+      "icon": "ui/asset/App_icon.png"
+    }
   },
   "keywords": [
     "electron",
@@ -29,6 +46,7 @@
     "ws": "^8.13.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.0",
+    "electron-builder": "^26.0.12"
   }
 }

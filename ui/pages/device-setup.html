@@ -8,10 +8,16 @@
 </head>
 <body class="device-setup-page">
     <div class="device-setup-container">
-        <div class="bg-layer"></div>
+        <div class="bg-layer">
+            <!-- 添加背景点缀元素 -->
+            <div class="bg-dots"></div>
+            <div class="bg-circle-1"></div>
+            <div class="bg-circle-2"></div>
+            <div class="bg-circle-3"></div>
+        </div>
         
         <header class="header">
-            <div class="logo">green</div>
+            <div class="logo"><img src="ui/asset/logo.png" alt="Green Logo" style="height: 24px;"></div>
             <div class="header-title">设备调试</div>
         </header>
         
@@ -22,7 +28,7 @@
                 <ul class="device-guide">
                     <li>确保所有设备的电源已开启</li>
                     <li>将传感器正确放置在身体相应位置</li>
-                    <li>保持设备在电脑蓝牙范围内</li>
+                    <li>人物位于摄像头正前方</li>
                     <li>连接成功后，会显示实时数据</li>
                 </ul>
             </div>
@@ -38,21 +44,25 @@
         
         <!-- 设备页面容器 -->
         <div id="device-pages-container">
-            <!-- 心率传感器页面 -->
+            <!-- 皮电传感器页面 -->
             <div id="device-page-0" class="device-page active-device-page">
                 <div class="device-container">
                     <div class="device-info">
-                        <div class="device-icon heart-icon"></div>
-                        <h3 class="device-name">心率传感器</h3>
-                        <p class="device-desc">请将传感器贴在胸前，确保稳固</p>
+                        <div class="device-icon skin-icon"></div>
+                        <h3 class="device-name">皮电传感器</h3>
+                        <p class="device-desc">请将传感器套在在非惯用手的食指和中指根</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 10px 0;">
+                        <img src="ui/asset/皮电指示.png" alt="皮电传感器使用指南" style="max-width: 35%; height: auto; border-radius: 8px;">
                     </div>
                     
                     <div class="connection-area">
                         <div class="connection-status"></div>
                         <div class="waiting-text">等待设备连接...</div>
-                        <div class="heart-rate-container" style="display: none;">
-                            <div class="heart-rate-label">心率：<span class="heart-rate-display">--</span> BPM</div>
-                            <svg class="heart-rate-svg" width="100%" height="100px"></svg>
+                        <div class="skin-data-container" style="display: none;">
+                            <div class="skin-data-label">皮电值：<span class="skin-data-display">--</span> μS</div>
+                            <svg class="skin-data-svg" width="90%" height="120px" style="display: block; margin: 0 auto;"></svg>
                         </div>
                     </div>
                     
@@ -62,21 +72,25 @@
                 </div>
             </div>
             
-            <!-- 皮电传感器页面 -->
+            <!-- 心率传感器页面 -->
             <div id="device-page-1" class="device-page">
                 <div class="device-container">
                     <div class="device-info">
-                        <div class="device-icon skin-icon"></div>
-                        <h3 class="device-name">皮电传感器</h3>
-                        <p class="device-desc">请将传感器贴在非惯用手的食指和中指指腹</p>
+                        <div class="device-icon heart-icon"></div>
+                        <h3 class="device-name">心率传感器</h3>
+                        <p class="device-desc">请将传感器套在非惯用手食指指尖，确保稳固</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 10px 0;">
+                        <img src="ui/asset/心率指示.png" alt="心率传感器使用指南" style="max-width: 35%; height: auto; border-radius: 8px;">
                     </div>
                     
                     <div class="connection-area">
                         <div class="connection-status"></div>
                         <div class="waiting-text">等待设备连接...</div>
-                        <div class="skin-data-container" style="display: none;">
-                            <div class="skin-data-label">皮电值：<span class="skin-data-display">--</span> μS</div>
-                            <svg class="skin-data-svg" width="100%" height="100px"></svg>
+                        <div class="heart-rate-container" style="display: none;">
+                            <div class="heart-rate-label">心率：<span class="heart-rate-display">--</span> BPM</div>
+                            <svg class="heart-rate-svg" width="90%" height="120px" style="display: block; margin: 0 auto;"></svg>
                         </div>
                     </div>
                     
@@ -99,8 +113,7 @@
                         <div class="connection-status"></div>
                         <div class="waiting-text">等待摄像头启动...</div>
                         <div class="camera-container" style="display: none;">
-                            <video id="camera-preview" width="100%" height="240px" autoplay muted></video>
-                            <div class="emotion-status">表情识别：<span class="emotion-display">未检测</span></div>
+                            <video id="camera-preview" width="100%" height="360px" autoplay muted></video>
                         </div>
                     </div>
                     
@@ -123,7 +136,7 @@
                         <div class="connection-status"></div>
                         <div class="waiting-text">等待设备连接...</div>
                         <div class="tablet-container" style="display: none;">
-                            <canvas id="tablet-canvas" width="100%" height="240px"></canvas>
+                            <canvas id="tablet-canvas" width="100%" height="120px" style="height: 120px !important; max-height: 120px !important;"></canvas>
                             <div class="tablet-controls">
                                 <button class="tablet-btn clear-btn">清除画布</button>
                                 <div class="pressure-display">压感：<span class="pressure-value">--</span></div>

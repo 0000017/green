@@ -19,7 +19,9 @@ function createWindow() {
         // 设置窗口为全屏
         fullscreen: true,
         // 无边框窗口，提供更完整的全屏体验
-        frame: false
+        frame: false,
+        // 设置应用图标
+        icon: path.join(__dirname, 'ui/asset/App_icon.png')
     });
 
     // 添加页面加载错误处理

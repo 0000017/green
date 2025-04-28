@@ -85,7 +85,7 @@ body {
 }
 
 /* 页头样式 */
-.ep-header {
+.ep-top-navigation {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -95,47 +95,49 @@ body {
     left: 0;
     width: 100%;
     z-index: 10;
-    background-color: rgba(20, 31, 20, 0.7);
+    background-color: rgba(20, 31, 20, 0.85);
     backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(110, 198, 0, 0.2);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
-.ep-logo {
-    display: flex;
-    align-items: center;
-}
-
-.ep-logo-text {
-    color: #B7FE5D;
+.ep-brand-logo {
+    color: #FFFFFF;
     font-size: 24px;
     font-weight: bold;
     letter-spacing: 1px;
+    cursor: pointer;
 }
 
-.ep-logo-leaf {
-    width: 18px;
-    height: 18px;
-    background-color: #6EC600;
-    border-radius: 0 50% 50% 50%;
-    transform: rotate(45deg);
-    margin-left: 8px;
-    position: relative;
+.ep-brand-logo img {
+    filter: brightness(0) invert(1);
 }
 
-.ep-logo-leaf::before {
-    content: '';
-    position: absolute;
-    width: 7px;
-    height: 1px;
-    background-color: rgba(255, 255, 255, 0.5);
-    top: 9px;
-    left: 5px;
-    transform: rotate(-45deg);
-}
-
-.ep-page-title {
+.ep-page-heading {
     color: #FFFFFF;
     font-size: 20px;
     font-weight: 500;
+}
+
+/* 之前的页头样式，保留但不使用 */
+.ep-header {
+    display: none;
+}
+
+.ep-logo {
+    display: none;
+}
+
+.ep-logo-text {
+    display: none;
+}
+
+.ep-logo-leaf {
+    display: none;
+}
+
+.ep-page-title {
+    display: none;
 }
 
 /* 内容容器样式 */
@@ -146,6 +148,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow-y: auto;
 }
 
 /* 子页面导航指示器 */
@@ -1194,11 +1197,11 @@ body {
 
 /* 响应式样式 */
 @media (max-width: 767px) {
-    .ep-header {
+    .ep-top-navigation {
         padding: 12px 16px;
     }
     
-    .ep-page-title {
+    .ep-page-heading {
         font-size: 18px;
     }
     
