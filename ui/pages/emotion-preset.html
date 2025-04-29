@@ -18,7 +18,7 @@
         <!-- 页头 -->
         <header class="ep-top-navigation">
             <div class="ep-brand-logo"><img src="ui/asset/logo.png" alt="Green Logo" style="height: 24px;"></div>
-            <div class="ep-page-heading">情感计算自适应预设</div>
+            <div class="header-title">情感计算自适应预设</div>
         </header>
         
         <!-- 内容容器 -->
@@ -293,7 +293,7 @@
                             
                             <div class="ep-fusion-container">
                                 <div class="ep-fusion-visual">
-                                    <canvas id="fusion-radar-chart" width="300" height="300"></canvas>
+                                    <canvas id="fusion-radar-chart" width="500" height="500"></canvas>
                                 </div>
                                 
                                 <div class="ep-fusion-settings">
@@ -540,9 +540,9 @@
             
             <!-- 导航按钮 -->
             <div class="ep-navigation-controls">
-                <button class="ep-nav-button ep-prev" id="prev-step" onclick="if(typeof navigateToStep === 'function' && window.epState && window.epState.currentStep > 1) { navigateToStep(window.epState.currentStep - 1); console.log('内联前一步点击'); }">上一步</button>
-                <button class="ep-nav-button ep-next" id="next-step" onclick="if(typeof navigateToStep === 'function' && window.epState && window.epState.currentStep < window.epState.totalSteps) { navigateToStep(window.epState.currentStep + 1); console.log('内联下一步点击'); }">下一步</button>
-                <button class="ep-nav-button ep-finish" id="finish-setup">完成设置</button>
+                <button class="ep-nav-button ep-prev" id="prev-step" onclick="if(window.epState && window.epState.currentStep > 1) { window.navigateToStep(window.epState.currentStep - 1); return false; }">上一步</button>
+                <button class="ep-nav-button ep-next" id="next-step" onclick="if(window.epState && window.epState.currentStep < window.epState.totalSteps) { window.navigateToStep(window.epState.currentStep + 1); return false; }">下一步</button>
+                <button class="ep-nav-button ep-finish" id="finish-setup" onclick="if(typeof saveAllSettings === 'function') { saveAllSettings(); } setTimeout(function() { if(window.navigateToPage) window.navigateToPage('main-app-page'); }, 1000); return false;">完成设置</button>
             </div>
         </div>
     </div>
@@ -566,7 +566,7 @@
         // 触发初始化
         function triggerPageInit() {
             // 如果是作为子页面加载的，且未初始化
-            if (isEmbedded() && !window.emotionPresetInitialized) {
+            if (isEmbedded()) {
                 console.log('页面直接触发初始化');
                 // 创建自定义事件
                 const initEvent = new CustomEvent('pageLoaded', {
@@ -579,9 +579,78 @@
                 window.dispatchEvent(initEvent);
                 
                 // 备用方法：直接调用初始化函数
-                if (typeof initEmotionPreset === 'function' && !window.emotionPresetInitialized) {
+                if (typeof initEmotionPreset === 'function') {
                     setTimeout(initEmotionPreset, 100);
                 }
+                
+                // 添加直接按钮事件处理
+                directBindNavigationButtons();
+            }
+        }
+        
+        // 直接绑定导航按钮事件
+        function directBindNavigationButtons() {
+            console.log('直接绑定导航按钮事件');
+            
+            const prevButton = document.getElementById('prev-step');
+            const nextButton = document.getElementById('next-step');
+            const finishButton = document.getElementById('finish-setup');
+            
+            if (prevButton) {
+                prevButton.onclick = function(e) {
+                    console.log('前一步按钮点击 - HTML直接绑定');
+                    if (window.epState && window.epState.currentStep > 1) {
+                        window.navigateToStep(window.epState.currentStep - 1);
+                    }
+                    e.preventDefault();
+                    return false;
+                };
+            }
+            
+            if (nextButton) {
+                nextButton.onclick = function(e) {
+                    console.log('下一步按钮点击 - HTML直接绑定');
+                    if (window.epState && window.epState.currentStep < window.epState.totalSteps) {
+                        window.navigateToStep(window.epState.currentStep + 1);
+                    }
+                    e.preventDefault();
+                    return false;
+                };
+            }
+            
+            if (finishButton) {
+                finishButton.onclick = function(e) {
+                    console.log('完成按钮点击 - HTML直接绑定');
+                    if (typeof saveAllSettings === 'function') {
+                        saveAllSettings();
+                    }
+                    setTimeout(function() {
+                        if (window.navigateToPage) {
+                            window.navigateToPage('main-app-page');
+                        }
+                    }, 1000);
+                    e.preventDefault();
+                    return false;
+                };
+            }
+        }
+        
+        // 触发页面卸载
+        function triggerPageUnload() {
+            console.log('触发情感预设页面卸载事件');
+            // 创建自定义卸载事件
+            const unloadEvent = new CustomEvent('pageUnloaded', {
+                detail: {
+                    pageId: 'emotion-preset-page',
+                    timestamp: new Date()
+                }
+            });
+            // 触发事件
+            window.dispatchEvent(unloadEvent);
+            
+            // 直接调用重置函数（如果存在）
+            if (typeof resetEmotionPresetState === 'function') {
+                resetEmotionPresetState();
             }
         }
         
@@ -590,60 +659,56 @@
             // 连接导航系统
             if (window.parent && window.parent.navigateToPage) {
                 console.log('连接到父窗口导航系统');
-                window.navigateToPage = window.parent.navigateToPage;
-            }
-            
-            // 为保证完成设置按钮可以正常工作
-            const finishButton = document.getElementById('finish-setup');
-            if (finishButton && !finishButton.hasAttribute('data-init')) {
-                finishButton.setAttribute('data-init', 'true');
-                finishButton.addEventListener('click', function() {
-                    console.log('点击完成设置按钮');
-                    // 如果脚本未初始化，通过这个备份处理程序处理跳转
-                    if (!window.emotionPresetInitialized && window.navigateToPage) {
-                        window.navigateToPage('main-app-page');
+                // 保存原始导航函数引用
+                const originalNavigateToPage = window.parent.navigateToPage;
+                
+                // 重新定义导航函数，添加页面卸载事件触发
+                window.navigateToPage = function(pageId) {
+                    // 如果当前页面是情感预设页面，且将要离开，触发卸载事件
+                    if (pageId !== 'emotion-preset-page' && pageId !== 'emotion-preset') {
+                        triggerPageUnload();
                     }
-                });
+                    
+                    // 调用原始导航函数
+                    originalNavigateToPage(pageId);
+                };
+                
+                // 也将增强的导航函数放回父窗口（如果可能）
+                try {
+                    window.parent.navigateToPage = window.navigateToPage;
+                } catch (e) {
+                    console.log('无法修改父窗口导航函数，使用本地增强版本');
+                }
             }
             
-            // 添加额外的导航按钮事件确保
-            const prevButton = document.getElementById('prev-step');
-            const nextButton = document.getElementById('next-step');
-            
-            if (prevButton && !prevButton.hasAttribute('data-init')) {
-                prevButton.setAttribute('data-init', 'true');
-                prevButton.addEventListener('click', function() {
-                    console.log('直接绑定的前一步按钮点击事件');
-                    if (window.epState && window.epState.currentStep > 1) {
-                        if (typeof navigateToStep === 'function') {
-                            navigateToStep(window.epState.currentStep - 1);
-                        }
-                    }
-                });
-            }
-            
-            if (nextButton && !nextButton.hasAttribute('data-init')) {
-                nextButton.setAttribute('data-init', 'true');
-                nextButton.addEventListener('click', function() {
-                    console.log('直接绑定的下一步按钮点击事件');
-                    if (window.epState && window.epState.currentStep < window.epState.totalSteps) {
-                        if (typeof navigateToStep === 'function') {
-                            navigateToStep(window.epState.currentStep + 1);
-                        }
-                    }
-                });
-            }
+            // 直接绑定导航按钮事件
+            directBindNavigationButtons();
             
             // 触发页面初始化
             setTimeout(triggerPageInit, 300);
+            
+            // 周期性检查并重新绑定导航按钮
+            setInterval(function() {
+                directBindNavigationButtons();
+            }, 2000);
         });
         
         // 备用：页面可见性变化时也检查初始化
         document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && !window.emotionPresetInitialized) {
+            if (!document.hidden) {
                 triggerPageInit();
+                // 确保按钮可用
+                directBindNavigationButtons();
             }
         });
+        
+        // 监听页面卸载事件
+        window.addEventListener('beforeunload', function() {
+            triggerPageUnload();
+        });
+        
+        // 首次加载立即尝试绑定按钮
+        setTimeout(directBindNavigationButtons, 500);
     </script>
 </body>
 </html> 

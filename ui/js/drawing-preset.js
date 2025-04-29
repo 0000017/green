@@ -270,19 +270,21 @@ function initDrawingPreset() {
         if (pageData.type === 'choice') {
             pageContent = `
                 <div class="question-title">${pageData.title}</div>
-                ${pageData.questions.map((q, qIndex) => `
-                    <div class="question-item">
-                        <div class="question-description">${q.question}</div>
-                        <div class="options-list">
-                            ${q.options.map((opt, optIndex) => `
-                                <div class="option-item" data-page="${pageIndex}" data-question="${qIndex}" data-option="${optIndex}">
-                                    <input type="radio" class="option-radio" name="question-${pageIndex}-${qIndex}" id="option-${pageIndex}-${qIndex}-${optIndex}">
-                                    <label class="option-text" for="option-${pageIndex}-${qIndex}-${optIndex}">${opt}</label>
-                                </div>
-                            `).join('')}
+                <div class="questions-row">
+                    ${pageData.questions.map((q, qIndex) => `
+                        <div class="question-item">
+                            <div class="question-description">${q.question}</div>
+                            <div class="options-list">
+                                ${q.options.map((opt, optIndex) => `
+                                    <div class="option-item" data-page="${pageIndex}" data-question="${qIndex}" data-option="${optIndex}">
+                                        <input type="radio" class="option-radio" name="question-${pageIndex}-${qIndex}" id="option-${pageIndex}-${qIndex}-${optIndex}">
+                                        <label class="option-text" for="option-${pageIndex}-${qIndex}-${optIndex}">${opt}</label>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
-                    </div>
-                `).join('')}
+                    `).join('')}
+                </div>
             `;
         } else if (pageData.type === 'open') {
             pageContent = `

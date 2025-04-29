@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Green</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 3D情感模型样式 -->
+    <link rel="stylesheet" href="./three/emotion-model.css">
+    <!-- P5绘画工具样式 -->
+    <link rel="stylesheet" href="./P5/styles.css">
+    <!-- 页面导航系统样式 -->
+    <link rel="stylesheet" href="./ui/navigator/navigator.css">
+    <!-- 页面加载器样式 -->
+    <style>
+        .loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(42, 157, 143, 0.3);
+            border-top: 5px solid #2A9D8F;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 9999;
+        }
+        
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .app-page {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+        
+        .app-page.active-page {
+            display: block;
+            opacity: 1;
+        }
+        
+        .error-message {
+            color: #f44336;
+            background-color: #ffebee;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px;
+            text-align: center;
+        }
+    </style>
+    
+    <!-- HTML5 Canvas polyfill，解决兼容性问题 -->
+    <script>
+    // 修复某些浏览器中的canvas兼容性问题
+    if (!HTMLCanvasElement.prototype.toBlob) {
+        Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+            value: function(callback, type, quality) {
+                const dataURL = this.toDataURL(type, quality);
+                const binStr = atob(dataURL.split(',')[1]);
+                const len = binStr.length;
+                const arr = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    arr[i] = binStr.charCodeAt(i);
+                }
+                callback(new Blob([arr], {type: type || 'image/png'}));
+            }
+        });
+    }
+    
+    // 定义一个全局错误处理函数，处理平台设置冲突
+    window.handlePlatformConflict = function(e) {
+        if (e && e.message && e.message.includes('Platform browser has already been set')) {
+            console.warn('忽略平台设置冲突:', e.message);
+            return true; // 已处理
+        }
+        return false; // 未处理
+    };
+    
+    // 捕获全局错误
+    window.addEventListener('error', function(e) {
+        if (window.handlePlatformConflict(e.error)) {
+            e.preventDefault();
+        }
+    });
+    </script>
+    
+    <!-- 页面导航系统脚本 -->
+    <script src="./ui/navigator/navigator.js"></script>
+</head>
+<body>
+    <!-- 页面导航系统 -->
+    <div id="page-container" class="page-container">
+        <!-- 默认显示欢迎页面 -->
+        <div id="welcome-page" class="app-page active-page"></div>
+        <div id="intro-page" class="app-page"></div>
+        <div id="device-setup-page" class="app-page"></div>
+        <div id="drawing-preset-page" class="app-page"></div>
+        <div id="emotion-preset-page" class="app-page"></div>
+        <div id="main-app-page" class="app-page"></div>
+        <div id="analysis-page" class="app-page"></div>
+    </div>
+
+    <!-- 主应用页面内容，初始隐藏 -->
+    <div id="main-app-content" style="display: none;">
+        <!-- 视频流 -->
+        <!--<video id="videoStream" autoplay playsinline></video>-->
+        
+        <!--webrtc状态显示切换按钮 -->
+        <!--<div id="status-toggle" class="status-toggle">i</div>-->
+        
+        <!-- 情感分析系统容器 -->
+        <div id="emotion-analysis-container" class="emotion-analysis-container">
+            <!-- 表情识别窗口 -->
+            <div id="emotion-floating-window" class="emotion-floating-window">
+                <div class="floating-header">
+                    <div class="status-indicator">
+                        <span class="status-dot" id="recognition-status-dot" role="button"></span>
+                    </div>
+                </div>
+                <div class="floating-content">
+                    <div class="video-container">
+                        <video id="floating-video" autoplay playsinline></video>
+                        <canvas id="outputCanvas" class="overlay-canvas"></canvas>
+                        <div class="emotion-panel" id="emotion-panel">
+                            <div class="panel-header">
+                                <h3>面部情绪分析</h3>
+                                
+                            </div>
+                            <div class="emotion-status">
+                                <span id="current-emotion" class="emotion-未检测">未检测</span>
+                            </div>
+                            <div class="emotion-bar-container">
+                                <div id="emotion-bar" class="emotion-bar"></div>
+                            </div>
+                            <!-- 生物传感器数据区域将由JS动态添加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 3D情感模型容器 -->
+            <div id="emotion-model-container"></div>
+        </div>
+        
+        <!-- 调试信息区域 -->
+        <div id="debug-info"></div>
+    </div>
+    
+    <!-- 功能模块脚本 -->
+    <!-- 先加载主要WebRTC脚本，确保videoElement变量先被声明 -->
+     <!--<script src="./webrtc_config/ui.js"></script>
+    <script src="./webrtc_config/renderer.js"></script>
+    
+    <!-- 加载face-api.js -->
+    <script>
+        try {
+            // 使用异步加载方式
+            const script = document.createElement('script');
+            script.src = "./opencv/emotion_model/face-api.js/dist/face-api.min.js";
+            script.onerror = function(e) {
+                console.error('加载face-api.js失败:', e);
+            };
+            document.body.appendChild(script);
+        } catch (e) {
+            console.error('创建face-api.js脚本标签失败:', e);
+        }
+    </script>
+    
+    <!-- 最后加载情感识别脚本，避免变量冲突 -->
+    <script src="./opencv/emotion-recognition.js"></script>
+    <script src="./opencv/emotion-ui.js"></script>
+    
+    <!-- 生物传感器模块 -->
+    <script>
+        // 全局定义THREE变量，确保模块能访问
+        // 直接从node_modules中引入Three.js
+        window.THREE = require('three');
+        console.log('THREE.js版本:', THREE.REVISION);
+        
+        // 加载生物传感器模块
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                // 加载生物传感器模块
+                const biometricData = require('./arhuino/biometric-data');
+                const biometricUI = require('./arhuino/biometric-ui');
+                const emotionFusion = require('./arhuino/emotion-fusion');
+                
+                // 加载3D情感模型
+                const emotionModel = require('./three/emotion-model');
+                
+                console.log('开始初始化情感分析系统...');
+                
+                // 初始化生物传感器UI和3D模型 - 增加延迟以确保DOM完全加载
+                setTimeout(() => {
+                    // 检查THREE对象是否可用
+                    if (typeof window.THREE === 'undefined') {
+                        console.error('THREE.js未正确加载');
+                        window.THREE = require('three');
+                    }
+                    
+                    console.log('检查DOM元素: #emotion-panel =', document.querySelector('#emotion-panel'));
+                    console.log('检查DOM元素: #emotion-model-container =', document.querySelector('#emotion-model-container'));
+                    
+                    // 先初始化情感融合模块
+                    emotionFusion.init();
+                        
+                    // 初始化生物传感器UI
+                    biometricUI.init('#emotion-panel').catch(err => {
+                        console.error('初始化生物传感器UI失败:', err);
+                        // 如果初始化失败，尝试直接添加到body
+                        console.log('尝试将生物传感器UI添加到容器...');
+                        biometricUI.init('#emotion-analysis-container').catch(err2 => {
+                            console.error('添加到容器也失败:', err2);
+                        });
+                    });
+                    
+                    // 初始化3D情感模型
+                    const modelInitResult = emotionModel.init('#emotion-model-container');
+                    console.log('情感模型初始化结果:', modelInitResult);
+                    
+                    // 添加情感融合数据监听
+                    emotionFusion.addUpdateListener((fusedData) => {
+                        // 测试直接调用模型更新，避免事件监听可能存在的问题
+                        if (emotionModel.handleEmotionUpdate) {
+                            console.log('情感数据更新:', fusedData);
+                            // 创建一个包含detail的对象，模拟自定义事件格式
+                            emotionModel.handleEmotionUpdate({
+                                detail: {
+                                    valence: fusedData.X,  // 效价 - 新Y轴
+                                    arousal: fusedData.Y,  // 唤醒度 - 新Z轴
+                                    dominant_emotion: fusedData.Z,  // 情感类型 - 新X轴
+                                    confidence: fusedData.confidence
+                                }
+                            });
+                        }
+                    });
+                    
+                    // 发送测试数据
+                    setTimeout(() => {
+                        console.log('发送测试情感数据');
+                        // 创建测试事件
+                        const testEvent = new CustomEvent('emotionFusionUpdate', {
+                            detail: {
+                                valence: 50,  // 效价 - Y轴
+                                arousal: 70,  // 唤醒度 - Z轴
+                                dominant_emotion: '开心', // 情感类型 - X轴
+                                confidence: 0.9
+                            }
+                        });
+                        document.dispatchEvent(testEvent);
+                    }, 2000);
+                    
+                    console.log('所有情感相关模块初始化完成');
+                    
+                    // 将情感融合模块暴露到全局，方便P5模块调用
+                    window.emotionFusion = emotionFusion;
+                    
+                }, 2500); // 增加延迟时间，确保DOM完全加载
+                
+                console.log('模块加载成功');
+            } catch (err) {
+                console.error('加载模块失败:', err);
+                console.error(err.stack || err);
+            }
+        });
+    </script>
+    
+    <!-- 加载dat.GUI库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    
+    <!-- 加载P5.js库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
+    
+    <!-- 加载P5绘画功能模块 -->
+    <script src="./P5/draw.js"></script>
+    <script src="./P5/camera.js"></script>
+    <script src="./P5/emotion.js"></script>
+    <script src="./P5/ai.js"></script>
+    <script src="./P5/sketch.js"></script>
+    
+    <!-- 初始化P5绘画工具 -->
+    <script>
+        // 等待DOM加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化P5绘画工具的函数
+            function initializeP5Drawing() {
+                    // 检查页面导航系统的当前状态
+                    const mainAppPage = document.getElementById('main-app-page');
+                    
+                    // 如果主应用页面不是当前激活的页面，先导航到主应用页面
+                    if (mainAppPage && !mainAppPage.classList.contains('active-page')) {
+                        if (window.navigateToPage) {
+                            window.navigateToPage('main-app-page');
+                            // 等待页面切换完成后再初始化P5
+                            setTimeout(() => {
+                                // 激活P5绘画工具
+                                window.p5Drawing.init();
+                            }, 300);
+                    }
+                } else {
+                    // 如果已经在主应用页面，直接初始化P5
+                    window.p5Drawing.init();
+                }
+            }
+            
+            // 监听页面加载完成事件，在主应用页面加载时初始化P5绘画工具
+            window.addEventListener('pageLoaded', function(event) {
+                if (event.detail.pageId === 'main-app-page') {
+                    // 当主应用页面加载完成时，初始化P5绘画工具
+                    initializeP5Drawing();
+                }
+            });
+            
+            // 如果当前已经是主应用页面，立即初始化P5绘画工具
+            const mainAppPage = document.getElementById('main-app-page');
+            if (mainAppPage && mainAppPage.classList.contains('active-page')) {
+                initializeP5Drawing();
+                }
+        });
+    </script>
+    
+    <!-- 页面导航系统脚本 -->
+    <script>
+        // 页面加载器
+        class PageLoader {
+            constructor() {
+                this.pages = {
+                    'welcome-page': './ui/pages/welcome.html',
+                    'intro-page': './ui/pages/intro.html',
+                    'device-setup-page': './ui/pages/device-setup.html',
+                    'drawing-preset-page': './ui/pages/drawing-preset.html',
+                    'emotion-preset-page': './ui/pages/emotion-preset.html',
+                    'main-app-page': '#main-app-content',
+                    'analysis-page': './ui/pages/analysis.html'
+                };
+                
+                this.currentPage = 'welcome-page';
+                this.pageHistory = [];
+                
+                // 初始化
+                this.init();
+            }
+            
+            init() {
+                // 将导航函数暴露给全局，以便iframe内部能够调用
+                window.navigateToPage = this.navigateToPage.bind(this);
+                window.goBack = this.goBack.bind(this);
+                
+                // 加载初始页面
+                this.loadPage('welcome-page');
+                
+                console.log('页面导航系统初始化完成');
+            }
+            
+            // 加载指定页面
+            async loadPage(pageId) {
+                console.log('加载页面:', pageId);
+                
+                // 添加加载指示器
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading-indicator';
+                document.body.appendChild(loadingIndicator);
+                
+                // 隐藏所有页面
+                document.querySelectorAll('.app-page').forEach(page => {
+                    page.classList.remove('active-page');
+                });
+                
+                // 获取目标页面容器
+                const pageContainer = document.getElementById(pageId);
+                
+                // 特殊处理主应用页面
+                if (pageId === 'main-app-page') {
+                    // 显示主应用内容
+                    const mainContent = document.getElementById('main-app-content');
+                    
+                    // 清除主应用内容上可能存在的所有导航系统的内联样式
+                    mainContent.setAttribute('style', '');
+                    
+                    // 显示主应用内容
+                    mainContent.style.display = 'block';
+                    
+                    // 激活页面容器但不修改其内容
+                    pageContainer.classList.add('active-page');
+                    
+                    // 如果pageContainer为空或者mainContent不在pageContainer中
+                    if (pageContainer.innerHTML === '' || !pageContainer.contains(mainContent)) {
+                        // 将主应用内容移动到页面容器中
+                        pageContainer.appendChild(mainContent);
+                    }
+                    
+                    // 移除页面容器上的过渡效果，确保立即显示
+                    pageContainer.style.transition = 'none';
+                    
+                    // 更新当前页面
+                    this.currentPage = pageId;
+                    
+                    // 移除加载指示器
+                    document.body.removeChild(loadingIndicator);
+                    
+                    // 触发页面加载完成事件，但不添加导航按钮
+                    const event = new CustomEvent('pageLoaded', {
+                        detail: {
+                            pageId: pageId,
+                            timestamp: new Date(),
+                            isMainApp: true  // 标记这是主应用页面
+                        }
+                    });
+                    window.dispatchEvent(event);
+                    
+                    return;
+                }
+                
+                // 如果页面不存在或需要重新加载
+                if (pageContainer.innerHTML === '' || pageId !== this.currentPage) {
+                    try {
+                        // 获取页面URL
+                        const pageUrl = this.pages[pageId];
+                        
+                        // 加载页面内容
+                        const response = await fetch(pageUrl);
+                        if (!response.ok) {
+                            throw new Error(`无法加载页面: ${pageUrl}`);
+                        }
+                        
+                        const html = await response.text();
+                        
+                        // 修正CSS和JS路径
+                        let fixedHtml = html
+                            // 处理 "../css/" 格式的路径
+                            .replace(/href="\.\.\/css\//g, 'href="./ui/css/')
+                            .replace(/src="\.\.\/js\//g, 'src="./ui/js/')
+                            // 处理 "css/" 格式的路径
+                            .replace(/href="css\//g, 'href="./ui/css/')
+                            .replace(/src="js\//g, 'src="./ui/js/')
+                            // 处理 "img/" 格式的路径
+                            .replace(/src="img\//g, 'src="./ui/img/');
+                        
+                        pageContainer.innerHTML = fixedHtml;
+                        
+                        // 初始化页面内部的脚本
+                        this.executeScripts(pageContainer);
+                    } catch (error) {
+                        console.error('加载页面失败:', error);
+                        pageContainer.innerHTML = `<div class="error-message">页面加载失败: ${error.message}</div>`;
+                    }
+                }
+                
+                // 显示当前页面
+                pageContainer.classList.add('active-page');
+                
+                // 更新当前页面
+                this.currentPage = pageId;
+                
+                // 移除加载指示器
+                document.body.removeChild(loadingIndicator);
+                
+                // 触发页面加载完成事件
+                this.triggerPageLoadedEvent(pageId);
+            }
+            
+            // 触发页面加载完成事件
+            triggerPageLoadedEvent(pageId) {
+                // 创建并触发自定义事件
+                const event = new CustomEvent('pageLoaded', {
+                    detail: {
+                        pageId: pageId,
+                        timestamp: new Date()
+                    }
+                });
+                window.dispatchEvent(event);
+            }
+            
+            // 执行页面内的脚本
+            executeScripts(container) {
+                // 查找所有脚本标签
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    
+                    // 复制属性
+                    Array.from(oldScript.attributes).forEach(attr => {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+                    
+                    // 复制内联脚本内容
+                    newScript.textContent = oldScript.textContent;
+                    
+                    // 替换原脚本
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+            }
+            
+            // 导航到指定页面
+            navigateToPage(pageId) {
+                console.log('导航到页面:', pageId);
+                
+                // 记录历史
+                this.pageHistory.push(this.currentPage);
+                
+                // 加载新页面
+                this.loadPage(pageId);
+            }
+            
+            // 返回上一页
+            goBack() {
+                if (this.pageHistory.length > 0) {
+                    const previousPage = this.pageHistory.pop();
+                    this.loadPage(previousPage);
+                }
+            }
+        }
+        
+        // 等待DOM加载完成后初始化页面加载器
+        document.addEventListener('DOMContentLoaded', function() {
+            window.pageLoader = new PageLoader();
+        });
+    </script>
+</body>
+</html>

@@ -81,6 +81,29 @@ function addNavigationButtons(pageId) {
     const currentIndex = PAGE_FLOW.indexOf(pageId);
     if (currentIndex === -1) return; // 页面不在定义的流程中
     
+    // 对情感预设页面特殊处理
+    if (pageId === 'emotion-preset-page') {
+        console.log('情感预设页面特殊处理 - 跳过添加导航按钮，使用页面内部导航');
+        
+        // 确保子页面内部导航按钮正常工作
+        setTimeout(function() {
+            if (typeof window.directBindNavigationButtons === 'function') {
+                window.directBindNavigationButtons();
+            } else {
+                console.log('找不到directBindNavigationButtons函数，尝试使用页面内置函数');
+                
+                // 尝试通过window.frames访问子页面函数
+                const pageFrame = document.getElementById(pageId);
+                if (pageFrame && pageFrame.contentWindow && 
+                    typeof pageFrame.contentWindow.directBindNavigationButtons === 'function') {
+                    pageFrame.contentWindow.directBindNavigationButtons();
+                }
+            }
+        }, 500);
+        
+        return;
+    }
+    
     // 获取当前页面容器
     const pageContainer = document.getElementById(pageId);
     if (!pageContainer) return;
@@ -219,16 +242,76 @@ function initNavigationEnhancement() {
     window.addEventListener('pageLoaded', (event) => {
         const pageId = event.detail.pageId;
         
+        console.log(`页面加载事件触发: ${pageId}`);
+        
         // 更新页面标题
         if (PAGE_TITLES[pageId]) {
             document.title = PAGE_TITLES[pageId];
         }
         
-        // 添加导航按钮
+        // 添加导航按钮，对情感预设页面有特殊处理
         addNavigationButtons(pageId);
+        
+        // 特殊处理情感预设页面，确保其内部导航功能正常
+        if (pageId === 'emotion-preset-page') {
+            console.log('尝试初始化情感预设页面...');
+            
+            // 多次尝试初始化，确保至少一次成功
+            let initAttempts = 0;
+            const maxAttempts = 3;
+            
+            function attemptInit() {
+                initAttempts++;
+                console.log(`尝试初始化情感预设页面，第${initAttempts}次`);
+                
+                // 尝试在子页面中找到并调用初始化函数
+                if (typeof window.initEmotionPreset === 'function') {
+                    window.initEmotionPreset();
+                    console.log('直接调用情感预设初始化函数成功');
+                } else {
+                    console.log('找不到情感预设初始化函数，尝试创建并触发初始化事件');
+                    
+                    // 创建并触发初始化事件
+                    const initEvent = new CustomEvent('pageLoaded', {
+                        detail: {
+                            pageId: 'emotion-preset-page', 
+                            timestamp: new Date()
+                        }
+                    });
+                    window.dispatchEvent(initEvent);
+                }
+                
+                // 如果还有尝试次数，且还未找到初始化函数，继续尝试
+                if (initAttempts < maxAttempts && typeof window.initEmotionPreset !== 'function') {
+                    setTimeout(attemptInit, 500);
+                }
+            }
+            
+            // 开始尝试初始化
+            setTimeout(attemptInit, 300);
+        }
         
         console.log(`页面 ${pageId} 加载完成，导航已就绪`);
     });
+    
+    // 绑定直接点击事件，确保情感预设页面的导航按钮能够正常工作
+    document.addEventListener('click', function(e) {
+        const emotionPresetPage = document.getElementById('emotion-preset-page');
+        
+        // 如果当前活动页面是情感预设页面
+        if (emotionPresetPage && emotionPresetPage.classList.contains('active-page')) {
+            
+            // 检查点击的是否是导航按钮
+            if (e.target.matches('#prev-step, #next-step, #finish-setup') || 
+                e.target.closest('#prev-step, #next-step, #finish-setup')) {
+                
+                console.log('导航系统捕获到情感预设页面按钮点击:', e.target.id || e.target.closest('button').id);
+                
+                // 让事件继续传播，以便页面内的事件处理程序能够处理
+                return true;
+            }
+        }
+    }, true); // 使用捕获阶段以确保先于其他处理程序
     
     console.log('导航增强功能初始化完成');
 }
@@ -268,5 +351,10 @@ window.UINavigator = {
     }
 };
 
-// DOM加载完成后执行初始化
-document.addEventListener('DOMContentLoaded', initNavigationEnhancement);
+// 当文档加载完成后执行初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 初始化导航系统
+    initNavigationEnhancement();
+    
+    console.log('导航系统初始化完成');
+});

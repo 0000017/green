@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Green - 效果评估</title>
     <link rel="stylesheet" href="../css/analysis.css">
 </head>
@@ -18,16 +18,8 @@
         <!-- 页头 -->
         <header class="header">
             <div class="logo"><img src="ui/asset/logo.png" alt="Green Logo" style="height: 24px;"></div>
-            <nav>
-                <ul class="nav-list">
-                    <li class="nav-item"><a href="welcome.html">首页</a></li>
-                    <li class="nav-item"><a href="intro.html">介绍</a></li>
-                    <li class="nav-item"><a href="device-setup.html">设备</a></li>
-                    <li class="nav-item active"><a href="analysis.html">评估</a></li>
-                </ul>
-            </nav>
+            <div class="header-title">效果评估</div>
         </header>
-
         <!-- 主要内容区域 -->
         <div class="main-content">
             <!-- 页面标题 -->
@@ -250,14 +242,16 @@
                     
                     <div class="card growth-card">
                         <h3>自我成长感知</h3>
-                        <p class="card-description">请评估此次体验对您的影响</p>
+                        <p class="card-description">请评估此次体验对您的情感和自我成长影响</p>
                         
                         <div class="growth-aspects">
                             <div class="aspect-item" data-aspect="awareness">
-                                <div class="aspect-icon awareness-icon"></div>
-                                <div class="aspect-content">
+                                <div class="aspect-header">
+                                    <div class="aspect-icon awareness-icon"></div>
                                     <h4>情感意识</h4>
-                                    <p>对自身情绪状态的认知与理解是否提高</p>
+                                </div>
+                                <div class="aspect-content">
+                                    <p>情绪状态认知程度</p>
                                     <div class="aspect-rating">
                                         <button class="rating-btn" data-value="1">1</button>
                                         <button class="rating-btn" data-value="2">2</button>
@@ -269,10 +263,12 @@
                             </div>
                             
                             <div class="aspect-item" data-aspect="expression">
-                                <div class="aspect-icon expression-icon"></div>
-                                <div class="aspect-content">
+                                <div class="aspect-header">
+                                    <div class="aspect-icon expression-icon"></div>
                                     <h4>表达能力</h4>
-                                    <p>通过艺术表达情感的能力是否提升</p>
+                                </div>
+                                <div class="aspect-content">
+                                    <p>艺术情感表达提升</p>
                                     <div class="aspect-rating">
                                         <button class="rating-btn" data-value="1">1</button>
                                         <button class="rating-btn" data-value="2">2</button>
@@ -284,10 +280,12 @@
                             </div>
                             
                             <div class="aspect-item" data-aspect="regulation">
-                                <div class="aspect-icon regulation-icon"></div>
-                                <div class="aspect-content">
+                                <div class="aspect-header">
+                                    <div class="aspect-icon regulation-icon"></div>
                                     <h4>情绪调节</h4>
-                                    <p>调节和管理情绪状态的能力是否增强</p>
+                                </div>
+                                <div class="aspect-content">
+                                    <p>管理情绪能力增强</p>
                                     <div class="aspect-rating">
                                         <button class="rating-btn" data-value="1">1</button>
                                         <button class="rating-btn" data-value="2">2</button>
@@ -299,10 +297,12 @@
                             </div>
                             
                             <div class="aspect-item" data-aspect="insight">
-                                <div class="aspect-icon insight-icon"></div>
-                                <div class="aspect-content">
+                                <div class="aspect-header">
+                                    <div class="aspect-icon insight-icon"></div>
                                     <h4>自我洞察</h4>
-                                    <p>对内心世界的探索与理解是否深入</p>
+                                </div>
+                                <div class="aspect-content">
+                                    <p>内心探索深入程度</p>
                                     <div class="aspect-rating">
                                         <button class="rating-btn" data-value="1">1</button>
                                         <button class="rating-btn" data-value="2">2</button>
@@ -317,10 +317,10 @@
                     
                     <div class="card insight-card">
                         <h3>创作洞察</h3>
-                        <p class="card-description">请分享此次创作过程中的洞察或发现</p>
+                        <p class="card-description">分享您的创作感受或发现</p>
                         
                         <div class="insight-input">
-                            <textarea id="insight-text" placeholder="请分享您在创作过程中的感受、发现或洞察..."></textarea>
+                            <textarea id="insight-text" placeholder="请简要分享您在创作过程中的感受或发现..."></textarea>
                         </div>
                     </div>
                 </div>

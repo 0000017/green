@@ -52,6 +52,30 @@ function initEmotionPreset() {
     console.log('情感计算预设页面初始化完成');
 }
 
+// 重置页面状态的函数（在离开或重新进入页面时调用）
+function resetEmotionPresetState() {
+    console.log('重置情感计算预设页面状态...');
+    
+    // 重置初始化标志
+    window.emotionPresetInitialized = false;
+    
+    // 重置基线测量状态
+    if (window.epState) {
+        window.epState.isBaselineMeasuring = false;
+        
+        // 清除可能存在的计时器
+        if (window.epState.baselineTimer) {
+            clearInterval(window.epState.baselineTimer);
+            window.epState.baselineTimer = null;
+        }
+        
+        // 重置当前步骤到第一步
+        window.epState.currentStep = 1;
+    }
+    
+    console.log('情感计算预设页面状态已重置');
+}
+
 // 检查当前是否为emotion-preset页面
 function checkAndInitEmotionPreset() {
     // 检查页面标识或URL
@@ -92,11 +116,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 监听pageLoaded事件（当作为子页面加载时）
 window.addEventListener('pageLoaded', function(event) {
-    if ((event.detail && (event.detail.pageId === 'emotion-preset-page' || 
-        event.detail.pageId === 'emotion-preset')) && !window.emotionPresetInitialized) {
+    if (event.detail && (event.detail.pageId === 'emotion-preset-page' || 
+        event.detail.pageId === 'emotion-preset')) {
         console.log('pageLoaded: 初始化情感预设页面');
+        // 重置页面状态，确保每次进入都能正确初始化
+        resetEmotionPresetState();
         // 设置短延迟确保DOM元素已加载
         setTimeout(initEmotionPreset, 50);
+    }
+});
+
+// 监听页面离开事件（由父窗口或导航系统触发）
+window.addEventListener('pageUnloaded', function(event) {
+    if (event.detail && (event.detail.pageId === 'emotion-preset-page' || 
+        event.detail.pageId === 'emotion-preset')) {
+        console.log('pageUnloaded: 清理情感预设页面状态');
+        resetEmotionPresetState();
     }
 });
 
@@ -165,6 +200,7 @@ function handlePrevButtonClick() {
 function handleNextButtonClick() {
     console.log('下一步按钮被点击(全局处理函数)');
     if (epState.currentStep < epState.totalSteps) {
+        console.log('执行步骤跳转，当前步骤:', epState.currentStep, '目标步骤:', epState.currentStep + 1);
         navigateToStep(epState.currentStep + 1);
     } else {
         console.log('已经是最后一步，不能再前进');
@@ -189,6 +225,9 @@ function handleFinishButtonClick() {
         } else {
             window.location.href = '../pages/main-app.html';
         }
+        
+        // 确保在导航离开后重置状态
+        resetEmotionPresetState();
     }, 2000);
 }
 
@@ -201,6 +240,11 @@ function initStepNavigation() {
     const prevButton = document.getElementById('prev-step');
     const nextButton = document.getElementById('next-step');
     const finishButton = document.getElementById('finish-setup');
+    
+    console.log('初始化步骤导航，按钮状态:', 
+                prevButton ? '前一步按钮存在' : '前一步按钮不存在', 
+                nextButton ? '下一步按钮存在' : '下一步按钮不存在',
+                finishButton ? '完成按钮存在' : '完成按钮不存在');
     
     // 为步骤指示器添加点击事件
     stepIndicators.forEach(indicator => {
@@ -216,40 +260,47 @@ function initStepNavigation() {
         });
     });
     
-    // 为前后导航按钮添加事件
-    prevButton.addEventListener('click', function() {
-        console.log('前一步按钮被点击');
-        if (epState.currentStep > 1) {
-            navigateToStep(epState.currentStep - 1);
-        }
-    });
+    // 移除可能存在的旧事件监听器，避免事件累积
+    if (prevButton) {
+        prevButton.removeEventListener('click', handlePrevButtonClick);
+        prevButton.addEventListener('click', handlePrevButtonClick);
+        console.log('前一步按钮事件重新绑定');
+    }
     
-    nextButton.addEventListener('click', function() {
-        console.log('下一步按钮被点击');
-        if (epState.currentStep < epState.totalSteps) {
-            navigateToStep(epState.currentStep + 1);
-        } else {
-            console.log('已经是最后一步，不能再前进');
-        }
-    });
-    
-    finishButton.addEventListener('click', function() {
-        // 保存所有设置并跳转到应用主页面
-        saveAllSettings();
-        
-        // 显示提示
-        showToast('设置已保存，正在跳转到应用页面...');
-        
-        // 添加延迟后跳转到主应用页面
-        setTimeout(() => {
-            if (window.navigateToPage) {
-                window.navigateToPage('main-app-page');
-            } else if (window.parent && window.parent.navigateToPage) {
-                window.parent.navigateToPage('main-app-page');
+    if (nextButton) {
+        // 直接使用内联函数，确保事件被正确绑定
+        nextButton.removeEventListener('click', handleNextButtonClick);
+        nextButton.addEventListener('click', function(e) {
+            console.log('下一步按钮被点击（内联处理函数）');
+            e.preventDefault(); // 阻止默认行为
+            e.stopPropagation(); // 阻止事件冒泡
+            if (epState.currentStep < epState.totalSteps) {
+                navigateToStep(epState.currentStep + 1);
             } else {
-                window.location.href = '../pages/main-app.html';
+                console.log('已经是最后一步，不能再前进');
             }
-        }, 2000);
+            return false;
+        });
+        // 同时也绑定全局处理函数作为备份
+        nextButton.addEventListener('click', handleNextButtonClick);
+        console.log('下一步按钮事件重新绑定');
+    }
+    
+    if (finishButton) {
+        finishButton.removeEventListener('click', handleFinishButtonClick);
+        finishButton.addEventListener('click', handleFinishButtonClick);
+        console.log('完成按钮事件重新绑定');
+    }
+    
+    // 添加额外的直接DOM事件监听
+    document.addEventListener('click', function(e) {
+        // 检查点击的元素是否是下一步按钮或其子元素
+        if (nextButton && (e.target === nextButton || nextButton.contains(e.target))) {
+            console.log('通过文档级事件捕获到下一步按钮点击');
+            if (epState.currentStep < epState.totalSteps) {
+                navigateToStep(epState.currentStep + 1);
+            }
+        }
     });
 }
 
@@ -864,7 +915,7 @@ function updateRadarChart() {
         const height = canvas.height;
         const centerX = width / 2;
         const centerY = height / 2;
-        const radius = Math.min(centerX, centerY) * 0.8;
+        const radius = Math.min(centerX, centerY) * 0.65; // 减小半径以适应小尺寸
         
         // 清除画布
         ctx.clearRect(0, 0, width, height);
@@ -931,16 +982,18 @@ function updateRadarChart() {
         });
         
         // 绘制轴标签
-        ctx.font = '12px Arial';
+        ctx.font = '10px Arial'; // 减小字体大小
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
         const labels = ['面部表情', '心率数据', '皮电反应', '绘画行为', '环境数据'];
+        const labelRadius = radius + 15; // 减小标签与中心点的距离
+        
         axes.forEach((_, i) => {
             const angle = i * angleStep - Math.PI / 2;
-            const x = centerX + (radius + 20) * Math.cos(angle);
-            const y = centerY + (radius + 20) * Math.sin(angle);
+            const x = centerX + labelRadius * Math.cos(angle);
+            const y = centerY + labelRadius * Math.sin(angle);
             
             ctx.fillText(labels[i], x, y);
         });
@@ -1138,6 +1191,8 @@ function showToast(message) {
 window.addEventListener('pageLoaded', function(event) {
     // 如果是当前页面被加载
     if (event.detail && event.detail.pageId === 'emotion-preset') {
+        // 重置页面状态，确保每次进入都能正确初始化
+        resetEmotionPresetState();
         // 初始化页面
         initEmotionPreset();
     }
@@ -1185,6 +1240,14 @@ window.testStepNavigation = function(direction) {
             // 显示提示
             showToast('设置已保存，正在跳转到应用页面...');
             
+            // 触发页面卸载事件
+            if (typeof triggerPageUnload === 'function') {
+                triggerPageUnload();
+            } else {
+                // 尝试直接重置状态
+                resetEmotionPresetState();
+            }
+            
             // 添加延迟后跳转到主应用页面
             setTimeout(() => {
                 if (window.navigateToPage) {
@@ -1203,4 +1266,52 @@ window.testStepNavigation = function(direction) {
         console.error('测试导航出错:', error);
         return false;
     }
-}; 
+};
+
+// 全局导出重置函数，确保其他地方可以调用
+window.resetEmotionPresetState = resetEmotionPresetState;
+
+// 添加一个初始化后的验证函数，确保所有功能正常
+setTimeout(function() {
+    console.log('进行初始化后的验证检查...');
+    const prevButton = document.getElementById('prev-step');
+    const nextButton = document.getElementById('next-step');
+    const finishButton = document.getElementById('finish-setup');
+    
+    if (prevButton && nextButton && finishButton) {
+        console.log('所有导航按钮都存在');
+        
+        // 检查事件是否已绑定
+        const prevEvents = getEventListeners(prevButton);
+        const nextEvents = getEventListeners(nextButton);
+        const finishEvents = getEventListeners(finishButton);
+        
+        console.log('前一步按钮事件数:', prevEvents ? prevEvents.length : '无法获取');
+        console.log('下一步按钮事件数:', nextEvents ? nextEvents.length : '无法获取');
+        console.log('完成按钮事件数:', finishEvents ? finishEvents.length : '无法获取');
+        
+        // 如果无法获取事件，尝试重新绑定
+        if (!nextEvents || nextEvents.length === 0) {
+            console.log('重新绑定下一步按钮事件');
+            nextButton.onclick = handleNextButtonClick;
+        }
+    } else {
+        console.warn('验证失败：部分导航按钮不存在');
+    }
+}, 1000);
+
+// 帮助函数：尝试获取元素上的事件监听器
+function getEventListeners(element) {
+    try {
+        // 尝试使用Chrome的getEventListeners API
+        if (window.getEventListeners) {
+            return window.getEventListeners(element);
+        }
+        
+        // 如果不可用，返回null
+        return null;
+    } catch (e) {
+        console.log('获取事件监听器失败:', e);
+        return null;
+    }
+} 
