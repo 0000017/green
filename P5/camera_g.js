@@ -91,6 +91,8 @@ window.greenCameraSketch = function(p) {
   let artboard;
   let particles = [];
   let config = window.GreenCameraConfig;
+  // 控制是否生成粒子的开关，默认为false，只有应用设置后才开始生成
+  let controlledGeneration = false;
   
   // 光流检测变量
   let lastImageData;
@@ -345,6 +347,9 @@ window.greenCameraSketch = function(p) {
   
   // 经典粒子效果更新
   function updateClassicParticles(r, g, b) {
+    // 如果未启用控制生成，直接返回，不生成任何粒子
+    if (!controlledGeneration) return;
+    
     let time = p.millis()/1000;
     const threshold = config.threshold;
     const stepSize = config.stepSize;
@@ -430,6 +435,9 @@ window.greenCameraSketch = function(p) {
   
   // 泊松盘采样粒子效果更新
   function updatePoissonParticles(r, g, b) {
+    // 如果未启用控制生成，直接返回，不生成任何粒子
+    if (!controlledGeneration) return;
+    
     const threshold = config.threshold;
     const stepSize = config.stepSize;
     const poissonConfig = config.poisson;
@@ -643,7 +651,19 @@ window.greenCameraSketch = function(p) {
           artboard.clear();
         }
       }
+      
+      // 启用粒子生成
+      controlledGeneration = true;
+      console.log('已启用粒子生成');
     }
+    return true;
+  };
+  
+  // 临时禁用粒子生成
+  p.disableGeneration = function() {
+    // 禁用粒子生成开关
+    controlledGeneration = false;
+    console.log('已临时禁用粒子生成，等待应用设置后重新启用');
     return true;
   };
   
@@ -660,7 +680,10 @@ window.greenCameraSketch = function(p) {
       artboard.clear();
     }
     
-    console.log('已清空所有粒子');
+    // 禁用粒子生成，这样清空后不会立即开始生成
+    controlledGeneration = false;
+    
+    console.log('已清空所有粒子并暂停生成，等待应用设置后重新启用');
     return true;
   };
 };

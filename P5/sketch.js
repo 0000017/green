@@ -242,7 +242,9 @@ function initGreenCameraSettings() {
       e.stopPropagation();
       // 只更新配置，但不立即应用
       updateGreenCameraConfig();
-      // 移除立即应用设置的调用
+      
+      // 临时禁用粒子生成 - 添加此行以禁用当前的粒子生成
+      disableGreenCameraGeneration();
     });
     console.log('已添加颜色选择器事件监听器');
   } else {
@@ -277,7 +279,8 @@ function initGreenCameraSettings() {
         console.log('已设置粒子风格为: classic（需点击应用按钮生效）');
       }
       
-      // 移除立即应用的调用
+      // 临时禁用粒子生成 - 添加此行以禁用当前的粒子生成
+      disableGreenCameraGeneration();
     });
     
     // 泊松线条按钮
@@ -293,7 +296,8 @@ function initGreenCameraSettings() {
         console.log('已设置粒子风格为: poisson（需点击应用按钮生效）');
       }
       
-      // 移除立即应用的调用
+      // 临时禁用粒子生成 - 添加此行以禁用当前的粒子生成
+      disableGreenCameraGeneration();
     });
     
     console.log('已添加粒子风格按钮事件监听器');
@@ -322,6 +326,20 @@ function initGreenCameraSettings() {
       clearGreenCameraParticles();
     });
     console.log('已添加清空粒子按钮事件监听器');
+  }
+}
+
+// 禁用绿色摄像头粒子生成
+function disableGreenCameraGeneration() {
+  // 如果当前正在使用绿色摄像头，临时禁用粒子生成
+  if (currentCameraType === 'green' && currentBackgroundMode === 'camera' && backgroundCanvas) {
+    // 如果实例有disableGeneration方法，调用它
+    if (typeof backgroundCanvas.disableGeneration === 'function') {
+      backgroundCanvas.disableGeneration();
+      console.log('已临时禁用粒子生成，等待应用设置');
+    } else {
+      console.warn('绿色摄像头实例没有disableGeneration方法');
+    }
   }
 }
 
@@ -482,12 +500,9 @@ function setCameraType(type) {
   if (currentBackgroundMode === 'camera') {
     initBackgroundLayer('camera');
     
-    // 如果切换为绿色摄像头，自动应用当前设置
+    // 移除自动应用设置的逻辑，改为提示用户点击应用按钮
     if (type === 'green') {
-      // 延迟一小段时间，确保摄像头已完全初始化
-      setTimeout(() => {
-        applyGreenCameraSettings();
-      }, 300);
+      console.log('绿色摄像头已准备就绪，请点击"应用设置"按钮开始生成粒子');
     }
   }
 }
