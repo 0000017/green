@@ -121,6 +121,98 @@
   display: block;
 }
 
+/* 相机弹出控制面板 */
+.camera-popup-panel {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 180px);
+  width: 220px;
+  background-color: rgba(30, 30, 30, 0.95);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+  z-index: 1200;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* 控制面板头部 */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 控制面板内容 */
+.panel-content {
+  padding: 5px 0;
+}
+
+/* 关闭按钮 */
+.close-btn {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 50%;
+}
+
+.close-btn:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 相机控制按钮 */
+.camera-control-btn {
+  width: 100%;
+  padding: 7px 10px;
+  margin: 5px 0;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+/* 主按钮样式 */
+.primary-btn {
+  background-color: #4CAF50;
+  color: white;
+  font-weight: 500;
+}
+
+.primary-btn:hover {
+  background-color: #3e8e41;
+}
+
+/* 次要按钮样式 */
+.secondary-btn {
+  background-color: #ff5722;
+  color: white;
+  font-weight: 500;
+}
+
+.secondary-btn:hover {
+  background-color: #f44336;
+}
+
 /* 摄像头倒计时显示 */
 .camera-countdown {
   margin-top: 8px;
@@ -130,6 +222,59 @@
   padding: 4px 8px;
   border-radius: 4px;
   text-align: center;
+}
+
+/* 控制行样式 */
+.control-row {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.control-row label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+  margin-bottom: 4px;
+  display: block;
+  width: 100%;
+}
+
+.control-row input[type="range"] {
+  flex: 1;
+  margin-right: 5px;
+  width: calc(100% - 40px);
+}
+
+.control-row input[type="color"] {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.control-row span {
+  font-size: 11px;
+  color: #4CAF50;
+  width: 30px;
+  text-align: right;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .camera-popup-panel {
+    left: calc(100% + 160px);
+    width: 200px;
+    padding: 10px;
+  }
+  
+  .panel-header h3 {
+    font-size: 12px;
+  }
+  
+  .camera-control-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
 }
 
 /* 响应式样式调整 */
@@ -174,24 +319,6 @@
   flex-direction: column;
   gap: 10px;
   z-index: 1100;
-}
-
-/* 摄像头控制样式 */
-#camera-options, #vintage-camera-controls {
-  margin-top: 5px;
-  padding: 5px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 5px;
-}
-
-/* 拍照按钮特殊样式 */
-#btn-camera-take-photo {
-  background-color: #ff5722;
-  font-weight: bold;
-}
-
-#btn-camera-take-photo:hover {
-  background-color: #ff7043;
 }
 
 /* 画布容器样式 */
@@ -314,51 +441,4 @@ input[type=text] {
   left: 0;
   width: 100%;
   height: 100%;
-}
-
-/* 更新控制面板样式 */
-.p5-control-panel {
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-}
-
-.panel-section {
-  margin-bottom: 8px;
-}
-
-.panel-section h3 {
-  color: white;
-  font-size: 14px;
-  margin: 5px 0;
-}
-
-.p5-control-panel button {
-  background-color: #444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 10px;
-  margin: 3px 0;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-}
-
-.p5-control-panel button:hover {
-  background-color: #666;
-}
-
-.p5-control-panel button.active {
-  background-color: #2A9D8F;
-} 
-
-/* 按钮图标 */
-.btn-icon {
-  margin-right: 8px;
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
 } 

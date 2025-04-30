@@ -13,7 +13,10 @@ function cameraSketch(p) {
 	p.setup = function() {
 		p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
 		film = p.createFramebuffer({ format: p.FLOAT })
-		capture = p.createCapture(p.VIDEO, { flipped: true })
+		
+		// 保持一致性：都不翻转或都翻转
+		// 此处选择不翻转，因为在WEBGL模式下需要特殊处理
+		capture = p.createCapture(p.VIDEO, { flipped: false })
 		capture.hide()
 		filmShader = p.createFilterShader(`precision highp float;
 	
@@ -46,13 +49,16 @@ function cameraSketch(p) {
 	}
 
 	p.mousePressed = function() {
-		const remaining = p.max(0, startTime + 20*1000 - p.millis())
+		const remaining = p.max(0, startTime + 20*1000 - performance.now())
 		if (startTime === -1 || (startTime > 0 && remaining === 0)) {
 			film.draw(() => p.background(0))
-			startTime = p.millis()
+			// 使用performance.now()而不是p.millis()，与sketch.js保持一致
+			startTime = performance.now();
 			
 			// 将startTime暴露给外部控制倒计时
 			p.startTime = startTime;
+			
+			console.log("开始拍照，startTime:", startTime);
 		}
 	}
 
@@ -64,7 +70,15 @@ function cameraSketch(p) {
 		p.textAlign(p.CENTER, p.CENTER)
 		p.push()
 		p.tint(255 * (startTime < 0 ? 0.5 : 0.2))
+		
+		// WEBGL模式下需要进行特殊处理以保持正确方向
+		// 注意：在WEBGL模式下，坐标系是不同的
+		if (capture.width > 0 && capture.height > 0) {
+			// 应用变换以保持一致方向
+			p.scale(1, 1); // 不翻转
 		p.image(capture, 0, 0, p.width, p.height, 0, 0, capture.width, capture.height, p.COVER)
+		}
+		
 		p.pop()
 		if (startTime < 0) {
 			p.push()
@@ -73,7 +87,9 @@ function cameraSketch(p) {
 			p.text('点击开始拍照，曝光需要20秒', 0, 0)
 			p.pop()
 		}	else {
-			const remaining = p.max(0, startTime + 20*1000 - p.millis())
+			// 使用performance.now()计算剩余时间，与sketch.js保持一致
+			const now = performance.now();
+			const remaining = p.max(0, startTime + 20*1000 - now);
 			
 			if (remaining > 0) {
 				film.draw(() => {
@@ -86,13 +102,14 @@ function cameraSketch(p) {
 					// same alpha tint in the shader instead.
 					filmShader.setUniform('brightness', 1 / (p.frameRate() * 20))
 					filmShader.setUniform('tex0', capture)
-					filmShader.setUniform('t', p.millis())
+					filmShader.setUniform('t', now)
 					p.scale(p.max(p.width/capture.width, p.height/capture.height))
 					p.plane(capture.width, capture.height)
 				})
 			}
 			
 			p.push()
+			// 确保渲染的方向与摄像头一致
 			p.scale(0.7)
 			p.image(film, 0, 0)
 			p.pop()
@@ -100,23 +117,8 @@ function cameraSketch(p) {
 			if (remaining === 0) {
 				p.push()
 				p.scale(0.7)
-				p.fill(255, 255 * p.map(p.millis(), startTime + 20*1000, startTime + 21*1000, 1, 0, true))
+				p.fill(255, 255 * p.map(now, startTime + 20*1000, startTime + 21*1000, 1, 0, true))
 				p.plane(p.width, p.height)
-				p.pop()
-			}
-			
-			if (remaining > 0) {
-				p.push()
-				const remSecs = p.ceil(remaining / 1000)
-				p.textSize(40)
-				p.translate(0, p.height/2 - 50)
-				p.text(`请保持不动！还剩 ${remSecs} 秒`, 0, 0)
-				p.pop()
-			} else {
-				p.push()
-				p.textSize(40)
-				p.translate(0, p.height/2 - 50)
-				p.text(`拍摄完成！点击可以再拍一张。`, 0, 0)
 				p.pop()
 			}
 		}
