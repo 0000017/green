@@ -57,6 +57,17 @@ function createWindow() {
         `);
     });
     
+    // 注册Ctrl+H显示/隐藏整个情感分析容器快捷键
+    globalShortcut.register('CommandOrControl+H', () => {
+        win.webContents.executeJavaScript(`
+            if (typeof window.toggleEmotionContainer === 'function') {
+                window.toggleEmotionContainer();
+            } else {
+                console.error('情感分析容器切换函数未定义');
+            }
+        `);
+    });
+    
     // 当窗口关闭时注销快捷键
     win.on('closed', () => {
         globalShortcut.unregisterAll();

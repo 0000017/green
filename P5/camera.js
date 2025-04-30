@@ -50,29 +50,10 @@ function cameraSketch(p) {
 		if (startTime === -1 || (startTime > 0 && remaining === 0)) {
 			film.draw(() => p.background(0))
 			startTime = p.millis()
+			
+			// 将startTime暴露给外部控制倒计时
+			p.startTime = startTime;
 		}
-	}
-
-	p.keyPressed = function() {
-		if (startTime > 0) {
-			const remaining = p.max(0, startTime + 20*1000 - p.millis())
-			if (remaining === 0) {
-				p.clear()
-				p.imageMode(p.CENTER)
-				p.image(film, 0, 0)
-				p.saveCanvas('daguerreotype.png')
-			}
-		}
-	}
-
-	function downloadURI(uri, name) {
-		var link = document.createElement("a");
-		link.download = name;
-		link.href = uri;
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-		delete link;
 	}
 
 	p.draw = function() {
@@ -89,7 +70,7 @@ function cameraSketch(p) {
 			p.push()
 			p.fill(255)
 			p.textSize(40)
-			p.text('A photo takes 20s. Click to start exposure', 0, 0)
+			p.text('点击开始拍照，曝光需要20秒', 0, 0)
 			p.pop()
 		}	else {
 			const remaining = p.max(0, startTime + 20*1000 - p.millis())
@@ -129,16 +110,19 @@ function cameraSketch(p) {
 				const remSecs = p.ceil(remaining / 1000)
 				p.textSize(40)
 				p.translate(0, p.height/2 - 50)
-				p.text(`Hold still! ${remSecs}s to go!`, 0, 0)
+				p.text(`请保持不动！还剩 ${remSecs} 秒`, 0, 0)
 				p.pop()
 			} else {
 				p.push()
 				p.textSize(40)
 				p.translate(0, p.height/2 - 50)
-				p.text(`Press any key to save your daguerreotype. Click to take another.`, 0, 0)
+				p.text(`拍摄完成！点击可以再拍一张。`, 0, 0)
 				p.pop()
 			}
 		}
+		
+		// 确保startTime变量持续更新以便外部访问
+		p.startTime = startTime;
 	}
 
 	// 当P5实例被移除时的清理函数

@@ -55,7 +55,18 @@ function drawSketch(p) {
     const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
     canvas.position(0, 0);
     canvas.style('z-index', '800');
+    
+    console.log("画布初始化，检查背景模式");
+    
+    // 先设置默认背景为白色
     p.background(255);
+    
+    // 检查全局背景模式状态
+    // 确保画布创建后立即按照当前模式设置背景
+    setTimeout(() => {
+      updateBackground();
+    }, 0);
+    
     p.noFill();
     p.stroke(color);
     p.strokeWeight(strokeWidth);
@@ -160,6 +171,42 @@ function drawSketch(p) {
     strokeSlider.style('width', '100px');
     strokeContainer.child(strokeSlider);
     controlPanel.child(strokeContainer);
+  };
+  
+  // 根据当前背景模式设置适当的背景
+  function updateBackground() {
+    // 检查全局状态中的背景模式
+    const mode = window.p5State ? window.p5State.currentBackgroundMode : 'none';
+    
+    console.log("更新背景，当前模式:", mode);
+    
+    if (mode === 'none') {
+      // 无背景模式：使用白色背景
+      console.log("应用白色背景");
+      p.background(255);
+    } else {
+      // 有背景模式：使用透明背景
+      console.log("应用透明背景");
+      if (p.drawingContext) {
+        p.drawingContext.clearRect(0, 0, p.width, p.height);
+      } else {
+        p._clear();
+      }
+    }
+  }
+  
+  // 添加一个公开方法用于直接从外部调用
+  p.forceUpdateBackground = function(mode) {
+    console.log("强制更新背景，模式:", mode);
+    if (mode === 'none') {
+      p.background(255);
+    } else {
+      if (p.drawingContext) {
+        p.drawingContext.clearRect(0, 0, p.width, p.height);
+      } else {
+        p._clear();
+      }
+    }
   };
   
   function brushChanged() {
@@ -487,11 +534,13 @@ function drawSketch(p) {
         console.log('windowResized: 成功恢复画布内容');
       } else {
         console.warn('windowResized: tempCanvas无效，将不恢复内容');
-        p.background(255); // 确保背景为白色
+        // 根据当前背景模式设置背景
+        updateBackground();
       }
     } catch (e) {
       console.error('windowResized出错:', e);
-      p.background(255); // 确保背景为白色
+      // 根据当前背景模式设置背景
+      updateBackground();
     }
   };
   
@@ -521,7 +570,8 @@ function drawSketch(p) {
   };
   
   p.clear = function() {
-    p.background(255);
+    // 根据当前背景模式设置背景
+    updateBackground();
   };
   
   p.saveCanvas = function(name, type) {

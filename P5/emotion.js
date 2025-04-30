@@ -85,16 +85,19 @@ function emotionSketch(p) {
     // 使用dat.GUI创建控制面板
     try {
       gui = new dat.GUI({autoPlace: true});
-      gui.domElement.id = 'camera-gui';
+      gui.domElement.id = 'emotion-gui';
       
-      // 将控制界面添加到画布容器
+      // 将控制界面添加到当前画布容器或父元素
       const guiContainer = document.createElement('div');
-      guiContainer.id = 'camera-gui-container';
+      guiContainer.id = 'emotion-gui-container';
       guiContainer.style.position = 'absolute';
       guiContainer.style.top = '10px';
       guiContainer.style.right = '10px';
       guiContainer.style.zIndex = '1000';
-      document.getElementById('p5-canvas-container').appendChild(guiContainer);
+      
+      // 查找合适的父容器 - 先尝试background-container，如果不存在则添加到body
+      const parentContainer = document.getElementById('background-container') || document.body;
+      parentContainer.appendChild(guiContainer);
       guiContainer.appendChild(gui.domElement);
 
       // 添加控制项
@@ -177,7 +180,9 @@ function emotionSketch(p) {
     });
     container.appendChild(rowsSlider);
     
-    document.getElementById('p5-canvas-container').appendChild(container);
+    // 查找合适的父容器 - 先尝试background-container，如果不存在则添加到body
+    const parentContainer = document.getElementById('background-container') || document.body;
+    parentContainer.appendChild(container);
   }
 
   // 绘制整个画布
@@ -431,7 +436,7 @@ function emotionSketch(p) {
   p.remove = function() {
     // 移除GUI
     if (gui) {
-      const container = document.getElementById('camera-gui-container');
+      const container = document.getElementById('emotion-gui-container');
       if (container) {
         container.parentNode.removeChild(container);
       }

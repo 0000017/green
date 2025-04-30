@@ -1,45 +1,168 @@
 /* P5绘画工具样式 */
 
-/* 大功能选择面板 */
+/* 主要容器 */
+.p5-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 绘图和背景层容器 */
+#drawing-container, #background-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 500;
+}
+
+#background-container {
+  z-index: 50;
+}
+
+/* 控制面板 */
 .p5-control-panel {
   position: fixed;
-  left: 50%;
-  bottom: 70px;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 10px 15px;
-  border-radius: 20px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 5px;
-  z-index: 1100; /* 提高z-index，确保在导航系统之上 */
-  max-width: 80%;
-}
-
-/* 功能切换按钮 */
-.p5-panel-toggle {
-  position: fixed;
-  left: 50%;
+  left: 20px;
   bottom: 20px;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  background-color: rgba(30, 30, 30, 0.85);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  max-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: white;
-  padding: 8px 20px;
-  border-radius: 20px;
+  font-family: 'Segoe UI', sans-serif;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* 面板分区 */
+.panel-section {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.panel-section:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.panel-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 按钮样式 */
+.p5-control-panel button {
+  background-color: rgba(60, 60, 60, 0.8);
+  color: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 4px 0;
   cursor: pointer;
-  z-index: 1200;
-  transition: opacity 0.3s, background-color 0.3s;
-  opacity: 0.2;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
 }
 
-.p5-panel-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.9);
-  opacity: 1;
+.p5-control-panel button:hover {
+  background-color: rgba(80, 80, 80, 0.9);
 }
 
-/* 小功能工具面板 */
+.p5-control-panel button.active {
+  background-color: rgba(0, 153, 255, 0.7);
+}
+
+/* 按钮图标 */
+.btn-icon {
+  margin-right: 6px;
+  font-size: 14px;
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+}
+
+/* 弹出式设置面板 */
+.popup-settings {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  width: 160px;
+  background-color: rgba(30, 30, 30, 0.95);
+  border-radius: 8px;
+  padding: 10px;
+  margin-left: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  display: none;
+  z-index: 1100;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 当按钮处于活动状态时显示弹出式设置 */
+.p5-control-panel button.active .popup-settings {
+  display: block;
+}
+
+/* 摄像头倒计时显示 */
+.camera-countdown {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* 响应式样式调整 */
+@media (max-width: 768px) {
+  .p5-control-panel {
+    max-width: 150px;
+    padding: 8px;
+  }
+  
+  .p5-control-panel button {
+    padding: 5px 7px;
+    font-size: 12px;
+  }
+  
+  .popup-settings {
+    width: 140px;
+  }
+}
+
+/* 为触屏设备增加更大的点击区域 */
+@media (pointer: coarse) {
+  .p5-control-panel button {
+    padding: 10px 12px;
+    margin: 6px 0;
+  }
+  
+  .btn-icon {
+    font-size: 16px;
+    width: 20px;
+  }
+}
+
+/* 小功能工具面板 - 设置为弹出样式 */
 .draw-tools-panel {
   position: fixed;
   top: 20px;
@@ -53,39 +176,22 @@
   z-index: 1100;
 }
 
-/* 按钮样式 */
-.p5-control-panel button, .draw-tools-panel button {
-  background-color: #4CAF50;
-  border: none;
-  color: white;
-  padding: 8px 12px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px;
-  margin: 4px 2px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-  min-width: 100px;
+/* 摄像头控制样式 */
+#camera-options, #vintage-camera-controls {
+  margin-top: 5px;
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
 }
 
-.p5-control-panel button:hover, .draw-tools-panel button:hover {
-  background-color: #45a049;
+/* 拍照按钮特殊样式 */
+#btn-camera-take-photo {
+  background-color: #ff5722;
+  font-weight: bold;
 }
 
-.p5-control-panel button:active, .draw-tools-panel button:active {
-  background-color: #3e8e41;
-}
-
-.p5-control-panel button:focus, .draw-tools-panel button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.5);
-}
-
-/* 当前选中的按钮样式 */
-.p5-control-panel button.active, .draw-tools-panel button.active {
-  background-color: #2196F3;
+#btn-camera-take-photo:hover {
+  background-color: #ff7043;
 }
 
 /* 画布容器样式 */
@@ -95,24 +201,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1050;  /* 提高z-index，但保持低于控制面板 */
-}
-
-/* 控制面板切换按钮样式 */
-.controls-toggle-button {
-  position: fixed;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 14px;
-  cursor: pointer;
-  z-index: 1101;
+  z-index: 1050;
 }
 
 /* 滑块样式 */
@@ -207,4 +296,69 @@ input[type=text] {
 .tooltip:hover .tooltiptext {
   visibility: visible;
   opacity: 1;
+} 
+
+/* 添加分层画布的样式 */
+#p5-canvas-layers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.canvas-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 更新控制面板样式 */
+.p5-control-panel {
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+}
+
+.panel-section {
+  margin-bottom: 8px;
+}
+
+.panel-section h3 {
+  color: white;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.p5-control-panel button {
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 3px 0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.p5-control-panel button:hover {
+  background-color: #666;
+}
+
+.p5-control-panel button.active {
+  background-color: #2A9D8F;
+} 
+
+/* 按钮图标 */
+.btn-icon {
+  margin-right: 8px;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
 } 

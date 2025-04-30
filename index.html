@@ -53,6 +53,35 @@
             margin: 20px;
             text-align: center;
         }
+        
+        .hide-button {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.7);
+            color: #333;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .show-emotion-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background-color: #2A9D8F;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
     </style>
     
     <!-- HTML5 Canvas polyfill，解决兼容性问题 -->
@@ -114,6 +143,12 @@
         <!--webrtc状态显示切换按钮 -->
         <!--<div id="status-toggle" class="status-toggle">i</div>-->
         
+        <!-- 分层画布容器 -->
+        <div id="p5-canvas-layers">
+            <div id="background-container" class="canvas-layer"></div>
+            <div id="drawing-container" class="canvas-layer"></div>
+        </div>
+        
         <!-- 情感分析系统容器 -->
         <div id="emotion-analysis-container" class="emotion-analysis-container">
             <!-- 表情识别窗口 -->
@@ -122,6 +157,8 @@
                     <div class="status-indicator">
                         <span class="status-dot" id="recognition-status-dot" role="button"></span>
                     </div>
+                    <!-- 添加隐藏按钮 -->
+                    <div class="hide-button" id="hide-emotion-container" title="隐藏情感分析">×</div>
                 </div>
                 <div class="floating-content">
                     <div class="video-container">
@@ -147,6 +184,9 @@
             <!-- 3D情感模型容器 -->
             <div id="emotion-model-container"></div>
         </div>
+        
+        <!-- 隐藏时的恢复按钮 -->
+        <div id="show-emotion-container" class="show-emotion-container" style="display: none;">显示情感分析</div>
         
         <!-- 调试信息区域 -->
         <div id="debug-info"></div>
@@ -520,6 +560,42 @@
         // 等待DOM加载完成后初始化页面加载器
         document.addEventListener('DOMContentLoaded', function() {
             window.pageLoader = new PageLoader();
+        });
+    </script>
+    
+    <!-- 添加控制情感分析容器显示/隐藏的脚本 -->
+    <script>
+        // 等待DOM加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取元素
+            const emotionContainer = document.getElementById('emotion-analysis-container');
+            const hideButton = document.getElementById('hide-emotion-container');
+            const showButton = document.getElementById('show-emotion-container');
+            
+            // 定义显示/隐藏情感分析容器的函数
+            window.toggleEmotionContainer = function() {
+                if (emotionContainer.style.display === 'none') {
+                    // 显示情感分析容器
+                    emotionContainer.style.display = 'block';
+                    showButton.style.display = 'none';
+                } else {
+                    // 隐藏情感分析容器
+                    emotionContainer.style.display = 'none';
+                    showButton.style.display = 'block';
+                }
+            };
+            
+            // 为隐藏按钮添加点击事件
+            if (hideButton) {
+                hideButton.addEventListener('click', window.toggleEmotionContainer);
+            }
+            
+            // 为显示按钮添加点击事件
+            if (showButton) {
+                showButton.addEventListener('click', window.toggleEmotionContainer);
+            }
+            
+            console.log('情感分析容器隐藏功能已初始化');
         });
     </script>
 </body>
