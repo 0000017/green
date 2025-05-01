@@ -8,7 +8,7 @@ function drawSketch(p) {
   let colorPicker;
   let strokeSlider;
   let brushSelect;
-  let brushType = 'basic';  // 默认笔刷类型
+  let brushType = 'flower';  // 默认笔刷类型改为花朵生成
   let controlsVisible = true;
   let controlPanel;
   let lastFlowerTime = 0; // 记录上次生成花的时间
@@ -101,26 +101,32 @@ function drawSketch(p) {
       }
     }
     
-    // 创建控制面板容器 - 放在左上角
+    // 创建控制面板容器 - 保持ID和class不变，修改样式
     controlPanel = p.createDiv('');
     controlPanel.id('draw-tools-panel');
     controlPanel.class('draw-tools-panel');
     controlPanel.style('position', 'fixed');
     controlPanel.style('top', '20px');
     controlPanel.style('left', '20px');
-    controlPanel.style('background-color', 'rgba(0, 0, 0, 0.7)');
+    controlPanel.style('background-color', 'rgba(30, 30, 30, 0.85)');
     controlPanel.style('padding', '10px');
-    controlPanel.style('border-radius', '8px');
+    controlPanel.style('border-radius', '10px');
     controlPanel.style('display', 'flex');
     controlPanel.style('flex-direction', 'column');
     controlPanel.style('gap', '10px');
     controlPanel.style('z-index', '1100');
+    controlPanel.style('box-shadow', '0 4px 8px rgba(0, 0, 0, 0.2)');
+    controlPanel.style('backdrop-filter', 'blur(10px)');
+    controlPanel.style('-webkit-backdrop-filter', 'blur(10px)');
+    controlPanel.style('border', '1px solid rgba(255, 255, 255, 0.15)');
     
     // 创建标题
     const panelTitle = p.createDiv('绘画工具');
     panelTitle.style('color', 'white');
     panelTitle.style('font-weight', 'bold');
-    panelTitle.style('margin-bottom', '5px');
+    panelTitle.style('margin-bottom', '8px');
+    panelTitle.style('padding-bottom', '5px');
+    panelTitle.style('border-bottom', '1px solid rgba(255, 255, 255, 0.1)');
     controlPanel.child(panelTitle);
     
     // 笔刷类型选择器
@@ -128,6 +134,7 @@ function drawSketch(p) {
     brushSelectContainer.style('display', 'flex');
     brushSelectContainer.style('align-items', 'center');
     brushSelectContainer.style('gap', '5px');
+    brushSelectContainer.style('margin-bottom', '5px');
     
     const brushLabel = p.createSpan('笔刷:');
     brushLabel.style('color', 'white');
@@ -135,9 +142,16 @@ function drawSketch(p) {
     
     brushSelect = p.createSelect();
     brushSelect.style('width', '100px');
+    brushSelect.style('background-color', 'rgba(60, 60, 60, 0.8)');
+    brushSelect.style('color', 'white');
+    brushSelect.style('border', 'none');
+    brushSelect.style('border-radius', '4px');
+    brushSelect.style('padding', '5px');
     for (let type in brushes) {
       brushSelect.option(brushes[type].label, type);
     }
+    // 设置默认选中花朵生成
+    brushSelect.selected('flower');
     brushSelect.changed(brushChanged);
     brushSelectContainer.child(brushSelect);
     controlPanel.child(brushSelectContainer);
@@ -147,13 +161,18 @@ function drawSketch(p) {
     colorContainer.style('display', 'flex');
     colorContainer.style('align-items', 'center');
     colorContainer.style('gap', '5px');
+    colorContainer.style('margin-bottom', '5px');
     
     const colorLabel = p.createSpan('颜色:');
     colorLabel.style('color', 'white');
     colorContainer.child(colorLabel);
     
     colorPicker = p.createColorPicker('#000000');
-    colorPicker.style('width', '50px');
+    colorPicker.style('width', '32px');
+    colorPicker.style('height', '32px');
+    colorPicker.style('border-radius', '50%');
+    colorPicker.style('border', 'none');
+    colorPicker.style('cursor', 'pointer');
     colorContainer.child(colorPicker);
     controlPanel.child(colorContainer);
     
@@ -169,6 +188,10 @@ function drawSketch(p) {
     
     strokeSlider = p.createSlider(1, 20, strokeWidth);
     strokeSlider.style('width', '100px');
+    strokeSlider.style('-webkit-appearance', 'none');
+    strokeSlider.style('height', '8px');
+    strokeSlider.style('border-radius', '4px');
+    strokeSlider.style('background', 'rgba(255, 255, 255, 0.2)');
     strokeContainer.child(strokeSlider);
     controlPanel.child(strokeContainer);
   };

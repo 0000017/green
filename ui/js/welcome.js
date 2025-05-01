@@ -1,186 +1,56 @@
-document.addEventListener('DOMContentLoaded', () => {
+// 定义全局函数，使其可以在内联脚本中调用
+window.createRipples = createRipples;
+window.animateBlurCircles = animateBlurCircles;
+
+// 主初始化函数
+function initWelcomeEffects() {
+    console.log('欢迎页面效果初始化');
+    
     // 创建涟漪效果
     createRipples();
     
-    // 创建流型坠落效果
-    createFlowingParticles();
-    
-    // 创建表情背景
-    createEmojiBackground();
-    
-    // 添加自动跳转功能（因为不再有开始按钮）
-    setTimeout(() => {
-        // 淡出动画
-        document.querySelector('.content').style.animation = 'fadeOut 0.8s forwards';
-        
-        // 延迟后跳转到下一页
-        setTimeout(() => {
-            // 这里使用Electron的IPC通信跳转到主页面
-            if (window.electron) {
-                window.electron.send('navigate', 'intro.html');
-            } else {
-                // 如果在浏览器环境中直接跳转
-                window.location.href = 'intro.html';
-            }
-        }, 800);
-    }, 5000); // 5秒后自动跳转
-    
-    // 添加淡出动画样式
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes fadeOut {
-            0% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-        }
-    `;
-    document.head.appendChild(style);
-});
-
-// 创建表情背景
-function createEmojiBackground() {
-    const container = document.querySelector('.emoji-container');
-    console.log('表情容器:', container); // 调试日志
-    
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    
-    // 表情SVG文件路径，修正路径
-    const emojis = [
-        '../asset/伤心.svg',
-        '../asset/吃惊.svg',
-        '../asset/大哭.svg',
-        '../asset/开心.svg',
-        '../asset/怒.svg',
-        '../asset/生气.svg'
-    ];
-    
-    console.log('正在创建表情背景'); // 调试日志
-    
-    // 创建表情元素
-    function createEmoji() {
-        const emoji = document.createElement('img');
-        emoji.className = 'emoji';
-        
-        // 随机选择表情
-        const emojiIndex = Math.floor(Math.random() * emojis.length);
-        emoji.src = emojis[emojiIndex];
-        
-        // 添加加载事件监听器
-        emoji.onload = function() {
-            console.log('表情加载成功:', emojis[emojiIndex]); // 调试日志
-        };
-        
-        emoji.onerror = function() {
-            console.error('表情加载失败:', emojis[emojiIndex]); // 调试日志
-        };
-        
-        // 随机位置
-        const x = Math.random() * screenWidth;
-        const y = Math.random() * screenHeight;
-        
-        // 随机大小 - 增大尺寸
-        const size = randomBetween(40, 100);
-        
-        // 随机透明度 - 增加透明度
-        const opacity = randomBetween(0.3, 0.5);
-        
-        // 随机动画延迟和持续时间
-        const delay = randomBetween(0, 10);
-        const duration = randomBetween(10, 20);
-        
-        // 设置样式
-        emoji.style.cssText = `
-            left: ${x}px;
-            top: ${y}px;
-            width: ${size}px;
-            height: ${size}px;
-            opacity: ${opacity};
-            animation-duration: ${duration}s;
-            animation-delay: ${delay}s;
-            z-index: 5;
-        `;
-        
-        // 添加到容器
-        container.appendChild(emoji);
-        console.log('已添加表情元素'); // 调试日志
-    }
-    
-    // 创建更多表情
-    const emojiCount = Math.max(15, Math.floor(screenWidth * screenHeight / 30000)); // 增加表情数量
-    console.log('表情数量:', emojiCount); // 调试日志
-    
-    for(let i = 0; i < emojiCount; i++) {
-        createEmoji();
-    }
+    // 增强模糊圆圈动画
+    animateBlurCircles();
 }
 
-// 创建流型坠落效果
-function createFlowingParticles() {
-    const container = document.querySelector('.flowing-container');
-    const screenWidth = window.innerWidth;
-    
-    // 获取设计指南中的配色
-    const colors = [
-        { start: 'rgba(183, 254, 93, 0.8)', end: 'rgba(110, 198, 0, 0)' }, // 亮绿到鲜绿
-        { start: 'rgba(110, 198, 0, 0.8)', end: 'rgba(69, 119, 4, 0)' },  // 鲜绿到森林绿
-        { start: 'rgba(19, 248, 139, 0.8)', end: 'rgba(19, 248, 139, 0)' }, // 青绿色
-        { start: 'rgba(255, 243, 69, 0.8)', end: 'rgba(255, 243, 69, 0)' }, // 亮黄色
-        { start: 'rgba(189, 252, 201, 0.8)', end: 'rgba(189, 252, 201, 0)' } // 淡绿色
-    ];
-    
-    function createFlowingParticle() {
-        // 创建流型坠落粒子
-        const particle = document.createElement('div');
-        particle.className = 'flowing-particle';
-        
-        // 随机位置、大小和速度
-        const x = Math.random() * screenWidth;
-        const size = randomBetween(5, 20);
-        const duration = randomBetween(3, 7);
-        
-        // 随机选择颜色
-        const colorIndex = Math.floor(Math.random() * colors.length);
-        const selectedColor = colors[colorIndex];
-        
-        // 设置样式
-        particle.style.cssText = `
-            left: ${x}px;
-            top: -${size}px;
-            width: ${size}px;
-            height: ${size}px;
-            animation-duration: ${duration}s;
-            background: linear-gradient(to bottom, ${selectedColor.start}, ${selectedColor.end});
-        `;
-        
-        // 添加到容器
-        container.appendChild(particle);
-        
-        // 动画结束后移除元素
-        setTimeout(() => {
-            particle.remove();
-        }, duration * 1000);
-        
-        // 递归创建下一个粒子
-        setTimeout(createFlowingParticle, randomBetween(100, 500));
+// 增强模糊圆圈动画效果
+function animateBlurCircles() {
+    const circles = document.querySelectorAll('.blur-circle');
+    if (!circles.length) {
+        console.error('未找到模糊圆圈元素');
+        return;
     }
     
-    // 初始创建多个粒子
-    for(let i = 0; i < 10; i++) {
-        setTimeout(() => {
-            createFlowingParticle();
-        }, i * 200);
-    }
+    // 为每个圆圈设置随机大小变化动画
+    circles.forEach((circle, index) => {
+        // 为每个圆圈添加大小变化动画
+        setInterval(() => {
+            // 随机调整大小
+            const sizeChange = randomBetween(0.95, 1.05);
+            circle.style.transform = `scale(${sizeChange})`;
+            
+            // 随机调整不透明度
+            const opacityChange = randomBetween(0.15, 0.25);
+            circle.style.opacity = opacityChange.toString();
+            
+            // 延迟后恢复
+            setTimeout(() => {
+                circle.style.transform = '';
+            }, 2000);
+        }, 5000 + index * 1000); // 错开每个圆圈的动画时间
+    });
+    
+    console.log('模糊圆圈动画增强已启用');
 }
 
 // 创建涟漪效果
 function createRipples() {
     const container = document.querySelector('.ripple-container');
+    if (!container) {
+        console.error('涟漪容器不存在');
+        return;
+    }
+    
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     
@@ -203,8 +73,8 @@ function createRipples() {
         const x = Math.random() * screenWidth;
         const y = Math.random() * (screenHeight * 0.7); // 主要在屏幕上方区域生成涟漪
         
-        // 随机大小
-        const size = randomBetween(20, 60);
+        // 随机大小 - 减小涟漪尺寸
+        const size = randomBetween(10, 30);
         
         // 随机动画时长和延迟
         const duration = randomBetween(3, 6);
@@ -222,8 +92,8 @@ function createRipples() {
             height: ${size}px;
             animation-duration: ${duration}s;
             animation-delay: ${delay}s;
-            opacity: ${randomBetween(0.1, 0.3)};
-            border-color: rgba(${color.r}, ${color.g}, ${color.b}, ${randomBetween(0.2, 0.5)});
+            opacity: ${randomBetween(0.1, 0.25)};
+            border-color: rgba(${color.r}, ${color.g}, ${color.b}, ${randomBetween(0.15, 0.35)});
         `;
         
         // 添加到容器
@@ -234,15 +104,15 @@ function createRipples() {
             ripple.remove();
         }, (duration + delay) * 1000);
         
-        // 递归创建下一个涟漪
-        setTimeout(createNewRipple, randomBetween(300, 1200));
+        // 递归创建下一个涟漪 - 降低频率
+        setTimeout(createNewRipple, randomBetween(800, 2000));
     }
     
-    // 初始创建多个涟漪
-    for(let i = 0; i < 5; i++) {
+    // 初始创建多个涟漪 - 减少初始数量
+    for(let i = 0; i < 3; i++) {
         setTimeout(() => {
             createNewRipple();
-        }, i * 200);
+        }, i * 500);
     }
 }
 
@@ -251,4 +121,20 @@ function randomBetween(min, max) {
     return min + Math.random() * (max - min);
 }
 
-// 不再使用随机绿色RGB值，使用设计原则中的颜色
+// 等待DOM加载完成后初始化
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWelcomeEffects);
+} else {
+    // DOM已加载完成，直接初始化
+    initWelcomeEffects();
+}
+
+// 同时监听window的load事件，以防DOMContentLoaded在iframe中不触发
+window.addEventListener('load', function() {
+    // 检查是否已初始化
+    const rippleContainer = document.querySelector('.ripple-container');
+    if (rippleContainer && rippleContainer.children.length === 0) {
+        console.log('通过load事件触发初始化');
+        initWelcomeEffects();
+    }
+});

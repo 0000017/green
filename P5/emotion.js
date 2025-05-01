@@ -15,25 +15,7 @@ function emotionSketch(p) {
     wavyLinePatternProbability: 0.3, // 波浪线图案概率
     polkaDotPatternProbability: 0.3, // 波点图案概率
     backgroundGradientStart: '#ffffff', // 背景渐变开始颜色
-    backgroundGradientEnd: '#e0e0e0',   // 背景渐变结束颜色
-
-    // 随机化参数函数
-    randomize: function() {
-      settings.cols = p.floor(p.random(1, 10));
-      settings.rows = p.floor(p.random(1, 10));
-      settings.colorFillProbability = p.random(0, 1);
-      settings.stepNum = p.floor(p.random(3, 20));
-      settings.paletteIndex = p.floor(p.random(0, palettes.length));
-      settings.hatchProbability = p.random(0, 1);
-      settings.horizontalHatchProbability = p.random(0, 1);
-      settings.handDrawnIntensity = p.random(0, 3);
-      settings.circlePatternProbability = p.random(0, 1);
-      settings.wavyLinePatternProbability = p.random(0, 1);
-      settings.polkaDotPatternProbability = p.random(0, 1);
-      settings.backgroundGradientStart = randomColor();
-      settings.backgroundGradientEnd = randomColor();
-      drawCanvas(); 
-    }
+    backgroundGradientEnd: '#e0e0e0'    // 背景渐变结束颜色
   };
 
   // 颜色主题
@@ -44,9 +26,6 @@ function emotionSketch(p) {
     ["#3f88c5", "#ffba08", "#f72585", "#4cc9f0", "#7209b7"], // 明亮主题
     ["#6a0572", "#d90368", "#f49d37", "#04a777", "#f2f2f2"]  // 对比主题
   ];
-
-  // GUI界面设置
-  let gui;
   
   p.setup = function() {
     // 创建与窗口大小相匹配的画布
@@ -54,12 +33,21 @@ function emotionSketch(p) {
     canvas.id('camera-canvas');
     p.noLoop(); // 不需要连续绘制
     
-    setupGUI();
+    console.log('emotionSketch初始化，检查全局配置:', window.EmotionConfig ? '存在' : '不存在');
+    
+    // 从全局配置加载设置
+    if (window.EmotionConfig) {
+      loadSettingsFromConfig();
+    }
+    
     if (window.savedCanvas) {
       p.image(window.savedCanvas, 0, 0, p.width, p.height);
     } else {
       drawCanvas();
     }
+    
+    // 确保该方法绑定到p对象
+    p.updateSettings = updateSettings;
   }
 
   p.windowResized = function() {
@@ -67,122 +55,42 @@ function emotionSketch(p) {
     drawCanvas();
   }
 
-  // 设置GUI控制界面
-  function setupGUI() {
-    // 确保dat.GUI库可用
-    if (typeof dat === 'undefined' || !dat.GUI) {
-      console.warn('dat.GUI库未加载，使用备用控制方式');
-      // 创建简单的控制面板作为备用
-      createSimpleControls();
-      return;
-    }
+  // 加载外部设置
+  function loadSettingsFromConfig() {
+    const config = window.EmotionConfig;
+    if (!config) return;
     
-    // 如果GUI已存在，先销毁
-    if (gui) {
-      gui.destroy();
-    }
+    console.log('从全局配置加载设置:', config);
     
-    // 使用dat.GUI创建控制面板
-    try {
-      gui = new dat.GUI({autoPlace: true});
-      gui.domElement.id = 'emotion-gui';
-      
-      // 将控制界面添加到当前画布容器或父元素
-      const guiContainer = document.createElement('div');
-      guiContainer.id = 'emotion-gui-container';
-      guiContainer.style.position = 'absolute';
-      guiContainer.style.top = '10px';
-      guiContainer.style.right = '10px';
-      guiContainer.style.zIndex = '1000';
-      
-      // 查找合适的父容器 - 先尝试background-container，如果不存在则添加到body
-      const parentContainer = document.getElementById('background-container') || document.body;
-      parentContainer.appendChild(guiContainer);
-      guiContainer.appendChild(gui.domElement);
-
-      // 添加控制项
-      gui.add(settings, 'cols', 1, 10, 1).name('方块列数').onChange(drawCanvas);
-      gui.add(settings, 'rows', 1, 10, 1).name('方块行数').onChange(drawCanvas);
-      gui.add(settings, 'colorFillProbability', 0, 1, 0.01).name('颜色填充概率').onChange(drawCanvas);
-      gui.add(settings, 'stepNum', 3, 20, 1).name('细分数量').onChange(drawCanvas);
-      gui.add(settings, 'hatchProbability', 0, 1, 0.01).name('网格填充概率').onChange(drawCanvas);
-      gui.add(settings, 'horizontalHatchProbability', 0, 1, 0.01).name('水平网格概率').onChange(drawCanvas);
-      gui.add(settings, 'handDrawnIntensity', 0, 3, 0.1).name('手绘强度').onChange(drawCanvas);
-
-      // 图案控制项
-      gui.add(settings, 'circlePatternProbability', 0, 1, 0.01).name('圆形图案概率').onChange(drawCanvas);
-      gui.add(settings, 'wavyLinePatternProbability', 0, 1, 0.01).name('波浪线概率').onChange(drawCanvas);
-      gui.add(settings, 'polkaDotPatternProbability', 0, 1, 0.01).name('波点概率').onChange(drawCanvas);
-
-      // 颜色主题选择
-      gui.add(settings, 'paletteIndex', { "经典": 0, "灰度": 1, "柔和": 2, "明亮": 3, "对比": 4 })
-        .name('颜色主题')
-        .onChange(drawCanvas);
-
-      // 随机化按钮
-      gui.add(settings, 'randomize').name('随机化');
-    } catch (error) {
-      console.error('创建dat.GUI控制面板失败:', error);
-      createSimpleControls();
+    // 复制所有设置
+    for (let key in config) {
+      if (settings.hasOwnProperty(key)) {
+        settings[key] = config[key];
+      }
     }
   }
   
-  // 创建简单的控制面板作为备用
-  function createSimpleControls() {
-    const container = document.createElement('div');
-    container.id = 'simple-controls';
-    container.style.position = 'absolute';
-    container.style.top = '10px';
-    container.style.right = '10px';
-    container.style.zIndex = '1000';
-    container.style.backgroundColor = 'rgba(0,0,0,0.7)';
-    container.style.padding = '10px';
-    container.style.borderRadius = '5px';
-    container.style.color = 'white';
+  // 设置更新方法，供外部调用
+  function updateSettings(newSettings) {
+    console.log('emotion.js收到设置更新请求:', newSettings);
     
-    // 随机化按钮
-    const randomizeBtn = document.createElement('button');
-    randomizeBtn.textContent = '随机化';
-    randomizeBtn.style.padding = '5px 10px';
-    randomizeBtn.style.margin = '5px';
-    randomizeBtn.addEventListener('click', settings.randomize);
-    container.appendChild(randomizeBtn);
+    if (!newSettings) {
+      console.warn('收到空设置对象');
+      return false;
+    }
     
-    // 列数选择器
-    const colsLabel = document.createElement('div');
-    colsLabel.textContent = '方块列数: ' + settings.cols;
-    container.appendChild(colsLabel);
-    const colsSlider = document.createElement('input');
-    colsSlider.type = 'range';
-    colsSlider.min = '1';
-    colsSlider.max = '10';
-    colsSlider.value = settings.cols;
-    colsSlider.addEventListener('input', function() {
-      settings.cols = parseInt(this.value);
-      colsLabel.textContent = '方块列数: ' + settings.cols;
-      drawCanvas();
-    });
-    container.appendChild(colsSlider);
+    // 更新设置
+    for (let key in newSettings) {
+      if (settings.hasOwnProperty(key)) {
+        settings[key] = newSettings[key];
+      }
+    }
     
-    // 行数选择器
-    const rowsLabel = document.createElement('div');
-    rowsLabel.textContent = '方块行数: ' + settings.rows;
-    container.appendChild(rowsLabel);
-    const rowsSlider = document.createElement('input');
-    rowsSlider.type = 'range';
-    rowsSlider.min = '1';
-    rowsSlider.max = '10';
-    rowsSlider.value = settings.rows;
-    rowsSlider.addEventListener('input', function() {
-      settings.rows = parseInt(this.value);
-      rowsLabel.textContent = '方块行数: ' + settings.rows;
-      drawCanvas();
-    });
-    container.appendChild(rowsSlider);
+    console.log('设置已更新，重绘画布');
     
-    // 查找合适的父容器 - 先尝试background-container，如果不存在则添加到body
-    const parentContainer = document.getElementById('background-container') || document.body;
-    parentContainer.appendChild(container);
+    // 重绘画布
+    drawCanvas();
+    return true;
   }
 
   // 绘制整个画布
@@ -434,22 +342,7 @@ function emotionSketch(p) {
   
   // 当P5实例被移除时的清理函数
   p.remove = function() {
-    // 移除GUI
-    if (gui) {
-      const container = document.getElementById('emotion-gui-container');
-      if (container) {
-        container.parentNode.removeChild(container);
-      }
-      gui.destroy();
-      gui = null;
-    }
-    
-    // 移除简易控制面板
-    const simpleControls = document.getElementById('simple-controls');
-    if (simpleControls) {
-      simpleControls.parentNode.removeChild(simpleControls);
-    }
-    
+    console.log('emotion.js实例被移除');
     // 调用P5的原生remove方法
     p._remove();
   }

@@ -472,18 +472,51 @@
                         
                         const html = await response.text();
                         
-                        // 修正CSS和JS路径
+                        // 修正CSS和JS路径 - 增加更多路径修正模式
                         let fixedHtml = html
                             // 处理 "../css/" 格式的路径
                             .replace(/href="\.\.\/css\//g, 'href="./ui/css/')
                             .replace(/src="\.\.\/js\//g, 'src="./ui/js/')
+                            // 处理 "../asset/" 格式的路径
+                            .replace(/src="\.\.\/asset\//g, 'src="./ui/asset/')
+                            .replace(/href="\.\.\/asset\//g, 'href="./ui/asset/')
                             // 处理 "css/" 格式的路径
                             .replace(/href="css\//g, 'href="./ui/css/')
                             .replace(/src="js\//g, 'src="./ui/js/')
                             // 处理 "img/" 格式的路径
-                            .replace(/src="img\//g, 'src="./ui/img/');
+                            .replace(/src="img\//g, 'src="./ui/img/')
+                            // 处理 "asset/" 格式的路径
+                            .replace(/src="asset\//g, 'src="./ui/asset/')
+                            // 确保脚本加载执行
+                            .replace(/<script src=/g, '<script defer src=');
                         
                         pageContainer.innerHTML = fixedHtml;
+                        
+                        // 添加特殊处理 - 如果是欢迎页面，等待资源加载完成后初始化
+                        if (pageId === 'welcome-page') {
+                            setTimeout(() => {
+                                console.log('欢迎页面资源延迟初始化');
+                                const scripts = pageContainer.querySelectorAll('script');
+                                // 检查是否有内联脚本需要执行
+                                if (scripts.length > 0) {
+                                    const welcomeScript = document.createElement('script');
+                                    welcomeScript.textContent = `
+                                        setTimeout(function() {
+                                            if (window.initWelcomeEffects) {
+                                                window.initWelcomeEffects();
+                                            } else if (window.createRipples) {
+                                                window.createRipples();
+                                                window.createFlowingParticles();
+                                                window.createEmojiBackground();
+                                            } else {
+                                                console.error('无法找到欢迎页面初始化函数');
+                                            }
+                                        }, 500);
+                                    `;
+                                    pageContainer.appendChild(welcomeScript);
+                                }
+                            }, 300);
+                        }
                         
                         // 初始化页面内部的脚本
                         this.executeScripts(pageContainer);

@@ -5,12 +5,151 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Green - 情感疗愈应用</title>
     <link rel="stylesheet" href="../css/welcome.css">
+    <style>
+        /* 内联备份样式，确保基本样式加载 */
+        .background-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #141F14;
+        }
+        .ripple-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        .ripple {
+            position: absolute;
+            border: 2px solid rgba(110, 198, 0, 0.4);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: rippleEffect 4s linear infinite;
+        }
+        
+        @keyframes rippleEffect {
+            to {
+                transform: scale(6);
+                opacity: 0;
+            }
+        }
+        
+        /* 海浪效果 */
+        .tide-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .tide {
+            position: absolute;
+            width: 200%;
+            height: 40%;
+            border-radius: 45%;
+            bottom: -30%;
+            left: -50%;
+            animation: tideMove 15s infinite ease-in-out;
+            opacity: 0.2;
+        }
+        
+        .tide1 {
+            background-color: #457704;
+            height: 42%;
+            bottom: -32%;
+            animation-duration: 15s;
+        }
+        
+        .tide2 {
+            background-color: #6EC600;
+            height: 44%;
+            bottom: -34%;
+            animation-duration: 18s;
+        }
+        
+        .tide3 {
+            background-color: #B7FE5D;
+            height: 45%;
+            bottom: -35%;
+            opacity: 0.1;
+            animation-duration: 21s;
+        }
+        
+        @keyframes tideMove {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(2deg); }
+            100% { transform: rotate(0deg); }
+        }
+        
+        /* 模糊圆圈背景 */
+        .blur-circles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        .blur-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(70px);
+            opacity: 0.2;
+            transition: all 1.5s ease;
+        }
+        
+        .circle-1 {
+            width: 400px;
+            height: 400px;
+            background-color: #457704;
+            top: 10%;
+            left: 5%;
+            animation: floating 15s infinite alternate ease-in-out;
+        }
+        
+        .circle-2 {
+            width: 300px;
+            height: 300px;
+            background-color: #B7FE5D;
+            bottom: 20%;
+            right: 10%;
+            animation: floating 20s infinite alternate-reverse ease-in-out;
+        }
+        
+        .circle-3 {
+            width: 200px;
+            height: 200px;
+            background-color: #6EC600;
+            top: 40%;
+            right: 25%;
+            animation: floating 18s infinite alternate ease-in-out;
+        }
+        
+        @keyframes floating {
+            0% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(30px, -30px);
+            }
+            100% {
+                transform: translate(-30px, 30px);
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="background-animation">
+        <div class="blur-circles">
+            <div class="blur-circle circle-1"></div>
+            <div class="blur-circle circle-2"></div>
+            <div class="blur-circle circle-3"></div>
+        </div>
         <div class="ripple-container"></div>
-        <div class="flowing-container"></div>
-        <div class="emoji-container"></div>
         <div class="tide-container">
             <div class="tide tide1"></div>
             <div class="tide tide2"></div>
