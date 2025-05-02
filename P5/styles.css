@@ -445,74 +445,135 @@ input[type=text] {
 
 /* 在适当位置添加情感控制面板的额外样式 */
 #emotion-control-panel {
-  width: 250px;
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 0;
-  z-index: 2000; /* 确保在其他元素之上 */
-  background-color: rgba(30, 30, 30, 0.95);
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-}
-
-#emotion-control-panel .control-row {
-  margin: 12px 0;
-}
-
-#emotion-control-panel span {
-  min-width: 35px;
-  text-align: right;
-  display: inline-block;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-#emotion-control-panel select {
-  width: 100%;
-  margin-top: 5px;
-  background-color: rgba(60, 60, 60, 0.8);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 5px;
-}
-
-#emotion-control-panel select option {
-  background-color: #333;
-}
-
-#emotion-control-panel input[type=range] {
-  width: calc(100% - 40px);
-  background: rgba(100, 100, 100, 0.5);
-}
-
-#emotion-control-panel input[type=range]::-webkit-slider-thumb {
-  background: #4CAF50;
-}
-
-#emotion-control-panel label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 12px;
-  display: block;
-  margin-bottom: 5px;
-}
-
-/* 添加 AI 控制面板样式 */
-#ai-control-panel {
   width: 320px;
   max-height: 90vh; /* 限制最大高度为视口高度的90% */
   background-color: rgba(20, 20, 20, 0.85);
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); /* 增强阴影效果 */
   color: #fff;
   overflow-y: auto;
-  position: absolute;
-  top: -50px; /* 向上偏移50px */
-  left: 100%; /* 从按钮的右侧弹出 */
-  z-index: 1000;
-  margin-left: 10px; /* 与按钮保持一定距离 */
+  position: fixed; /* 使用fixed定位 */
+  top: auto; /* 不使用top定位，依赖bottom */
+  left: auto; /* 初始不设置left，会在JS中动态设置 */
+  bottom: auto; /* 初始不设置bottom，会在JS中动态设置 */
+  z-index: 1500; /* 确保在最上层 */
+  margin: 0; /* 取消margin，使用精确定位 */
+  transform-origin: left bottom; /* 设置变换原点为左下角 */
+  transition: all 0.3s ease; /* 添加平滑过渡效果 */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* 稍微明显的边框 */
+  padding-bottom: 10px; /* 底部增加内边距 */
+}
+
+/* 当情感控制面板显示时的动画效果 */
+#emotion-control-panel[style*="display: block"] {
+  animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+#emotion-panel-content {
+  padding: 15px;
+}
+
+/* 增强情感控制面板内的按钮样式 */
+#emotion-control-panel .camera-control-btn.primary-btn {
+  background-color: #2196F3; /* 使用更饱和的蓝色 */
+  transition: background-color 0.2s;
+}
+
+#emotion-control-panel .camera-control-btn.primary-btn:hover {
+  background-color: #0d8aee; /* 悬停时颜色变深 */
+}
+
+#emotion-control-panel .camera-control-btn.secondary-btn {
+  background-color: #ff5722; /* 橙色按钮 */
+  transition: background-color 0.2s;
+}
+
+#emotion-control-panel .camera-control-btn.secondary-btn:hover {
+  background-color: #e64a19; /* 悬停时颜色变深 */
+}
+
+/* 增强情感控制面板的标题样式 */
+#emotion-control-panel .panel-header {
+  background-color: rgba(76, 175, 80, 0.3); /* 添加绿色调背景，与AI区分 */
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  margin: -1px -1px 0 -1px; /* 扩展到边框外 */
+  padding: 12px 15px;
+}
+
+/* 修改AI设置弹出面板样式 */
+#ai-settings {
+  width: 320px;
+  max-height: 90vh; /* 限制最大高度为视口高度的90% */
+  background-color: rgba(20, 20, 20, 0.85);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); /* 增强阴影效果 */
+  color: #fff;
+  overflow-y: auto;
+  position: fixed; /* 使用fixed定位 */
+  top: auto; /* 不使用top定位，依赖bottom */
+  left: auto; /* 初始不设置left，会在JS中动态设置 */
+  bottom: auto; /* 初始不设置bottom，会在JS中动态设置 */
+  z-index: 1500; /* 确保在最上层 */
+  margin: 0; /* 取消margin，使用精确定位 */
+  transform-origin: left bottom; /* 设置变换原点为左下角 */
+  transition: all 0.3s ease; /* 添加平滑过渡效果 */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* 稍微明显的边框 */
+  padding-bottom: 10px; /* 底部增加内边距 */
+}
+
+/* 当AI设置面板显示时的动画效果 */
+#ai-settings[style*="display: block"] {
+  animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 #ai-panel-content {
   padding: 15px;
+}
+
+/* 增强AI设置面板内的按钮样式 */
+#ai-settings .camera-control-btn.primary-btn {
+  background-color: #2196F3; /* 使用更饱和的蓝色 */
+  transition: background-color 0.2s;
+}
+
+#ai-settings .camera-control-btn.primary-btn:hover {
+  background-color: #0d8aee; /* 悬停时颜色变深 */
+}
+
+/* 增强AI设置面板的标题样式 */
+#ai-settings .panel-header {
+  background-color: rgba(33, 150, 243, 0.3); /* 添加蓝色调背景 */
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  margin: -1px -1px 0 -1px; /* 扩展到边框外 */
+  padding: 12px 15px;
 }
 
 .ai-select {
@@ -523,6 +584,13 @@ input[type=text] {
   color: white;
   border: 1px solid rgba(100, 100, 100, 0.4);
   margin-top: 5px;
+  /* 确保可以选择 */
+  pointer-events: auto !important;
+  user-select: all !important;
+  -webkit-user-select: all !important;
+  -moz-user-select: all !important;
+  -ms-user-select: all !important;
+  cursor: pointer !important;
 }
 
 .prompt-type-buttons {
@@ -555,6 +623,12 @@ input[type=text] {
   margin-top: 5px;
   resize: vertical;
   font-family: inherit;
+  /* 确保可以输入 */
+  pointer-events: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
 }
 
 .trigger-word {

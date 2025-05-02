@@ -239,19 +239,33 @@ function initP5Drawing() {
   // 初始化绘画层
   initDrawingLayer();
   
-  // 创建情感背景设置弹出面板
+  // 创建情感背景设置弹出面板 - 移除"打开控制面板"按钮
   const emotionSettings = document.createElement('div');
   emotionSettings.id = 'emotion-settings';
   emotionSettings.className = 'popup-settings';
   emotionSettings.innerHTML = `
     <h3>情感背景设置</h3>
-    <button id="btn-emotion-settings-show">打开控制面板</button>
   `;
   
   // 将情感设置添加到情感背景按钮下
   const emotionBtn = document.getElementById('btn-bg-emotion');
   if (emotionBtn) {
     emotionBtn.appendChild(emotionSettings);
+    
+    // 直接修改情感背景按钮的点击事件
+    emotionBtn.removeEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePopupSettings('btn-bg-emotion');
+      if(currentBackgroundMode !== 'emotion') {
+        setBackgroundMode('emotion');
+      }
+    });
+    
+    emotionBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setBackgroundMode('emotion');
+      toggleEmotionSettings(true); // 强制显示情感设置面板
+    });
   }
   
   // 创建情感背景控制面板 - 弹出式面板
@@ -310,41 +324,27 @@ function initP5Drawing() {
     </div>
   `;
   
-  // 将情感控制面板添加到情感按钮旁边
-  emotionBtn.appendChild(emotionControlPanel);
+  // 将情感控制面板添加到文档中，不再附加到按钮上
+  document.body.appendChild(emotionControlPanel);
   
-  // 添加情感控制面板按钮事件
-  document.getElementById('btn-emotion-settings-show').addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleEmotionControls();
-  });
-  
+  // 添加情感控制面板关闭按钮事件
   document.getElementById('emotion-close-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     document.getElementById('emotion-control-panel').style.display = 'none';
   });
   
-  // 创建AI背景设置弹出面板
+  // 删除原有的情感控制面板按钮事件
+  // document.getElementById('btn-emotion-settings-show').addEventListener('click', (e) => {
+  //   e.stopPropagation();
+  //   toggleEmotionControls();
+  // });
+  
+  // 创建AI背景设置弹出面板 - 直接包含所有AI控制内容
   const aiSettings = document.createElement('div');
   aiSettings.id = 'ai-settings';
   aiSettings.className = 'popup-settings';
+  aiSettings.style.display = 'none';
   aiSettings.innerHTML = `
-    <h3>AI背景设置</h3>
-    <button id="btn-ai-settings-show">打开控制面板</button>
-  `;
-  
-  // 将AI设置添加到AI背景按钮下
-  const aiBtn = document.getElementById('btn-bg-ai');
-  if (aiBtn) {
-    aiBtn.appendChild(aiSettings);
-  }
-  
-  // 创建AI背景控制面板 - 弹出式面板
-  const aiControlPanel = document.createElement('div');
-  aiControlPanel.id = 'ai-control-panel';
-  aiControlPanel.className = 'camera-popup-panel';
-  aiControlPanel.style.display = 'none';
-  aiControlPanel.innerHTML = `
     <div class="panel-header">
       <h3>AI背景控制</h3>
       <span class="close-btn" id="ai-close-btn">×</span>
@@ -394,38 +394,64 @@ function initP5Drawing() {
     </div>
   `;
   
-  // 将AI控制面板添加到AI按钮旁边
-  aiBtn.appendChild(aiControlPanel);
+  // 将AI设置添加到文档中，不再向按钮添加子元素
+  document.body.appendChild(aiSettings);
   
-  // 添加AI控制面板按钮事件
-  document.getElementById('btn-ai-settings-show').addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleAIControls();
-  });
-  
-  document.getElementById('ai-close-btn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.getElementById('ai-control-panel').style.display = 'none';
-  });
-  
-  // 切换情感控制面板
-  function toggleEmotionControls() {
-    const controlPanel = document.getElementById('emotion-control-panel');
-    if (controlPanel) {
-      controlPanel.style.display = controlPanel.style.display === 'none' ? 'block' : 'none';
-    }
+  // 修改AI背景按钮点击事件，直接切换AI设置面板的显示状态
+  const aiBtn = document.getElementById('btn-bg-ai');
+  if (aiBtn) {
+    // 移除旧的事件监听器
+    aiBtn.removeEventListener('click', () => setBackgroundMode('ai'));
+    
+    // 添加新的事件监听器
+    aiBtn.addEventListener('click', () => {
+      setBackgroundMode('ai');
+      toggleAISettings(true); // 强制显示设置面板
+    });
   }
   
-  // 切换AI控制面板
-  function toggleAIControls() {
-    const controlPanel = document.getElementById('ai-control-panel');
-    if (controlPanel) {
-      controlPanel.style.display = controlPanel.style.display === 'none' ? 'block' : 'none';
+  // 添加关闭按钮事件
+  document.getElementById('ai-close-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('ai-settings').style.display = 'none';
+  });
+  
+  // 切换情感设置面板
+  function toggleEmotionSettings(forceShow = false) {
+    const settingsPanel = document.getElementById('emotion-control-panel');
+    const controlPanelContainer = document.getElementById('p5-control-panel');
+    
+    if (settingsPanel && controlPanelContainer) {
+      console.log('切换情感设置面板，当前显示状态:', settingsPanel.style.display);
       
-      // 如果是打开面板，则初始化控件
-      if (controlPanel.style.display === 'block') {
-        updateAIControlPanel();
+      // 如果传入forceShow=true，强制显示面板
+      const newDisplay = forceShow ? 'block' : 
+                        (settingsPanel.style.display === 'none' ? 'block' : 'none');
+      settingsPanel.style.display = newDisplay;
+      console.log('情感设置面板新显示状态:', newDisplay);
+      
+      // 如果是打开面板，则初始化控件并确保面板位置正确
+      if (newDisplay === 'block') {
+        console.log('打开情感设置面板，重置位置和初始化控件');
+        
+        // 获取整个控制面板容器的位置信息
+        const containerRect = controlPanelContainer.getBoundingClientRect();
+        
+        // 重置面板位置，使其靠右显示且底部与整个控制面板容器底部对齐
+        settingsPanel.style.position = 'fixed';
+        settingsPanel.style.left = (containerRect.right + 20) + 'px'; // 控制面板右侧+20px的位置，增加间隙
+        settingsPanel.style.bottom = (window.innerHeight - containerRect.bottom) + 'px'; // 与整个控制面板底部对齐
+        settingsPanel.style.top = 'auto'; // 清除top设置，使bottom生效
+        settingsPanel.style.maxHeight = '90vh';
+        settingsPanel.style.zIndex = '1500'; // 确保在最上层
+        settingsPanel.style.overflow = 'auto';
+        
+        // 确保面板可见性
+        settingsPanel.style.visibility = 'visible';
+        settingsPanel.style.opacity = '1';
       }
+    } else {
+      console.error('未找到情感设置面板元素或控制面板容器');
     }
   }
   
@@ -840,18 +866,8 @@ function setBackgroundMode(mode) {
     const aiBtn = document.getElementById('btn-bg-ai');
     if (aiBtn) {
       aiBtn.classList.add('active');
-      
-      // 如果AI控制面板存在，则显示
-      const aiControlPanel = document.getElementById('ai-control-panel');
-      if (aiControlPanel) {
-        aiControlPanel.style.display = 'block';
-        
-        // 更新控制面板内容
-        setTimeout(() => {
-          updateAIControlPanel();
-        }, 300);
-      }
     }
+    // 注意：我们在点击按钮时已经显示了设置面板，这里不需要额外处理
   } else {
     // 否则关闭所有弹出设置
     closeAllPopupSettings();
@@ -1046,11 +1062,35 @@ function initBackgroundLayer(mode) {
   // 清除旧的背景实例
   if (backgroundCanvas) {
     try {
-      console.log('移除旧背景实例:', mode);
-      backgroundCanvas.remove();
+      console.log('尝试移除旧背景实例:', mode);
+      
+      // 安全检查：确保backgroundCanvas是一个有效的p5实例
+      if (typeof backgroundCanvas.remove === 'function') {
+        backgroundCanvas.remove();
+        console.log('旧背景实例移除成功');
+      } else {
+        console.warn('背景实例没有remove方法，尝试替代清理');
+        // 尝试替代清理方法
+        if (backgroundCanvas.canvas && backgroundCanvas.canvas.parentElement) {
+          backgroundCanvas.canvas.parentElement.removeChild(backgroundCanvas.canvas);
+          console.log('已直接移除背景canvas元素');
+        }
+      }
     } catch(e) {
-      console.warn('移除背景画布失败:', e);
+      console.error('移除背景画布失败:', e);
+      // 尝试强制清理
+      try {
+        if (backgroundCanvas.canvas) {
+          if (backgroundCanvas.canvas.parentElement) {
+            backgroundCanvas.canvas.parentElement.removeChild(backgroundCanvas.canvas);
+          }
+        }
+      } catch(e2) {
+        console.error('强制清理也失败:', e2);
+      }
     }
+    
+    // 重置背景实例引用
     backgroundCanvas = null;
   }
   
@@ -1061,51 +1101,81 @@ function initBackgroundLayer(mode) {
     // 清空容器
     if (backgroundContainer) {
       backgroundContainer.innerHTML = '';
+      console.log('已清空背景容器');
+    } else {
+      console.error('未找到背景容器元素');
+      return; // 如果找不到容器，就不要继续尝试创建实例
     }
     
     // 创建新的背景实例
-    switch(mode) {
-      case 'emotion':
-        console.log('创建情感背景实例');
-        backgroundCanvas = new p5(emotionSketch, 'background-container');
-        console.log('情感背景实例创建结果:', backgroundCanvas ? '成功' : '失败');
-        // 如果存在EmotionConfig，立即应用设置
-        if (window.EmotionConfig && backgroundCanvas && typeof backgroundCanvas.updateSettings === 'function') {
-          console.log('应用情感背景初始设置');
-          setTimeout(() => {
-            backgroundCanvas.updateSettings(window.EmotionConfig);
-          }, 100);
-        }
-        break;
-      case 'camera':
-        if (currentCameraType === 'normal') {
-          // 原始摄像头模式
-          backgroundCanvas = new p5(normalCameraSketch, 'background-container');
-        } else if (currentCameraType === 'vintage') {
-          // 老相机模式
-          backgroundCanvas = new p5(window.cameraSketch, 'background-container');
-        } else if (currentCameraType === 'green') {
-          // 绿色摄像头模式 - 从camera_g.js加载
-          backgroundCanvas = new p5(window.greenCameraSketch, 'background-container');
-        }
-        break;
-      case 'ai':
-        if (typeof window.aiSketch === 'function') {
-          backgroundCanvas = new p5(window.aiSketch, 'background-container');
-        } else {
-          console.error('未找到AI实时绘画模块，请先加载ai.js');
-          alert('请先加载AI绘画模块');
-          // 重置为无背景
-          setBackgroundMode('none');
-          return;
-        }
-        break;
-    }
-    
-    // 设置背景画布的样式
-    if (backgroundCanvas && backgroundCanvas.canvas) {
-      backgroundCanvas.canvas.style.position = 'absolute';
-      backgroundCanvas.canvas.style.zIndex = '700';
+    try {
+      console.log('开始创建新背景实例，模式:', mode);
+      
+      switch(mode) {
+        case 'emotion':
+          console.log('创建情感背景实例');
+          backgroundCanvas = new p5(emotionSketch, 'background-container');
+          console.log('情感背景实例创建结果:', backgroundCanvas ? '成功' : '失败');
+          // 如果存在EmotionConfig，立即应用设置
+          if (window.EmotionConfig && backgroundCanvas && typeof backgroundCanvas.updateSettings === 'function') {
+            console.log('应用情感背景初始设置');
+            setTimeout(() => {
+              backgroundCanvas.updateSettings(window.EmotionConfig);
+            }, 100);
+          }
+          break;
+        case 'camera':
+          if (currentCameraType === 'normal') {
+            // 原始摄像头模式
+            backgroundCanvas = new p5(normalCameraSketch, 'background-container');
+            console.log('原始摄像头实例创建完成');
+          } else if (currentCameraType === 'vintage') {
+            // 老相机模式
+            if (typeof window.cameraSketch === 'function') {
+              backgroundCanvas = new p5(window.cameraSketch, 'background-container');
+              console.log('老相机实例创建完成');
+            } else {
+              console.error('未找到老相机sketch函数');
+            }
+          } else if (currentCameraType === 'green') {
+            // 绿色摄像头模式 - 从camera_g.js加载
+            if (typeof window.greenCameraSketch === 'function') {
+              backgroundCanvas = new p5(window.greenCameraSketch, 'background-container');
+              console.log('绿色摄像头实例创建完成');
+            } else {
+              console.error('未找到绿色摄像头sketch函数');
+            }
+          }
+          break;
+        case 'ai':
+          if (typeof window.aiSketch === 'function') {
+            backgroundCanvas = new p5(window.aiSketch, 'background-container');
+            console.log('AI背景实例创建完成');
+          } else {
+            console.error('未找到AI实时绘画模块，请先加载ai.js');
+            alert('请先加载AI绘画模块');
+            // 重置为无背景
+            setBackgroundMode('none');
+            return;
+          }
+          break;
+        default:
+          console.warn('未知的背景模式:', mode);
+      }
+      
+      // 设置背景画布的样式
+      if (backgroundCanvas && backgroundCanvas.canvas) {
+        backgroundCanvas.canvas.style.position = 'absolute';
+        backgroundCanvas.canvas.style.zIndex = '700';
+        console.log('背景画布样式设置完成');
+      } else {
+        console.warn('背景画布创建后无法设置样式，可能创建失败');
+      }
+    } catch (error) {
+      console.error('创建背景实例时出错:', error);
+      // 出错时重置为无背景
+      backgroundCanvas = null;
+      setBackgroundMode('none');
     }
   }
 }
@@ -1143,8 +1213,27 @@ function normalCameraSketch(p) {
     if (capture) {
       capture.stop();
     }
-    // 调用P5的原生remove方法
-    p._remove();
+    
+    // 修正：使用更安全的方式清理P5实例
+    try {
+      // 直接清理相关资源
+      if (p.canvas) {
+        if (p.canvas.parentElement) {
+          p.canvas.parentElement.removeChild(p.canvas);
+        } else if (p.canvas.remove) {
+          // 如果canvas本身有remove方法
+          p.canvas.remove();
+        }
+      }
+      
+      // 避免调用有问题的noCanvas方法
+      // 而是直接标记已移除的状态
+      p._setupDone = false;
+      
+      console.log('摄像头实例移除成功');
+    } catch (e) {
+      console.error('摄像头实例移除时出错:', e);
+    }
   };
 }
 
@@ -1403,18 +1492,26 @@ function clearGreenCameraParticles() {
 
 // AI 控制面板初始化和事件处理
 function initAIControls() {
-  // 默认使用默认提示词
-  let useDefaultPrompt = true;
-  let currentLoraIndex = 0;
+  console.log('初始化AI控制面板事件处理');
   
   // Lora 模型选择事件
   const loraSelect = document.getElementById('ai-lora-model');
   if (loraSelect) {
     loraSelect.addEventListener('change', function(e) {
-      currentLoraIndex = parseInt(this.value);
-      updateDefaultPromptDisplay(currentLoraIndex);
-      updateTriggerWordDisplay(currentLoraIndex);
+      e.stopPropagation(); // 阻止事件冒泡
+      const newIndex = parseInt(this.value);
+      console.log('Lora模型切换为:', newIndex);
+      
+      // 直接更新全局设置
+      if (typeof currentSettings !== 'undefined') {
+        currentSettings.loraIndex = newIndex;
+      }
+      updateDefaultPromptDisplay(newIndex);
+      updateTriggerWordDisplay(newIndex);
     });
+    console.log('已为Lora下拉菜单添加事件监听器');
+  } else {
+    console.error('未找到Lora下拉菜单元素');
   }
   
   // 提示词类型切换按钮
@@ -1425,20 +1522,55 @@ function initAIControls() {
   
   if (defaultPromptBtn && customPromptBtn) {
     defaultPromptBtn.addEventListener('click', function(e) {
-      useDefaultPrompt = true;
+      e.stopPropagation(); // 阻止事件冒泡
+      if (typeof currentSettings !== 'undefined') {
+        currentSettings.useDefaultPrompt = true;
+      }
       this.classList.add('active');
       customPromptBtn.classList.remove('active');
       defaultPromptContainer.style.display = 'block';
       customPromptContainer.style.display = 'none';
+      console.log('已切换到默认提示词');
     });
     
     customPromptBtn.addEventListener('click', function(e) {
-      useDefaultPrompt = false;
+      e.stopPropagation(); // 阻止事件冒泡
+      if (typeof currentSettings !== 'undefined') {
+        currentSettings.useDefaultPrompt = false;
+      }
       this.classList.add('active');
       defaultPromptBtn.classList.remove('active');
       defaultPromptContainer.style.display = 'none';
       customPromptContainer.style.display = 'block';
+      console.log('已切换到自定义提示词');
     });
+  }
+  
+  // 自定义提示词输入框事件
+  const customPromptInput = document.getElementById('ai-custom-prompt');
+  if (customPromptInput) {
+    // 确保可以获取焦点和输入
+    customPromptInput.addEventListener('click', function(e) {
+      e.stopPropagation();
+      this.focus();
+      console.log('自定义提示词输入框已点击');
+    });
+    
+    customPromptInput.addEventListener('input', function(e) {
+      e.stopPropagation();
+      if (typeof currentSettings !== 'undefined') {
+        currentSettings.customPrompt = this.value;
+      }
+      console.log('自定义提示词已更新:', this.value);
+    });
+    
+    // 确保没有CSS阻止交互
+    customPromptInput.style.pointerEvents = 'auto';
+    customPromptInput.style.userSelect = 'text';
+    
+    console.log('已为自定义提示词输入框添加事件监听器');
+  } else {
+    console.error('未找到自定义提示词输入框元素');
   }
   
   // 随机种子按钮
@@ -1447,7 +1579,13 @@ function initAIControls() {
   
   if (randomSeedBtn && seedInput) {
     randomSeedBtn.addEventListener('click', function(e) {
-      seedInput.value = Math.floor(Math.random() * 1000000000);
+      e.stopPropagation(); // 阻止事件冒泡
+      const randomSeed = Math.floor(Math.random() * 1000000000);
+      seedInput.value = randomSeed;
+      if (typeof currentSettings !== 'undefined') {
+        currentSettings.randomSeed = randomSeed;
+      }
+      console.log('已生成随机种子:', randomSeed);
     });
   }
   
@@ -1455,13 +1593,14 @@ function initAIControls() {
   const generateBtn = document.getElementById('btn-generate-image');
   if (generateBtn) {
     generateBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); // 阻止事件冒泡
       generateAIImage();
     });
   }
   
   // 初始化显示默认提示词和触发词
-  updateDefaultPromptDisplay(currentLoraIndex);
-  updateTriggerWordDisplay(currentLoraIndex);
+  updateDefaultPromptDisplay(0);
+  updateTriggerWordDisplay(0);
   
   // 添加 AI 图像生成完成事件监听
   document.addEventListener('aiImageGenerated', function(e) {
@@ -1471,19 +1610,33 @@ function initAIControls() {
   // 每5秒更新一次 ComfyUI 连接状态
   updateComfyUIStatus();
   setInterval(updateComfyUIStatus, 5000);
+  
+  console.log('AI控制面板事件初始化完成');
 }
 
 // 更新 AI 控制面板内容
 function updateAIControlPanel() {
+  console.log('开始更新AI控制面板...');
+  
+  // 检查是否有全局设置
+  if (window.AISettings) {
+    console.log('找到全局AI设置:', window.AISettings);
+  } else {
+    console.warn('未找到全局AI设置');
+  }
+  
   // 检查是否有 backgroundCanvas 和 getLoraModels 方法
   if (backgroundCanvas && typeof backgroundCanvas.getLoraModels === 'function') {
     // 获取 Lora 模型列表
     const loraModels = backgroundCanvas.getLoraModels();
+    console.log('获取到Lora模型列表:', loraModels ? `${loraModels.length}个模型` : '无');
     
     // 如果有可用的模型，更新选择器
     if (loraModels && loraModels.length > 0) {
       const loraSelect = document.getElementById('ai-lora-model');
       if (loraSelect) {
+        console.log('找到Lora选择器，当前值:', loraSelect.value);
+        
         // 清空现有选项
         loraSelect.innerHTML = '';
         
@@ -1495,14 +1648,71 @@ function updateAIControlPanel() {
           loraSelect.appendChild(option);
         });
         
+        // 设置当前选中值
+        if (window.AISettings && typeof window.AISettings.loraIndex !== 'undefined') {
+          loraSelect.value = window.AISettings.loraIndex;
+          console.log('设置Lora选择器值为:', window.AISettings.loraIndex);
+        }
+        
         // 触发 change 事件以更新提示词显示
-        loraSelect.dispatchEvent(new Event('change'));
+        try {
+          console.log('手动触发change事件更新提示词');
+          const event = new Event('change');
+          loraSelect.dispatchEvent(event);
+        } catch (e) {
+          console.error('触发change事件失败:', e);
+        }
+      } else {
+        console.error('未找到Lora选择器元素(#ai-lora-model)');
+      }
+    } else {
+      console.warn('没有可用的Lora模型');
+    }
+  } else {
+    console.error('backgroundCanvas不存在或缺少getLoraModels方法');
+  }
+  
+  // 更新自定义提示词输入框
+  const customPromptInput = document.getElementById('ai-custom-prompt');
+  if (customPromptInput && window.AISettings) {
+    customPromptInput.value = window.AISettings.customPrompt || '';
+    console.log('更新自定义提示词输入框为:', window.AISettings.customPrompt);
+  }
+  
+  // 更新随机种子输入框
+  const seedInput = document.getElementById('ai-seed');
+  if (seedInput && window.AISettings) {
+    seedInput.value = window.AISettings.randomSeed || Math.floor(Math.random() * 1000000000);
+    console.log('更新随机种子输入框为:', seedInput.value);
+  }
+  
+  // 更新提示词类型按钮状态
+  if (window.AISettings) {
+    const defaultPromptBtn = document.getElementById('btn-use-default-prompt');
+    const customPromptBtn = document.getElementById('btn-use-custom-prompt');
+    const defaultPromptContainer = document.getElementById('default-prompt-container');
+    const customPromptContainer = document.getElementById('custom-prompt-container');
+    
+    if (defaultPromptBtn && customPromptBtn) {
+      if (window.AISettings.useDefaultPrompt) {
+        defaultPromptBtn.classList.add('active');
+        customPromptBtn.classList.remove('active');
+        if (defaultPromptContainer) defaultPromptContainer.style.display = 'block';
+        if (customPromptContainer) customPromptContainer.style.display = 'none';
+        console.log('设置为使用默认提示词');
+      } else {
+        customPromptBtn.classList.add('active');
+        defaultPromptBtn.classList.remove('active');
+        if (defaultPromptContainer) defaultPromptContainer.style.display = 'none';
+        if (customPromptContainer) customPromptContainer.style.display = 'block';
+        console.log('设置为使用自定义提示词');
       }
     }
   }
   
   // 更新 ComfyUI 状态
   updateComfyUIStatus();
+  console.log('AI控制面板更新完成');
 }
 
 // 更新默认提示词显示
@@ -1554,34 +1764,155 @@ function updateAIStatusDisplay(message) {
 // 生成 AI 图像
 function generateAIImage() {
   if (backgroundCanvas && typeof backgroundCanvas.generateImage === 'function') {
-    // 获取当前设置
+    // 确保从UI获取最新设置
     const loraSelect = document.getElementById('ai-lora-model');
     const customPromptInput = document.getElementById('ai-custom-prompt');
     const seedInput = document.getElementById('ai-seed');
     const useDefaultPromptBtn = document.getElementById('btn-use-default-prompt');
     
-    const settings = {
-      loraIndex: parseInt(loraSelect.value),
-      customPrompt: customPromptInput.value,
-      useDefaultPrompt: useDefaultPromptBtn.classList.contains('active'),
-      randomSeed: parseInt(seedInput.value)
-    };
+    // 记录当前状态
+    console.log('准备生成AI图像，当前界面状态:');
+    console.log('- Lora选择:', loraSelect ? loraSelect.value : '未找到元素');
+    console.log('- 自定义提示词:', customPromptInput ? customPromptInput.value : '未找到元素');
+    console.log('- 随机种子:', seedInput ? seedInput.value : '未找到元素');
+    console.log('- 使用默认提示词:', useDefaultPromptBtn ? useDefaultPromptBtn.classList.contains('active') : '未找到元素');
     
-    console.log('生成 AI 图像，设置:', settings);
-    
-    // 调用 generateImage 方法
-    try {
-      backgroundCanvas.generateImage(settings);
-      updateAIStatusDisplay('正在生成图像...');
-    } catch (error) {
-      console.error('生成图像时出错:', error);
-      updateAIStatusDisplay('生成图像失败: ' + error.message);
+    // 更新全局设置
+    if (window.AISettings) {
+      if (loraSelect) window.AISettings.loraIndex = parseInt(loraSelect.value);
+      if (customPromptInput) window.AISettings.customPrompt = customPromptInput.value;
+      if (seedInput) window.AISettings.randomSeed = parseInt(seedInput.value);
+      if (useDefaultPromptBtn) window.AISettings.useDefaultPrompt = useDefaultPromptBtn.classList.contains('active');
+      
+      console.log('生成AI图像，全局设置:', window.AISettings);
+      
+      // 调用 generateImage 方法
+      try {
+        backgroundCanvas.generateImage(window.AISettings);
+        updateAIStatusDisplay('正在生成图像...');
+      } catch (error) {
+        console.error('生成图像时出错:', error);
+        updateAIStatusDisplay('生成图像失败: ' + error.message);
+      }
+    } else {
+      console.error('未找到全局AI设置对象');
+      updateAIStatusDisplay('无法访问AI设置');
     }
   } else {
-    console.error('backgroundCanvas 不存在或缺少 generateImage 方法');
-    updateAIStatusDisplay('无法访问 AI 生成功能');
+    console.error('backgroundCanvas不存在或缺少generateImage方法');
+    updateAIStatusDisplay('无法访问AI生成功能');
   }
 }
+
+// 切换AI设置面板
+function toggleAISettings(forceShow = false) {
+  const settingsPanel = document.getElementById('ai-settings');
+  const controlPanelContainer = document.getElementById('p5-control-panel');
+  
+  if (settingsPanel && controlPanelContainer) {
+    console.log('切换AI设置面板，当前显示状态:', settingsPanel.style.display);
+    
+    // 如果传入forceShow=true，强制显示面板
+    const newDisplay = forceShow ? 'block' : 
+                      (settingsPanel.style.display === 'none' ? 'block' : 'none');
+    settingsPanel.style.display = newDisplay;
+    console.log('AI设置面板新显示状态:', newDisplay);
+    
+    // 如果是打开面板，则初始化控件并确保面板位置正确
+    if (newDisplay === 'block') {
+      console.log('打开AI设置面板，重置位置和初始化控件');
+      
+      // 获取整个控制面板容器的位置信息
+      const containerRect = controlPanelContainer.getBoundingClientRect();
+      
+      // 重置面板位置，使其靠右显示且底部与整个控制面板容器底部对齐
+      settingsPanel.style.position = 'fixed';
+      settingsPanel.style.left = (containerRect.right + 20) + 'px'; // 控制面板右侧+20px的位置，增加间隙
+      settingsPanel.style.bottom = (window.innerHeight - containerRect.bottom) + 'px'; // 与整个控制面板底部对齐
+      settingsPanel.style.top = 'auto'; // 清除top设置，使bottom生效
+      settingsPanel.style.maxHeight = '90vh';
+      settingsPanel.style.zIndex = '1500'; // 确保在最上层
+      settingsPanel.style.overflow = 'auto';
+      
+      // 确保面板可见性
+      settingsPanel.style.visibility = 'visible';
+      settingsPanel.style.opacity = '1';
+      
+      // 确保面板中的交互元素可以正常工作
+      setTimeout(() => {
+        try {
+          const inputs = settingsPanel.querySelectorAll('input, textarea, select, button');
+          inputs.forEach(el => {
+            el.style.pointerEvents = 'auto';
+            el.style.userSelect = 'text';
+            
+            // 特别处理textarea，确保它可以输入
+            if (el.tagName.toLowerCase() === 'textarea') {
+              el.readOnly = false;
+              // 添加点击焦点事件
+              el.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.focus();
+                console.log('文本域已聚焦');
+              }, { once: false });
+            }
+            
+            // 特别处理select，确保它可以选择
+            if (el.tagName.toLowerCase() === 'select') {
+              // 添加特定的click事件
+              el.addEventListener('click', function(e) {
+                e.stopPropagation();
+                console.log('选择器被点击');
+              }, { once: false });
+              
+              // 添加change事件日志
+              el.addEventListener('change', function(e) {
+                e.stopPropagation();
+                console.log('选择器值已改变:', this.value);
+              }, { once: false });
+            }
+            
+            console.log('启用交互元素:', el.id || el.tagName);
+          });
+          
+          // 特别处理Lora选择器，确保其事件正常工作
+          const loraSelect = document.getElementById('ai-lora-model');
+          if (loraSelect) {
+            console.log('特别处理Lora选择器');
+            // 移除所有现有事件监听器
+            const newLoraSelect = loraSelect.cloneNode(true);
+            loraSelect.parentNode.replaceChild(newLoraSelect, loraSelect);
+            
+            // 重新添加事件监听器
+            newLoraSelect.addEventListener('change', function(e) {
+              e.stopPropagation();
+              const newIndex = parseInt(this.value);
+              console.log('Lora模型选择器值变化:', newIndex);
+              
+              // 直接更新全局设置
+              if (window.AISettings) {
+                window.AISettings.loraIndex = newIndex;
+                console.log('更新全局设置loraIndex为:', newIndex);
+              }
+              
+              // 更新显示
+              updateDefaultPromptDisplay(newIndex);
+              updateTriggerWordDisplay(newIndex);
+            });
+          }
+          
+          updateAIControlPanel();
+        } catch (err) {
+          console.error('设置控制面板交互元素时出错:', err);
+        }
+      }, 100);
+    }
+  } else {
+    console.error('未找到AI设置面板元素或控制面板容器');
+  }
+}
+
+// 注释掉旧的切换情感控制面板函数
 
 // 在模块加载完成后，将函数绑定到全局p5Drawing对象
 window.p5Drawing = {

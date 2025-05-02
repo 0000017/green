@@ -57,6 +57,9 @@ window.aiSketch = function(p) {
     randomSeed: Math.floor(Math.random() * 1000000000)  // 随机种子
   };
   
+  // 将当前设置暴露到全局，使sketch.js可以访问
+  window.AISettings = currentSettings;
+  
   // 更新服务器地址的函数 - 可以从外部调用
   window.updateComfyUIServerAddress = function(ip, port) {
     if (ip && port) {

@@ -132,8 +132,27 @@ function cameraSketch(p) {
 		if (capture) {
 			capture.stop()
 		}
-		// 调用P5的原生remove方法
-		p._remove()
+		
+		// 修正：使用更安全的方式清理P5实例
+		try {
+			// 直接清理相关资源
+			if (p.canvas) {
+				if (p.canvas.parentElement) {
+					p.canvas.parentElement.removeChild(p.canvas);
+				} else if (p.canvas.remove) {
+					// 如果canvas本身有remove方法
+					p.canvas.remove();
+				}
+			}
+			
+			// 避免调用有问题的noCanvas方法
+			// 而是直接标记已移除的状态
+			p._setupDone = false;
+			
+			console.log('相机实例移除成功');
+		} catch (e) {
+			console.error('相机实例移除时出错:', e);
+		}
 	}
 }
 
