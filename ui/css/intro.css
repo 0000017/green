@@ -211,6 +211,13 @@ a:hover {
     align-items: center;
 }
 
+.header-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #FFFFFF;
+    letter-spacing: 0.5px;
+}
+
 .logo-text {
     color: #ffffff;
     font-size: 28px;
@@ -282,29 +289,48 @@ a:hover {
 }
 
 .fullpage-pagination li {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.3);
+    width: auto;
+    height: auto;
+    border-radius: 20px;
+    background-color: rgba(20, 31, 20, 0.7);
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
+.fullpage-pagination li a {
+    color: #EEEEEE;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: block;
+    white-space: nowrap;
+}
+
 .fullpage-pagination li:hover {
-    background-color: rgba(183, 254, 93, 0.5);
+    background-color: rgba(110, 198, 0, 0.1);
+}
+
+.fullpage-pagination li:hover a {
+    color: #B7FE5D;
+    text-decoration: none;
 }
 
 .fullpage-pagination li.active {
-    background-color: #B7FE5D;
-    transform: scale(1.2);
+    background-color: rgba(110, 198, 0, 0.2);
+}
+
+.fullpage-pagination li.active a {
+    color: #B7FE5D;
 }
 
 /* 章节通用样式 */
 .section-title {
     color: #B7FE5D;
-    font-size: 28px;
+    font-size: 42px;
     font-weight: bold;
-    margin-bottom: 32px;
+    margin-bottom: 50px;
     text-align: center;
     position: relative;
 }
@@ -312,10 +338,10 @@ a:hover {
 .section-title::after {
     content: '';
     display: block;
-    width: 60px;
-    height: 3px;
+    width: 100px;
+    height: 5px;
     background-color: #6EC600;
-    margin: 12px auto 0;
+    margin: 20px auto 0;
     border-radius: 3px;
 }
 
@@ -328,10 +354,10 @@ a:hover {
 /* 卡片样式 */
 .card {
     background-color: rgba(255, 255, 255, 0.04);
-    border-radius: 12px;
+    border-radius: 20px;
     overflow: hidden;
-    padding: 24px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 40px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(183, 254, 93, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -357,13 +383,14 @@ a:hover {
 
 .card-image {
     flex: 0 0 40%;
-    height: 200px;
+    height: 300px;
     background: linear-gradient(120deg, #457704, #6EC600);
     background-size: cover;
     background-position: center;
-    border-radius: 8px;
+    border-radius: 16px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .card-image::before {
@@ -376,15 +403,32 @@ a:hover {
     background: linear-gradient(120deg, rgba(110, 198, 0, 0.3), rgba(183, 254, 93, 0.1));
 }
 
+.card-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/情感.svg');
+    background-size: 60px 60px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(15deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
+}
+
 .card-text-container {
     flex: 1;
 }
 
 .card-text {
     color: #EEEEEE;
-    margin-bottom: 16px;
-    font-size: 16px;
-    line-height: 1.6;
+    margin-bottom: 24px;
+    font-size: 22px;
+    line-height: 1.7;
 }
 
 /* 卡片轮播样式 */
@@ -476,8 +520,8 @@ a:hover {
 /* 功能卡片样式 */
 .feature-card {
     background-color: rgba(255, 255, 255, 0.04);
-    border-radius: 12px;
-    padding: 24px;
+    border-radius: 20px;
+    padding: 40px;
     position: relative;
     height: 100%;
     display: flex;
@@ -493,10 +537,10 @@ a:hover {
 }
 
 .feature-icon {
-    width: 60px;
-    height: 60px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -526,21 +570,21 @@ a:hover {
 
 .feature-title {
     color: #B7FE5D;
-    font-size: 20px;
+    font-size: 32px;
     font-weight: 600;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
 .feature-desc {
     color: #EEEEEE;
-    font-size: 15px;
-    margin-bottom: 24px;
+    font-size: 22px;
+    margin-bottom: 32px;
     flex-grow: 1;
 }
 
 .feature-image {
-    height: 160px;
-    border-radius: 8px;
+    height: 250px;
+    border-radius: 16px;
     overflow: hidden;
     position: relative;
     background-size: cover;
@@ -550,14 +594,68 @@ a:hover {
 
 .art-image {
     background: linear-gradient(120deg, #457704, #B7FE5D);
+    position: relative;
+}
+
+.art-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/艺术.svg');
+    background-size: 55px 55px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(-10deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
 }
 
 .data-image {
     background: linear-gradient(120deg, #6EC600, #13F88B);
+    position: relative;
+}
+
+.data-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/bg-calculator.svg');
+    background-size: 58px 58px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(8deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
 }
 
 .interact-image {
     background: linear-gradient(120deg, #B7FE5D, #BDFCC9);
+    position: relative;
+}
+
+.interact-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/kangfu.svg');
+    background-size: 54px 54px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(5deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
 }
 
 /* 流程卡片样式 */
@@ -566,8 +664,8 @@ a:hover {
     margin-bottom: 20px;
     position: relative;
     background-color: rgba(255, 255, 255, 0.04);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 20px;
+    padding: 30px;
     border: 1px solid rgba(183, 254, 93, 0.05);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -579,17 +677,17 @@ a:hover {
 }
 
 .step-number {
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background-color: #6EC600;
     color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: bold;
-    margin-right: 24px;
+    margin-right: 30px;
     flex-shrink: 0;
 }
 
@@ -599,20 +697,20 @@ a:hover {
 
 .step-title {
     color: #B7FE5D;
-    font-size: 18px;
+    font-size: 28px;
     font-weight: 600;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
 .step-desc {
     color: #EEEEEE;
-    font-size: 15px;
-    margin-bottom: 24px;
+    font-size: 22px;
+    margin-bottom: 32px;
 }
 
 .step-image {
-    height: 160px;
-    border-radius: 8px;
+    height: 250px;
+    border-radius: 16px;
     overflow: hidden;
     background-size: cover;
     background-position: center;
@@ -620,18 +718,112 @@ a:hover {
 
 .connect-image {
     background: linear-gradient(120deg, #141F14, #457704);
+    position: relative;
+}
+
+.connect-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/连接.svg');
+    background-size: 52px 52px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(-12deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
+}
+
+.preset-image {
+    background: linear-gradient(120deg, #457704, #13F88B);
+    position: relative;
+}
+
+.preset-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/适应.svg');
+    background-size: 56px 56px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(7deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
 }
 
 .create-image {
     background: linear-gradient(120deg, #457704, #6EC600);
+    position: relative;
+}
+
+.create-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/策划中心-选题创造-选中.svg');
+    background-size: 57px 57px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(-5deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
 }
 
 .analyze-image {
     background: linear-gradient(120deg, #6EC600, #B7FE5D);
+    position: relative;
+}
+
+.analyze-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/analysisDashboard.svg');
+    background-size: 55px 55px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(9deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
 }
 
 .growth-image {
     background: linear-gradient(120deg, #B7FE5D, #BDFCC9);
+    position: relative;
+}
+
+.growth-image::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url('../asset/成长.svg');
+    background-size: 53px 53px;
+    background-position: center;
+    background-repeat: repeat;
+    opacity: 0.2;
+    transform: rotate(-8deg);
+    z-index: 1;
+    filter: grayscale(100%) brightness(180%);
 }
 
 /* CTA部分样式 */
@@ -649,10 +841,10 @@ a:hover {
     background-color: #6EC600;
     color: #FFFFFF;
     border: none;
-    padding: 12px 32px;
-    font-size: 16px;
+    padding: 16px 40px;
+    font-size: 20px;
     font-weight: 600;
-    border-radius: 24px;
+    border-radius: 30px;
     cursor: pointer;
     transition: all 0.3s ease;
     outline: none;
@@ -707,34 +899,61 @@ a:hover {
     }
     
     .section-title {
-        font-size: 22px;
+        font-size: 32px;
     }
     
     .feature-card, 
     .card {
-        padding: 16px;
+        padding: 24px;
     }
     
-    .step-content {
-        padding: 16px;
+    .card-text,
+    .feature-desc,
+    .step-desc {
+        font-size: 18px;
     }
     
+    .feature-title {
+        font-size: 26px;
+    }
+    
+    .step-title {
+        font-size: 24px;
+    }
+    
+    .feature-image,
     .step-image,
-    .feature-image {
-        height: 120px;
+    .card-image {
+        height: 180px;
     }
     
     .fullpage-pagination {
         right: 10px;
     }
     
-    .fullpage-pagination li {
-        width: 8px;
-        height: 8px;
+    .fullpage-pagination li a {
+        font-size: 12px;
+        padding: 6px 12px;
     }
     
     .carousel-controls {
         flex-wrap: wrap;
+    }
+    
+    .card-image::after,
+    .art-image::after,
+    .data-image::after,
+    .interact-image::after,
+    .connect-image::after,
+    .preset-image::after,
+    .create-image::after,
+    .analyze-image::after,
+    .growth-image::after {
+        background-size: 40px 40px;
+        top: -30%;
+        left: -30%;
+        width: 160%;
+        height: 160%;
     }
 }
 

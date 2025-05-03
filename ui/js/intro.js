@@ -50,7 +50,6 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 function initFullPageScroll() {
     // 获取相关元素
     const sections = document.querySelectorAll('.fullpage-section');
-    const navItems = document.querySelectorAll('.nav-item');
     const paginationItems = document.querySelectorAll('.fullpage-pagination li');
     const fullpageWrapper = document.querySelector('.fullpage-wrapper');
     
@@ -73,10 +72,8 @@ function initFullPageScroll() {
         fullpageWrapper.style.transform = `translateY(-${index * 100}vh)`;
         
         // 更新导航状态
-        navItems.forEach(item => item.classList.remove('active'));
         paginationItems.forEach(item => item.classList.remove('active'));
         
-        navItems[index].classList.add('active');
         paginationItems[index].classList.add('active');
         
         // 动画完成后允许再次滚动
@@ -132,18 +129,12 @@ function initFullPageScroll() {
         }
     });
     
-    // 导航点击事件
-    navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            const index = parseInt(this.getAttribute('data-index'));
-            goToSection(index);
-        });
-    });
-    
     // 页面指示器点击事件
     paginationItems.forEach(item => {
-        item.addEventListener('click', function() {
+        item.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') {
+                e.preventDefault();
+            }
             const index = parseInt(this.getAttribute('data-index'));
             goToSection(index);
         });

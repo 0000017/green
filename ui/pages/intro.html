@@ -27,14 +27,7 @@
         <!-- 页头导航 -->
         <header class="header">
             <div class="logo"><img src="ui/asset/logo.png"  style="height: 24px;"></div>
-            <nav class="navigation">
-                <ul class="nav-list">
-                    <li class="nav-item active" data-index="0"><a href="#about">关于</a></li>
-                    <li class="nav-item" data-index="1"><a href="#features">功能</a></li>
-                    <li class="nav-item" data-index="2"><a href="#process">流程</a></li>
-                    <li class="nav-item" data-index="3"><a href="#start">开始体验</a></li>
-                </ul>
-            </nav>
+            <div class="header-title">应用简介</div>
         </header>
         
         <!-- 全屏滚动容器 -->
@@ -149,10 +142,26 @@
                                     </div>
                                 </div>
                                 
-                                <!-- 步骤2 -->
+                                <!-- 自适应预设（新增步骤） -->
                                 <div class="carousel-item">
                                     <div class="process-card">
                                         <div class="step-number">2</div>
+                                        <div class="step-content">
+                                            <h3 class="step-title">自适应预设</h3>
+                                            <p class="step-desc">
+                                                根据你的情感数据，Green自动生成个性化创作预设。
+                                                系统会推荐适合当前情绪状态的色彩组合、笔刷类型和画布布局，
+                                                让创作过程更加顺畅直观。
+                                            </p>
+                                            <div class="step-image preset-image"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 步骤3 -->
+                                <div class="carousel-item">
+                                    <div class="process-card">
+                                        <div class="step-number">3</div>
                                         <div class="step-content">
                                             <h3 class="step-title">艺术创作</h3>
                                             <p class="step-desc">
@@ -164,10 +173,10 @@
                                     </div>
                                 </div>
                                 
-                                <!-- 步骤3 -->
+                                <!-- 步骤4 -->
                                 <div class="carousel-item">
                                     <div class="process-card">
-                                        <div class="step-number">3</div>
+                                        <div class="step-number">4</div>
                                         <div class="step-content">
                                             <h3 class="step-title">情感分析</h3>
                                             <p class="step-desc">
@@ -179,10 +188,10 @@
                                     </div>
                                 </div>
                                 
-                                <!-- 步骤4 -->
+                                <!-- 步骤5 -->
                                 <div class="carousel-item">
                                     <div class="process-card">
-                                        <div class="step-number">4</div>
+                                        <div class="step-number">5</div>
                                         <div class="step-content">
                                             <h3 class="step-title">反思与成长</h3>
                                             <p class="step-desc">
@@ -201,6 +210,7 @@
                             <button class="carousel-control prev" data-target="process">上一个</button>
                             <div class="carousel-indicators" data-target="process">
                                 <span class="indicator active"></span>
+                                <span class="indicator"></span>
                                 <span class="indicator"></span>
                                 <span class="indicator"></span>
                                 <span class="indicator"></span>
@@ -231,10 +241,10 @@
         <!-- 全屏导航指示器 -->
         <div class="fullpage-pagination">
             <ul>
-                <li class="active" data-index="0"></li>
-                <li data-index="1"></li>
-                <li data-index="2"></li>
-                <li data-index="3"></li>
+                <li class="active" data-index="0"><a href="#about">应用特色</a></li>
+                <li data-index="1"><a href="#features">核心功能</a></li>
+                <li data-index="2"><a href="#process">使用流程</a></li>
+                <li data-index="3"><a href="#start">开始体验</a></li>
             </ul>
         </div>
     </div>
