@@ -69,7 +69,12 @@ if (typeof BUTTON_TEXT_CONFIG === 'undefined') {
 
 // 特殊页面标记 - 这些页面需要特殊处理 - 使用条件声明避免重复定义
 if (typeof SPECIAL_PAGES === 'undefined') {
-    var SPECIAL_PAGES = [];  // 移除所有特殊页面，让所有页面都显示导航按钮
+    var SPECIAL_PAGES = [
+        'intro-page',        // 简介页面不需要导航按钮
+        'device-setup-page', // 设备调试页面不需要导航按钮
+        'drawing-preset-page', // 绘画预设页面不需要导航按钮
+        'emotion-preset-page'  // 情感预设页面不需要导航按钮
+    ]; 
 }
 
 /**
@@ -77,6 +82,12 @@ if (typeof SPECIAL_PAGES === 'undefined') {
  * @param {string} pageId - 当前页面ID
  */
 function addNavigationButtons(pageId) {
+    // 检查是否是特殊页面（不需要导航按钮的页面）
+    if (SPECIAL_PAGES.includes(pageId)) {
+        console.log(`页面 ${pageId} 是特殊页面，不添加导航按钮`);
+        return;
+    }
+    
     // 计算当前页面在流程中的位置
     const currentIndex = PAGE_FLOW.indexOf(pageId);
     if (currentIndex === -1) return; // 页面不在定义的流程中
