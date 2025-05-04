@@ -20,6 +20,9 @@ function drawSketch(p) {
   let penY = 0; // 数位笔Y坐标
   let isPenHovering = false; // 数位笔是否悬停在画布上
   
+  // 光标显示控制
+  let cursorElement = null; // 光标DOM元素
+  
   // 花朵生成的颜色数组
   const flowerColors = ['#3f88c5', '#c1292e', '#ffffff', '#ed91bd', '#17bebb', '#f1d302', '#2e933c'];
   
@@ -55,6 +58,9 @@ function drawSketch(p) {
     const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
     canvas.position(0, 0);
     canvas.style('z-index', '800');
+    
+    // 创建光标DOM元素
+    createCursorElement();
     
     console.log("画布初始化，检查背景模式");
     
@@ -196,6 +202,60 @@ function drawSketch(p) {
     controlPanel.child(strokeContainer);
   };
   
+  // 创建光标DOM元素
+  function createCursorElement() {
+    // 如果已存在光标元素，先移除
+    if (cursorElement) {
+      cursorElement.remove();
+    }
+    
+    // 创建新的光标元素
+    cursorElement = document.createElement('div');
+    cursorElement.id = 'pen-cursor';
+    cursorElement.style.position = 'fixed';
+    cursorElement.style.pointerEvents = 'none'; // 避免干扰鼠标事件
+    cursorElement.style.zIndex = '1000'; // 高于画布，低于控制面板
+    cursorElement.style.display = 'none'; // 默认隐藏
+    cursorElement.style.transform = 'translate(-50%, -50%)'; // 居中定位
+    
+    // 添加SVG光标
+    cursorElement.innerHTML = `
+      <svg t="1746370945803" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3097" width="100%" height="100%">
+        <path d="M347 373.5l301.3 301.3-214.1 245.8-333-333z" fill="#F4ECD9" p-id="3098"></path>
+        <path d="M592.2 618.7L378.1 864.5l56.1 56.1 214.1-245.8z" fill="#EADABB" p-id="3099"></path>
+        <path d="M822.7 88L537.3 294.2 347 373.5l301.3 301.3 79.3-190.3 206.1-285.4z" fill="#ED9520" p-id="3100"></path>
+        <path d="M640.4 300.1c-3.5 0-6.9-1.6-9.1-4.6-3.6-5-2.5-12 2.5-15.7l143.5-103.6c5-3.6 12-2.5 15.7 2.5 3.6 5 2.5 12-2.5 15.7L646.9 298c-2 1.4-4.3 2.1-6.5 2.1z" fill="#FFFFFF" p-id="3101"></path>
+        <path d="M671.5 428.4l-79.3 190.3L347 373.5l301.3 301.3 79.3-190.3 206.1-285.4-30.7-30.7z" fill="#D1791A" p-id="3102"></path>
+        <path d="M819.7 157.3m-11.2 0a11.2 11.2 0 1 0 22.4 0 11.2 11.2 0 1 0-22.4 0Z" fill="#FFFFFF" p-id="3103"></path>
+        <path d="M943.6 185.4c-7.5-5.4-18.1-3.7-23.5 3.8L725.5 458.6 609.3 342.5c-6.6-6.6-17.2-6.6-23.8 0-6.6 6.6-6.6 17.2 0 23.8l122.2 122.2-65.3 156.7-265.8-265.8 167.1-69.6c1.2-0.5 2.3-1.1 3.4-1.9l285.5-206.2c7.5-5.4 9.2-15.9 3.8-23.5-5.4-7.5-15.9-9.2-23.5-3.8L529 279.4 340.5 358l-0.6 0.3c-0.8 0.4-1.6 0.8-2.4 1.4-0.3 0.2-0.7 0.4-1 0.7-0.2 0.2-0.4 0.3-0.6 0.4L90.1 574.9c-3.5 3.1-5.6 7.4-5.8 12.1-0.2 4.7 1.6 9.2 4.9 12.5l333 333c3.2 3.2 7.4 4.9 11.9 4.9h0.6c4.7-0.2 9-2.2 12.1-5.8L661 685.8c0.2-0.2 0.3-0.4 0.4-0.6 0.3-0.3 0.5-0.6 0.7-1 0.5-0.8 1-1.6 1.4-2.4 0.1-0.2 0.3-0.4 0.3-0.6l78.5-188.5 205-283.9c5.5-7.4 3.8-17.9-3.7-23.4zM433.3 896l-70.5-70.5 71.1-71.1c6.6-6.6 6.6-17.2 0-23.8-6.6-6.6-17.2-6.6-23.8 0L339 801.7l-118.9-119 71.1-71.1c6.6-6.6 6.6-17.2 0-23.8-6.6-6.6-17.2-6.6-23.8 0l-71.1 71.1-70.5-70.5 220.4-191.9 56.3 56.3-66 66c-6.6 6.6-6.6 17.2 0 23.8 3.3 3.3 7.6 4.9 11.9 4.9s8.6-1.6 11.9-4.9l66-66 118.9 118.9-66 66c-6.6 6.6-6.6 17.2 0 23.8 3.3 3.3 7.6 4.9 11.9 4.9 4.3 0 8.6-1.6 11.9-4.9l66-66 56.3 56.3-192 220.4z" fill="#2D3742" p-id="3104"></path>
+        <path d="M426.3 571.7l-111 111c-6.6 6.6-6.6 17.2 0 23.8 3.3 3.3 7.6 4.9 11.9 4.9 4.3 0 8.6-1.6 11.9-4.9l111-111c6.6-6.6 6.6-17.2 0-23.8-6.6-6.5-17.3-6.5-23.8 0z" fill="#2D3742" p-id="3105"></path>
+      </svg>
+    `;
+    
+    // 添加到文档中
+    document.body.appendChild(cursorElement);
+  }
+  
+  // 显示光标
+  function showCursor(x, y, size) {
+    if (!cursorElement) {
+      createCursorElement();
+    }
+    
+    // 计算光标大小
+    let cursorSize = size * 3; // 放大尺寸以便更好显示SVG
+    if (cursorSize < 24) cursorSize = 24; // 确保最小尺寸
+    
+    // 更新光标样式
+    cursorElement.style.width = cursorSize + 'px';
+    cursorElement.style.height = cursorSize + 'px';
+    cursorElement.style.left = x + 'px';
+    cursorElement.style.top = y + 'px';
+    
+    // 显示光标（不再自动隐藏）
+    cursorElement.style.display = 'block';
+  }
+  
   // 根据当前背景模式设置适当的背景
   function updateBackground() {
     // 检查全局状态中的背景模式
@@ -246,11 +306,6 @@ function drawSketch(p) {
     // 根据当前笔刷类型绘画
     if (isDrawing) {
       brushes[brushType].draw(p, color, strokeWidth);
-    }
-    
-    // 只在数位笔悬停在画布上时显示光标
-    if (isPenHovering) {
-      drawPenCursor(penX, penY);
     }
   };
   
@@ -613,6 +668,9 @@ function drawSketch(p) {
           isPenHovering = true;
           penX = e.clientX;
           penY = e.clientY;
+          
+          // 显示光标在最新位置
+          showCursor(penX, penY, strokeWidth);
         
           if (isDrawing) {
             // 获取压力值，Windows Ink应该支持
@@ -626,6 +684,9 @@ function drawSketch(p) {
                 if (strokeSlider) {
                   strokeSlider.value(strokeWidth);
                 }
+                
+                // 根据新的笔触大小更新光标
+                showCursor(penX, penY, strokeWidth);
               }
             }
             
@@ -650,6 +711,9 @@ function drawSketch(p) {
           penX = e.clientX;
           penY = e.clientY;
           penPressure = e.pressure || 0.5;
+          
+          // 显示光标在最新位置
+          showCursor(penX, penY, strokeWidth);
           
           // 检测设备是否支持压力感应
           console.log('canvas直接检测到数位笔输入设备');
@@ -701,6 +765,9 @@ function drawSketch(p) {
         if (e.pointerType === 'pen') {
           // 数位笔离开画布，隐藏光标
           isPenHovering = false;
+          if (cursorElement) {
+            cursorElement.style.display = 'none';
+          }
         }
       });
       
@@ -711,39 +778,11 @@ function drawSketch(p) {
           isPenHovering = true;
           penX = e.clientX;
           penY = e.clientY;
+          
+          // 显示光标在最新位置
+          showCursor(penX, penY, strokeWidth);
         }
       });
     }
   });
-  
-  // 绘制数位笔光标
-  function drawPenCursor(x, y) {
-    // 计算光标大小（基于当前笔刷大小）
-    let cursorSize = strokeWidth * 2;
-    if (cursorSize < 10) cursorSize = 10;
-    
-    p.push();
-    
-    // 在数位笔位置绘制光标
-    p.translate(x, y);
-    
-    // 绘制笔尖 - 使用绿色
-    p.noStroke();
-    p.fill(50, 200, 50, 200); // 绿色，半透明
-    p.ellipse(0, 0, cursorSize, cursorSize);
-    
-    // 绘制外轮廓
-    p.stroke(0, 150);
-    p.strokeWeight(1);
-    p.noFill();
-    p.ellipse(0, 0, cursorSize + 3, cursorSize + 3);
-    
-    // 添加十字线帮助精确定位
-    p.stroke(255);
-    p.strokeWeight(1);
-    p.line(-cursorSize/2, 0, cursorSize/2, 0);
-    p.line(0, -cursorSize/2, 0, cursorSize/2);
-    
-    p.pop();
-  }
 } 

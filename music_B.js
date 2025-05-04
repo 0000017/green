@@ -19,57 +19,47 @@ class MusicPlayer {
         this.loadMusicFiles();
         this.createPlayerUI();
         this.setupEventListeners();
+        // 设置默认为播放状态
+        setTimeout(() => {
+            this.togglePlay();
+        }, 1000);
     }
 
     loadMusicFiles() {
-        // 获取music文件夹中的音乐文件
+        // 获取music文件夹中的音乐文件 - 只包含浏览器支持的格式和实际存在的文件
         const musicFiles = [
-            '久石譲 - The Rain (From Kikujiro Soundtrack).ncm',
-            '何石 - 海鸥的夏天.ncm',
             'Aleile,麻枝准 - 過ぎ去りし夏.mp3',
-            '昙轩 - 海の形.ncm',
-            '久石譲 - 海.ncm',
-            '刘嘉卓 - 晨.ncm',
-            'Ólafur Arnalds - Doria.ncm',
             'Music therapy - Floating in the City.mp3',
-            'Snatam Kaur - Kabir\'s Song.ncm',
-            'Piano Peace - Solitude.ncm',
-            'nunu - cheburashka.ncm',
-            'Voice & Spirit - Ad Gure Nameh.ncm',
-            '黛青塔娜,HAYA乐团 - 寂静的天空.ncm',
             '许嫚烜 - 天人合一.mp3',
-            'Angela Harry - The Big Finale.ncm',
-            '田原 - 50 Seconds From Now.ncm',
-            'Terry Oldfield,Mike Oldfield - Moola Mantra.ncm',
             '风潮音乐 - 永恒之道.mp3',
-            'Jane Winther - Singingbowls - Instrumental.ncm',
-            'Snatam Kaur - Ek Ong Kar Sat Nam.ncm',
             'Oliver Shanti - Nuur el AB.mp3',
             '常成 - 颂钵冥想音乐空山秘境.mp3',
             'Ananda Giri - Oneness Blessing.mp3',
-            'Stive Morgan - Magic World of Illusion.ncm',
             'Sudha - Tvameva.mp3',
             'Snatam Kaur - Jap Man Sat Nam.mp3',
-            'Karunesh - Earthsong.ncm',
             'Manesh DeMoor - Jai Radha Madhav.mp3',
-            'Yiruma - If I Could See You Again.ncm',
             'Ah Nee Mah - House of the Spirit.mp3',
             'Amrit Kirtan - Ong Namo Guru Dev Namo (Adi Mantra).mp3',
-            'Enya - One By One.ncm',
             'Deva Premal,Miten - Om Kumara Mantra (Innocence).mp3',
-            'Sudha - E Hia `Ai.ncm',
-            'Julian Lloyd Webber,English Chamber Orchestra,Nicholas Cleobury - Kinderszenen, Op.15Träumerei (Arr. Palmer).ncm',
             'Amrit Kirtan - Wah Yantee.mp3',
-            '风潮音乐 - 灵气.mp3',
-            'Gurunam Singh - Dharti Hai.ncm',
-            'Deva Premal - Idé Weré Weré.ncm',
-            '何石 - 托斯卡纳艳阳下.ncm',
-            'Joshua Bell - The Carnival of the Animals The Swan.ncm',
-            '王雪山 - 治愈童年的创伤 情感排毒 洗去痛苦的潜意识冥想.ncm'
+            '风潮音乐 - 灵气.mp3'
         ];
 
-        // 将音乐文件路径添加到播放列表
-        this.playlist = musicFiles.map(file => `./music/${file}`);
+        // 检查当前运行环境和URL
+        const isFileProtocol = window.location.protocol === 'file:';
+        const baseUrl = isFileProtocol ? '' : window.location.origin;
+        
+        // 将音乐文件路径添加到播放列表，使用相对路径
+        this.playlist = musicFiles.map(file => {
+            // 对文件名进行URL编码，以处理特殊字符
+            const encodedFileName = encodeURIComponent(file);
+            return `music/${encodedFileName}`;
+        });
+
+        // 如果播放列表为空，添加一个提示
+        if (this.playlist.length === 0) {
+            console.warn('没有找到可播放的音乐文件，请确保音乐文件位于 ./music/ 目录下，并且是 .mp3、.wav 或 .ogg 格式');
+        }
 
         // 设置初始音乐
         if (this.playlist.length > 0) {
@@ -96,9 +86,9 @@ class MusicPlayer {
         this.expandedPlayer.style.display = 'none';
         this.expandedPlayer.innerHTML = `
             <div class="music-controls">
-                <button class="prev-btn">◀</button>
-                <button class="play-btn">▶</button>
-                <button class="next-btn">▶</button>
+                <button class="control-btn prev-btn">◀</button>
+                <button class="control-btn play-btn">▶</button>
+                <button class="control-btn next-btn">▶</button>
             </div>
             <div class="music-title"></div>
         `;
@@ -133,6 +123,19 @@ class MusicPlayer {
 
         // 音乐结束时自动播放下一曲
         this.audioElement.addEventListener('ended', () => this.playNext());
+        
+        // 音频播放状态事件
+        this.audioElement.addEventListener('playing', () => {
+            this.isPlaying = true;
+            playBtn.textContent = '⏸';
+            this.playerBall.classList.add('playing');
+        });
+        
+        this.audioElement.addEventListener('pause', () => {
+            this.isPlaying = false;
+            playBtn.textContent = '▶';
+            this.playerBall.classList.remove('playing');
+        });
 
         // 添加拖动事件监听
         this.setupDragEvents();
@@ -218,22 +221,21 @@ class MusicPlayer {
             this.audioElement.pause();
             playBtn.textContent = '▶';
             this.playerBall.classList.remove('playing');
+            this.container.classList.remove('playing');
         } else {
+            if (this.playlist.length === 0) {
+                console.error('播放列表为空，无法播放');
+                return;
+            }
+            
             this.audioElement.play().catch(error => {
                 console.error('播放出错:', error);
-                // 尝试播放MP3格式
-                if (this.playlist[this.currentIndex].endsWith('.ncm')) {
-                    const mp3Index = this.playlist.findIndex(file => file.endsWith('.mp3'));
-                    if (mp3Index !== -1) {
-                        this.currentIndex = mp3Index;
-                        this.audioElement.src = this.playlist[this.currentIndex];
-                        this.audioElement.load();
-                        this.audioElement.play().catch(e => console.error('替代播放也失败:', e));
-                    }
-                }
+                // 尝试播放下一首
+                this.playNext();
             });
             playBtn.textContent = '⏸';
             this.playerBall.classList.add('playing');
+            this.container.classList.add('playing');
         }
         this.isPlaying = !this.isPlaying;
     }
@@ -249,21 +251,56 @@ class MusicPlayer {
     }
 
     loadAndPlayCurrent() {
+        // 检查当前索引是否有效
+        if (this.playlist.length === 0) {
+            console.error('播放列表为空，无法加载音乐');
+            return;
+        }
+        
+        if (this.currentIndex < 0 || this.currentIndex >= this.playlist.length) {
+            console.error('播放索引无效，重置为0');
+            this.currentIndex = 0;
+        }
+        
+        // 在加载前先移除之前的错误监听器
+        const errorHandler = () => {
+            console.error('音乐文件加载失败:', this.playlist[this.currentIndex]);
+            // 记录当前索引，以避免无限循环
+            const failedIndex = this.currentIndex;
+            this.playNext();
+            // 如果播放下一首后索引没变或回到了失败的索引，说明所有歌曲都无法播放
+            if (this.currentIndex === failedIndex || this.playlist.length <= 1) {
+                console.error('所有音乐文件均无法播放');
+                this.isPlaying = false;
+                const playBtn = this.expandedPlayer.querySelector('.play-btn');
+                if (playBtn) playBtn.textContent = '▶';
+                this.playerBall.classList.remove('playing');
+            }
+        };
+        
+        this.audioElement.removeEventListener('error', errorHandler);
+        this.audioElement.addEventListener('error', errorHandler, { once: true });
+        
         this.audioElement.src = this.playlist[this.currentIndex];
         this.audioElement.load();
         this.updateMusicTitle();
         
         // 如果当前正在播放，则加载新歌曲后继续播放
         if (this.isPlaying) {
-            this.audioElement.play().catch(e => console.error('切换音乐失败:', e));
+            this.audioElement.play().catch(error => {
+                console.error('切换音乐失败:', error);
+            });
         }
     }
 
     updateMusicTitle() {
         const titleElem = this.expandedPlayer.querySelector('.music-title');
         const fullPath = this.playlist[this.currentIndex];
-        const fileName = fullPath.split('/').pop();
-        const musicName = fileName.replace(/\.[^/.]+$/, ""); // 移除扩展名
+        // 从路径中提取文件名并解码URL编码
+        const encodedFileName = fullPath.split('/').pop();
+        const fileName = decodeURIComponent(encodedFileName);
+        // 移除扩展名
+        const musicName = fileName.replace(/\.[^/.]+$/, "");
         titleElem.textContent = musicName;
     }
 }
@@ -324,8 +361,8 @@ function addStyle() {
             margin-bottom: 10px;
         }
         
-        .music-controls button {
-            background-color: #13F88B;
+        .control-btn {
+            background-color: #15CC83 !important;
             color: white;
             border: none;
             border-radius: 50%;
@@ -335,6 +372,17 @@ function addStyle() {
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background-color: #0DD67A !important;
+            transform: scale(1.05);
+        }
+        
+        .control-btn:active {
+            background-color: #0BB566 !important;
+            transform: scale(0.95);
         }
         
         .prev-btn, .next-btn {
@@ -351,6 +399,9 @@ function addStyle() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #000000;
+            font-weight: 500;
+            margin-top: 5px;
         }
         
         @keyframes pulse {

@@ -1313,18 +1313,275 @@ function saveCanvas() {
       ctx.drawImage(drawingCanvas.canvas, 0, 0);
     }
     
-    // 将合并后的画布转换为图片并下载
+    // 将合并后的画布转换为图片数据
     const dataURL = tempCanvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = 'artwork-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.png';
-    link.href = dataURL;
-    link.click();
     
-    console.log('作品已保存');
+    // 显示保存选项模态框
+    showSaveOptions(dataURL);
+    
+    console.log('保存选项已准备');
   } catch (e) {
-    console.error('保存画布失败:', e);
+    console.error('准备保存画布失败:', e);
     alert('保存失败: ' + e.message);
   }
+}
+
+// 显示保存选项模态框
+function showSaveOptions(imageDataURL) {
+  // 创建模态框容器
+  const modal = document.createElement('div');
+  modal.className = 'save-options-modal';
+  modal.innerHTML = `
+    <div class="save-options-content">
+      <span class="save-options-close">&times;</span>
+      <h3>保存作品</h3>
+      <div class="save-preview">
+        <img src="${imageDataURL}" alt="作品预览" />
+      </div>
+      <div class="save-buttons">
+        <button id="btn-save-local" class="save-btn">
+          <span class="save-icon">💾</span>保存到本地
+        </button>
+        <button id="btn-share-qr" class="save-btn">
+          <span class="save-icon">📱</span>分享到手机
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // 添加到文档中
+  document.body.appendChild(modal);
+  
+  // 添加样式
+  const style = document.createElement('style');
+  if (!document.getElementById('save-options-styles')) {
+    style.id = 'save-options-styles';
+    style.textContent = `
+      .save-options-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        backdrop-filter: blur(3px);
+      }
+      .save-options-content {
+        background-color: rgba(20, 31, 20, 0.95);
+        padding: 30px;
+        border-radius: 20px;
+        max-width: 90%;
+        width: 450px;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(183, 254, 93, 0.1);
+        color: #EEEEEE;
+      }
+      .save-options-close {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 24px;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.7);
+        transition: all 0.2s;
+        width: 25px;
+        height: 25px;
+        line-height: 22px;
+        text-align: center;
+        border-radius: 50%;
+      }
+      .save-options-close:hover {
+        color: white;
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+      .save-preview {
+        margin: 20px 0;
+        border: 1px solid rgba(183, 254, 93, 0.2);
+        padding: 15px;
+        max-height: 220px;
+        overflow: hidden;
+        border-radius: 10px;
+        background-color: rgba(255, 255, 255, 0.04);
+      }
+      .save-preview img {
+        max-width: 100%;
+        max-height: 180px;
+        object-fit: contain;
+        border-radius: 5px;
+      }
+      .save-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .save-btn {
+        padding: 12px 15px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        height: 46px;
+        background-color: #6EC600;
+        color: white;
+      }
+      .save-btn:hover {
+        background-color: #5CB100;
+        transform: translateY(-2px);
+      }
+      .save-icon {
+        margin-right: 10px;
+        font-size: 20px;
+      }
+      .save-options-content h3 {
+        margin-top: 0;
+        color: #B7FE5D;
+        font-size: 22px;
+      }
+      @media (min-width: 768px) {
+        .save-buttons {
+          flex-direction: row;
+          justify-content: center;
+        }
+        .save-btn {
+          min-width: 180px;
+          margin: 0 8px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // 添加按钮事件
+  
+  // 关闭按钮
+  modal.querySelector('.save-options-close').addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
+  
+  // 点击背景关闭
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+    }
+  });
+  
+  // 生成更具辨识性的文件名
+  function generateFilename() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    // 获取当前背景模式或相机类型作为前缀（如果可用）
+    let prefix = "Green作品";
+    if (window.currentBackgroundMode) {
+      prefix = window.currentBackgroundMode;
+    } else if (window.currentCameraType) {
+      prefix = window.currentCameraType;
+    }
+    
+    return `${prefix}-${year}${month}${day}-${hours}${minutes}${seconds}.png`;
+  }
+  
+  // 保存到本地按钮
+  modal.querySelector('#btn-save-local').addEventListener('click', () => {
+    // 使用a标签下载图片
+    const link = document.createElement('a');
+    link.download = generateFilename();
+    link.href = imageDataURL;
+    link.click();
+    
+    // 提示用户保存成功
+    alert('作品已保存到您的设备');
+    
+    // 关闭模态框
+    document.body.removeChild(modal);
+  });
+  
+  // 二维码分享按钮
+  modal.querySelector('#btn-share-qr').addEventListener('click', () => {
+    // 关闭当前模态框
+    document.body.removeChild(modal);
+    
+    // 检查QRShareTool是否可用
+    if (window.QRShareTool && typeof window.QRShareTool.shareImageWithQRCode === 'function') {
+      // 使用二维码工具分享
+      window.QRShareTool.shareImageWithQRCode(imageDataURL, generateFilename());
+    } else {
+      // 如果QRShareTool不可用，尝试动态加载
+      loadQRShareTool()
+        .then(() => {
+          // 加载成功后使用二维码工具分享
+          if (window.QRShareTool && typeof window.QRShareTool.shareImageWithQRCode === 'function') {
+            window.QRShareTool.shareImageWithQRCode(imageDataURL, generateFilename());
+          } else {
+            throw new Error('二维码分享工具加载失败');
+          }
+        })
+        .catch(error => {
+          console.error('加载二维码分享工具失败:', error);
+          alert('二维码分享功能暂不可用');
+        });
+    }
+  });
+}
+
+// 加载二维码分享工具
+function loadQRShareTool() {
+  return new Promise((resolve, reject) => {
+    // 检查是否已加载
+    if (window.QRShareTool) {
+      resolve();
+      return;
+    }
+    
+    // 先加载QR辅助库
+    const helperScript = document.createElement('script');
+    helperScript.src = 'P5/qr-helper.js';
+    helperScript.onload = () => {
+      console.log('QR辅助库加载成功');
+      
+      // 然后加载分享工具
+      const shareScript = document.createElement('script');
+      shareScript.src = 'P5/qrShare.js';
+      shareScript.onload = () => {
+        console.log('二维码分享工具加载成功');
+        // 等待一点时间确保初始化完成
+        setTimeout(resolve, 100);
+      };
+      shareScript.onerror = () => reject(new Error('加载二维码分享工具失败'));
+      document.head.appendChild(shareScript);
+    };
+    helperScript.onerror = () => {
+      console.warn('QR辅助库加载失败，尝试直接加载分享工具');
+      
+      // 直接加载分享工具
+      const shareScript = document.createElement('script');
+      shareScript.src = 'P5/qrShare.js';
+      shareScript.onload = () => {
+        console.log('二维码分享工具加载成功');
+        setTimeout(resolve, 100);
+      };
+      shareScript.onerror = () => reject(new Error('加载二维码分享工具失败'));
+      document.head.appendChild(shareScript);
+    };
+    document.head.appendChild(helperScript);
+  });
 }
 
 // 为Canvas启用数位笔支持
@@ -1917,4 +2174,35 @@ function toggleAISettings(forceShow = false) {
 // 在模块加载完成后，将函数绑定到全局p5Drawing对象
 window.p5Drawing = {
   init: initP5Drawing
+}; 
+
+// 分享图片
+window.shareImage = function() {
+  console.log('开始分享图片...');
+  // 显示二维码弹窗
+  const shareDialog = document.getElementById('shareDialog');
+  if (shareDialog) {
+    shareDialog.style.display = 'flex';
+    
+    // 生成分享链接
+    const shareUrl = generateShareUrl();
+    console.log('生成分享链接:', shareUrl);
+    
+    // 生成二维码
+    if (typeof QRHelper !== 'undefined' && QRHelper.generate) {
+      console.log('使用QRHelper生成二维码');
+      QRHelper.generate('qrcode', shareUrl);
+    } else if (typeof generateQRCode === 'function') {
+      console.log('使用generateQRCode函数生成二维码');
+      generateQRCode('qrcode', shareUrl);
+    } else {
+      console.error('没有可用的二维码生成方法');
+      document.getElementById('qrcode').innerHTML = `
+        <div style="padding: 20px; background: #f8f8f8; border-radius: 5px;">
+          <p>无法生成二维码，请使用以下链接分享：</p>
+          <a href="${shareUrl}" target="_blank" style="word-break: break-all;">${shareUrl}</a>
+        </div>
+      `;
+    }
+  }
 }; 

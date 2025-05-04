@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green - 图片下载</title>
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #141F14;
+            color: #EEEEEE;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* 背景元素 */
+        .background-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .blur-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(70px);
+            opacity: 0.2;
+            transition: all 1.5s ease;
+        }
+        
+        .circle-1 {
+            width: 400px;
+            height: 400px;
+            background-color: #457704;
+            top: 10%;
+            left: 5%;
+            animation: floating 15s infinite alternate ease-in-out;
+        }
+        
+        .circle-2 {
+            width: 300px;
+            height: 300px;
+            background-color: #B7FE5D;
+            bottom: 20%;
+            right: 10%;
+            animation: floating 20s infinite alternate-reverse ease-in-out;
+        }
+        
+        .circle-3 {
+            width: 200px;
+            height: 200px;
+            background-color: #6EC600;
+            top: 40%;
+            right: 25%;
+            animation: floating 18s infinite alternate ease-in-out;
+        }
+        
+        @keyframes floating {
+            0% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(30px, -30px);
+            }
+            100% {
+                transform: translate(-30px, 30px);
+            }
+        }
+        
+        /* 容器样式 */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px;
+            flex: 1;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 头部样式 */
+        header {
+            background-color: rgba(20, 31, 20, 0.7);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 16px 0;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .logo {
+            height: 48px;
+            width: auto;
+            max-width: 100%;
+        }
+        
+        /* 图片容器样式 */
+        .image-card {
+            margin: 24px 0;
+            background-color: rgba(255, 255, 255, 0.04);
+            border-radius: 20px;
+            overflow: hidden;
+            padding: 40px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(183, 254, 93, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+        
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 8px;
+        }
+        
+        /* 按钮样式 */
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 24px 0;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+        }
+        
+        .btn-primary {
+            background-color: #6EC600;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #5CB100;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background-color: rgba(69, 119, 4, 0.2);
+            color: #B7FE5D;
+            border: 1px solid rgba(183, 254, 93, 0.4);
+        }
+        
+        .btn-secondary:hover {
+            background-color: rgba(69, 119, 4, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        /* 信息卡片样式 */
+        .info {
+            background-color: rgba(189, 252, 201, 0.1);
+            border-left: 4px solid #6EC600;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+            color: #B7FE5D;
+        }
+        
+        /* 加载状态 */
+        #loading {
+            padding: 40px;
+            color: #B7FE5D;
+            font-size: 16px;
+        }
+        
+        /* 页脚样式 */
+        footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            background-color: rgba(20, 31, 20, 0.7);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 10;
+            margin-top: 24px;
+        }
+        
+        /* 响应式调整 */
+        @media (min-width: 768px) {
+            .buttons {
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .btn {
+                min-width: 180px;
+                margin: 0 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景元素 -->
+    <div class="background-elements">
+        <div class="blur-circle circle-1"></div>
+        <div class="blur-circle circle-2"></div>
+        <div class="blur-circle circle-3"></div>
+    </div>
+    
+    <header>
+        <svg class="logo" viewBox="0 0 941 252" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M566.635 167.617C559.859 103.483 615.143 54.198 678.363 67.4665C724.723 77.1972 751.862 123.316 746.267 169.137C738.078 168.226 729.918 168.657 721.703 168.408C719.916 168.354 718.263 167.619 716.482 167.59C679.148 166.95 642.394 172.152 610.351 192.239C620.807 212.077 644.82 220.92 666.538 218.911C685.779 217.13 700.442 205.81 711.916 191.181L738.021 210.32C738.983 211.08 738.375 211.186 738.041 211.843C736.833 214.221 731.005 220.989 728.925 223.186C692.007 262.174 623.975 261.328 588.128 221.288C586.569 219.547 581.28 211.486 579.867 211.44C539.616 237.82 491.541 261.522 442.09 248.102C389.802 233.913 361.635 179.379 377.73 127.748C401.455 51.6486 510.456 42.1322 543.121 116.722C544.217 119.223 548.546 129.873 548.495 131.777C548.472 132.671 548.073 133.163 547.294 133.532C520.9 149.195 492.631 162.873 466.488 178.828C456.347 185.018 437.266 194.9 446.739 209.44C449.143 213.129 455.945 216.11 460.178 217.144C514.995 230.524 567.814 176.516 614.419 156.909C628.787 150.865 644.648 146.186 660.056 143.66C676.545 140.954 693.337 140.922 710.026 140.414L710.035 140.411C705.066 117.266 686.059 99.5701 662.145 98.0612C629.181 95.9808 606.846 117.703 601.346 149.101L566.635 167.617ZM31.1093 42.1637C87.93 -22.7331 197.906 -11.4823 235.229 67.4147L201.377 82.9352C180.261 35.788 118.437 22.1367 76.5468 50.6286C26.1257 84.9217 24.119 164.469 74.2802 199.974C121.816 233.616 191.907 213.686 206.603 155.528H125.087V122.278H125.09L246.924 122.198C248.484 123.33 246.715 131.219 246.615 133.243C242.876 208.199 189.357 256.039 114.112 251.532C11.146 245.365 -35.7044 118.474 31.1093 42.1637ZM300.596 86.7819C319.671 71.4358 343.91 65.6569 368.129 67.8688H368.126V103.385C357.559 103.208 346.765 103.323 336.786 107.146C319.754 113.67 309.019 129.234 306.444 147.047C304.383 180.748 305.985 214.69 305.479 248.477H269.25L269.259 149.867C271.125 125.382 281.369 102.248 300.596 86.7819ZM768.163 146.09C776.146 41.3669 931.64 37.56 940.991 143.823L941 248.477H904.77L904.802 154.362C904.339 118.569 875.813 93.0231 839.843 102.991C820.713 108.292 804.384 129.971 804.384 149.858V248.474H768.154L768.163 146.09ZM494.937 108.287C484.405 99.4334 469.762 96.7783 456.266 98.3044C439.603 100.185 424.493 111.325 416.575 125.822C408.497 140.614 401.538 175.132 429.77 166.239C449.277 154.785 470.83 145.32 490.15 133.741C502.444 126.374 508.352 119.561 494.937 108.287Z" fill="#13F88B"/>
+        </svg>
+    </header>
+    
+    <div class="container">
+        <div class="image-card">
+            <div id="loading">正在加载图片...</div>
+            <img id="artwork" style="display:none;" />
+        </div>
+        
+        <div class="info">
+            <p>此图片临时分享，将在10分钟后自动过期。请尽快保存您的创作。</p>
+        </div>
+        
+        <div class="buttons">
+            <a id="download-btn" class="btn btn-primary" href="#" download>保存到设备</a>
+            <button id="share-btn" class="btn btn-secondary">分享给朋友</button>
+        </div>
+    </div>
+    
+    <footer>
+        &copy; Green创意项目 - 情感疗愈交互系统
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从URL获取文件名
+            const currentPath = window.location.pathname;
+            const fileName = currentPath.split('/').pop();
+            
+            // 构建图片URL - 使用/shared/路径访问图片文件
+            const baseUrl = window.location.origin;
+            const imageUrl = `${baseUrl}/shared/${fileName}`;
+            
+            // 加载图片
+            const img = document.getElementById('artwork');
+            const loading = document.getElementById('loading');
+            
+            img.onload = function() {
+                loading.style.display = 'none';
+                img.style.display = 'block';
+            };
+            
+            img.onerror = function() {
+                loading.textContent = '图片加载失败或已过期';
+                loading.style.color = '#e74c3c';
+            };
+            
+            img.src = imageUrl;
+            
+            // 设置下载链接
+            const downloadBtn = document.getElementById('download-btn');
+            downloadBtn.href = imageUrl;
+            downloadBtn.download = fileName;
+            
+            // 分享按钮（如果浏览器支持Web Share API）
+            const shareBtn = document.getElementById('share-btn');
+            
+            if (navigator.share) {
+                shareBtn.addEventListener('click', function() {
+                    navigator.share({
+                        title: 'Green创意作品',
+                        text: '来自Green创意项目的分享',
+                        url: window.location.href
+                    })
+                    .catch(error => console.log('分享失败:', error));
+                });
+            } else {
+                shareBtn.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -227,7 +227,16 @@ function initCarousels() {
         // 添加键盘事件（左右箭头）
         document.addEventListener('keydown', (e) => {
             // 确保只有当前在显示相应的部分时才处理键盘事件
-            const currentSection = document.querySelector('.fullpage-section:nth-child(' + (document.querySelector('.nav-item.active').getAttribute('data-index') * 1 + 1) + ')');
+            const activeNavItem = document.querySelector('.nav-item.active');
+            
+            // 添加空检查，防止null引用错误
+            if (!activeNavItem) return;
+            
+            const index = activeNavItem.getAttribute('data-index');
+            if (!index) return;
+            
+            const currentSection = document.querySelector('.fullpage-section:nth-child(' + (index * 1 + 1) + ')');
+            
             if (currentSection && currentSection.id === target) {
                 if (e.key === 'ArrowLeft') {
                     showItem(currentIndex - 1);
